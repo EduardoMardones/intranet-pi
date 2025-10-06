@@ -1,5 +1,5 @@
 import React from "react"
-import { VacacionesTable } from "@/components/common/tablas/VacacionesTable"
+import { VacacionesTable } from "@/components/common/vacaciones/VacacionesTable"
 import { CardSection } from "@/components/common/vacaciones/CardSection"
 
 const VacacionesPage: React.FC = () => {
