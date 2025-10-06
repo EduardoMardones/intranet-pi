@@ -1,7 +1,14 @@
 // src/components/common/home/HomeCardSection.tsx
 import React from "react"
 import { HomeCard } from "./HomeCard"
-import { FaRegClipboard, FaRegFolder, FaBullhorn, FaRegCalendarAlt } from "react-icons/fa"
+import { 
+  FaRegClipboard, 
+  FaRegFolder, 
+  FaBullhorn, 
+  FaBirthdayCake,
+  FaRegCalendarAlt, 
+  FaQuestionCircle 
+} from "react-icons/fa"
 
 export const HomeCardSection: React.FC = () => {
   return (
@@ -31,8 +38,22 @@ export const HomeCardSection: React.FC = () => {
         />
         <HomeCard
           title="Eventos"
+          icon={FaBirthdayCake} // ícono de celebración
+          bgColor="bg-purple-400"
+          textColor="text-white"
+          iconColor="text-white"
+        />
+        <HomeCard
+          title="Calendario"
           icon={FaRegCalendarAlt}
           bgColor="bg-green-400"
+          textColor="text-white"
+          iconColor="text-white"
+        />
+        <HomeCard
+          title="Soporte"
+          icon={FaQuestionCircle}
+          bgColor="bg-pink-400"
           textColor="text-white"
           iconColor="text-white"
         />
