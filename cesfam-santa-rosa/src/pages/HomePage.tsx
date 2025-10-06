@@ -18,28 +18,25 @@ export default function HomePage() {
 
   return (
     <>
-      <div className="px-[200px]">
-        <Navbar />
+      <Navbar />
 
-        <div className="pt-24 space-y-12">
-          <h1 className="text-3xl font-bold mb-4">Bienvenida a la Homepage 🎉</h1>
-          <p className="text-lg mb-6">
-            Aquí irá el contenido de la página, con padding para que no quede debajo del navbar.
-          </p>
+      {/* Carousel ocupa todo el ancho */}
+      <div>
+        <Carouselcn slides={slides} />
+      </div>
 
-          <div>
-            <h2 className="text-xl font-semibold mb-2 mt-8">Shadcn / Embla Carousel</h2>
-            <div className="max-w-4xl h-64 mx-auto">
-              <Carouselcn slides={slides} />
-            </div>
-          </div>
-        </div>
+      {/* Resto del contenido con padding lateral */}
+      <div className="px-[200px] pt-24 space-y-12">
+        <h1 className="text-3xl font-bold mb-4">Bienvenida a la Homepage 🎉</h1>
+        <p className="text-lg mb-6">
+          Aquí irá el contenido de la página, con padding lateral.
+        </p>
 
         <HomeCardSection />
         <UltimosDocumentos documentos={mockDocumentos} />
       </div>
 
-      <Footer /> {/* Footer fuera del div con padding */}
+      <Footer />
     </>
   )
 }
