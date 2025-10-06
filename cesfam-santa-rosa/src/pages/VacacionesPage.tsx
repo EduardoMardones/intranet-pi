@@ -1,6 +1,6 @@
 import React from "react"
 import { VacacionesTable } from "@/components/common/vacaciones/VacacionesTable"
-import { CardSection } from "@/components/common/vacaciones/CardSection"
+import { CardSection } from "@/components/common/vacaciones/VacacionesCardSection"
 
 const VacacionesPage: React.FC = () => {
   return (
