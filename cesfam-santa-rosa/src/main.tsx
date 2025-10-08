@@ -7,6 +7,6 @@ import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <VacacionesPage/>
+    <HomePage/>
   </StrictMode>,
 )

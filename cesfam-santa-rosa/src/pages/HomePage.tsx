@@ -6,6 +6,7 @@ import slide2 from "../components/images/cesfam_2.jpg"
 import slide3 from "../components/images/cesfam_3.jpg"
 import { UltimosDocumentos } from "@/components/common/home/UltimosDocumentos"
 import Footer from "@/components/common/layout/Footer"
+import { Calendar31 } from "@/components/common/calendario/Calendar31"
 
 const mockDocumentos = [
   { id: 1, nombre: "Informe Mensual", categoria: "Reportes", fecha: "2025-10-05", size: "1.2 MB" },
@@ -33,7 +34,12 @@ export default function HomePage() {
         </p>
 
         <HomeCardSection />
-        <UltimosDocumentos documentos={mockDocumentos} />
+        <div className="flex justify-between items-start w-full">
+          <UltimosDocumentos documentos={mockDocumentos} />
+          <Calendar31 />
+        </div>
+
+
       </div>
 
       <Footer />
