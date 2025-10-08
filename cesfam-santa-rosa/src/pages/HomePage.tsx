@@ -22,13 +22,12 @@ export default function HomePage() {
       <Navbar />
 
       {/* Carousel ocupa todo el ancho */}
-      <div>
+      <div className="flex-1 px-[60px] pt-16">
         <Carouselcn slides={slides} />
       </div>
 
       {/* Resto del contenido con padding lateral */}
-      <div className="px-[200px] pt-24 space-y-12">
-        <h1 className="text-3xl font-bold mb-4">Bienvenida a la Homepage 🎉</h1>
+      <div className="flex-1 px-[60px] pt-20">  {/* 🟢 esta línea tiene el cambio */}        <h1 className="text-3xl font-bold mb-4">Bienvenida a la Homepage 🎉</h1>
         <p className="text-lg mb-6">
           Aquí irá el contenido de la página, con padding lateral.
         </p>

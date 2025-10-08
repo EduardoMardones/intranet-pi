@@ -7,8 +7,7 @@ import Footer from "@/components/common/layout/Footer"
 const VacacionesPage: React.FC = () => {
   return (
     <div>
-    <div className="min-h-screen bg-gray-50 px-[60px]">
-      <Navbar></Navbar>
+    <div className="flex-1 px-[60px] pt-20">  {/* 🟢 esta línea tiene el cambio */}      <Navbar></Navbar>
     <h1 className="text-2xl font-bold text-cyan-600 mb-4">Solicitudes de Vacaciones</h1>
 
         <CardSection></CardSection>

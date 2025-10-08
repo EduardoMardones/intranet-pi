@@ -60,6 +60,7 @@ export const UltimosDocumentos: React.FC<UltimosDocumentosProps> = ({
           ))}
         </div>
       </CardContent>
+      <Button variant="link" className="w-full mt-4">Ver todos los documentos</Button>
     </Card>
   )
 }

@@ -1,5 +1,6 @@
 // src/components/common/navbar/Navbar.tsx
 import React from "react"
+import { Link } from "react-router-dom"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { FaClinicMedical } from "react-icons/fa"
 
@@ -14,14 +15,26 @@ export const Navbar: React.FC = () => {
         <span className="font-semibold text-lg text-gray-700">CESFAM Intranet</span>
       </div>
 
-      {/* Botones del menú solo texto */}
+      {/* Navegación */}
       <div className="flex gap-12">
-        <button className="text-gray-700 font-semibold text-lg hover:text-blue-500 transition">
+        <Link
+          to="/"
+          className="text-gray-700 font-semibold text-lg hover:text-orange-500 transition"
+        >
+          Inicio
+        </Link>
+        <Link
+          to="/vacaciones"
+          className="text-gray-700 font-semibold text-lg hover:text-blue-500 transition"
+        >
           Solicitudes
-        </button>
-        <button className="text-gray-700 font-semibold text-lg hover:text-yellow-500 transition">
+        </Link>
+        <Link
+          to="/repositorio"
+          className="text-gray-700 font-semibold text-lg hover:text-yellow-500 transition"
+        >
           Archivos
-        </button>
+        </Link>
         <button className="text-gray-700 font-semibold text-lg hover:text-red-500 transition">
           Anuncios
         </button>
