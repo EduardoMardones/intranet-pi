@@ -3,7 +3,7 @@ import { Users, CheckCircle, Clock, XCircle } from "lucide-react"
 import { SolicitudCard } from "./DiasVacacionesCard"
 export const CardSection: React.FC = () => {
   return (
-    <div className="pt-10 flex flex-wrap gap-6 justify-center">
+    <div className="pt-1 pb-10 flex flex-wrap gap-6 justify-center ">
       <SolicitudCard
         title="Totales"
         icon={Users}

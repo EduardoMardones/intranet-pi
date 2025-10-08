@@ -7,6 +7,9 @@ import slide3 from "../components/images/cesfam_3.jpg"
 import { UltimosDocumentos } from "@/components/common/home/UltimosDocumentos"
 import Footer from "@/components/common/layout/Footer"
 import { Calendar31 } from "@/components/common/calendario/Calendar31"
+import bannerHome from "@/components/images/banner_images/banner_home.png"
+
+
 
 const mockDocumentos = [
   { id: 1, nombre: "Informe Mensual", categoria: "Reportes", fecha: "2025-10-05", size: "1.2 MB" },
@@ -20,14 +23,34 @@ export default function HomePage() {
   return (
     <>
       <Navbar />
+      // En tu componente de página, por ejemplo HomePage o algún layout
 
-      {/* Carousel ocupa todo el ancho */}
-      <div className="flex-1 px-[60px] pt-16">
+  <div className="relative w-full h-[400px] pt-120px" >  {/* Ajusta altura según necesidad */}
+    <img
+      src={bannerHome}
+      alt="Banner principal"
+      className="object-cover object-[center_-40px] w-full h-full"
+    />
+
+    {/* Opcional: capa superpuesta (overlay) */}
+    <div className="absolute inset-0 bg-black opacity-10"></div>
+    {/* Contenido sobre el banner */}
+    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+  <h1 className="text-cyan-500 text-4xl font-bold">Bienvenido</h1>
+  <h1 className="text-cyan-500 text-4xl font-bold">Te estábamos esperando!</h1>
+</div>
+
+    
+  </div>
+
+
+      {/* Fondo azul claro levemente plomo */}
+      <div
+        className="flex-1 px-[200px] pt-16 min-h-screen"
+        style={{ backgroundColor: "#E6EEF3" }}  // 🟢 cambio hecho aquí
+      >
         <Carouselcn slides={slides} />
-      </div>
-
-      {/* Resto del contenido con padding lateral */}
-      <div className="flex-1 px-[60px] pt-20">  {/* 🟢 esta línea tiene el cambio */}        <h1 className="text-3xl font-bold mb-4">Bienvenida a la Homepage 🎉</h1>
+        <h1 className="text-3xl font-bold mb-4">Bienvenida a la Homepage 🎉</h1>
         <p className="text-lg mb-6">
           Aquí irá el contenido de la página, con padding lateral.
         </p>
@@ -37,8 +60,6 @@ export default function HomePage() {
           <UltimosDocumentos documentos={mockDocumentos} />
           <Calendar31 />
         </div>
-
-
       </div>
 
       <Footer />

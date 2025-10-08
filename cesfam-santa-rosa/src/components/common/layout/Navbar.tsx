@@ -41,9 +41,12 @@ export const Navbar: React.FC = () => {
         <button className="text-gray-700 font-semibold text-lg hover:text-purple-500 transition">
           Eventos
         </button>
-        <button className="text-gray-700 font-semibold text-lg hover:text-green-500 transition">
+        <Link
+          to="/calendario"
+          className="text-gray-700 font-semibold text-lg hover:text-blue-500 transition"
+        >
           Calendario
-        </button>
+        </Link>
         <button className="text-gray-700 font-semibold text-lg hover:text-pink-500 transition">
           Soporte
         </button>

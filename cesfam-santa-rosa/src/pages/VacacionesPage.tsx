@@ -7,12 +7,13 @@ import Footer from "@/components/common/layout/Footer"
 const VacacionesPage: React.FC = () => {
   return (
     <div>
-    <div className="flex-1 px-[60px] pt-20">  {/* 🟢 esta línea tiene el cambio */}      <Navbar></Navbar>
+    <div className="flex-1 px-[200px] pt-20">  {/* 🟢 esta línea tiene el cambio */}      <Navbar></Navbar>
     <h1 className="text-2xl font-bold text-cyan-600 mb-4">Solicitudes de Vacaciones</h1>
 
         <CardSection></CardSection>
+
       {/* Contenedor de contenido */}
-      <main className="p-6">
+      <main className="">
         <VacacionesTable />
       </main>
       
