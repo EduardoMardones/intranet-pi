@@ -11,3 +11,14 @@ El calendario invoclucra los siguientes modulos>
     -calendar/tsx
 -utils/
     -dateUtils.tsx
+
+
+Actividades Page invoclucra los siguientes modulos
+
+-actividades/
+    -ActivitiesGrid.tsx
+    -ActivityCard.tsx
+-data/
+    -mockActivities.tsx
+-types/
+    -activity.tsx

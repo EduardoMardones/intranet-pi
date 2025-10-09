@@ -6,7 +6,7 @@ import slide2 from "../components/images/cesfam_2.jpg"
 import slide3 from "../components/images/cesfam_3.jpg"
 import { UltimosDocumentos } from "@/components/common/home/UltimosDocumentos"
 import Footer from "@/components/common/layout/Footer"
-import { Calendar31 } from "@/components/common/calendario/Calendar31"
+import { Calendar31 } from "@/components/common/calendario/MiniCalendario"
 import bannerHome from "@/components/images/banner_images/banner_home.png"
 import Banner from "@/components/common/layout/Banner";
 

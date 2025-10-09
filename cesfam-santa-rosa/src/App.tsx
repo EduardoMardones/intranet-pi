@@ -3,6 +3,7 @@ import HomePage from "@/pages/HomePage"
 import { RepositorioPage } from "@/pages/RepositorioPage"
 import VacacionesPage  from "@/pages/VacacionesPage"
 import CalendarioPage from "@/pages/CalendarioPage"
+import { ActividadesPage } from "./pages/ActividadesPage"
 
 function App() {
   return (
@@ -12,6 +13,8 @@ function App() {
         <Route path="/repositorio" element={<RepositorioPage />} />
         <Route path="/vacaciones" element={<VacacionesPage />} />
         <Route path="/calendario" element={<CalendarioPage />} />
+        <Route path="/actividades" element={<ActividadesPage />} />
+
       </Routes>
     </Router>
   )
