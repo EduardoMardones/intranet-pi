@@ -2,6 +2,10 @@ import { RepositorioTable } from "@/components/common/repositorio/RepositorioTab
 import React from "react"
 import { Navbar } from "@/components/common/layout/Navbar"
 import Footer from "@/components/common/layout/Footer"
+import Banner from '@/components/common/layout/Banner';
+import bannerHome from "@/components/images/banner_images/banner_home.png"
+
+
 
 export const RepositorioPage: React.FC = () => {
   return (
@@ -10,6 +14,12 @@ export const RepositorioPage: React.FC = () => {
       <Navbar />
       <div className="h-16" /> {/* Este espacio ocupa la altura del Navbar */}
 
+      <Banner
+        imageSrc={bannerHome}
+        title="Bienvenido"
+        subtitle="Te estábamos esperando!"
+        height="250px"
+      />
       {/* Contenido principal con padding superior igual a la altura del navbar */}
       <div className="flex-1 px-[200px] "> 
         <h1 className="text-2xl font-bold text-cyan-600 mb-4">

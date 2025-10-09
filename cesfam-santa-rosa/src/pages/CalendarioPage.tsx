@@ -13,6 +13,10 @@ import { mockEvents } from '../data/mockEvents';
 import { getPreviousMonth, getNextMonth } from '../utils/dateUtils';
 import { Navbar } from '@/components/common/layout/Navbar';
 import Footer from '@/components/common/layout/Footer';
+import Banner from '@/components/common/layout/Banner';
+import bannerHome from "@/components/images/banner_images/banner_home.png"
+
+
 
 // ======================================================
 // COMPONENTE PRINCIPAL
@@ -102,6 +106,12 @@ const CalendarioPage: React.FC = () => {
     {/* Navbar */}
       <Navbar />
       <div className="h-16" /> {/* Este espacio ocupa la altura del Navbar */}
+    <Banner
+        imageSrc={bannerHome}
+        title="Bienvenido"
+        subtitle="Te estábamos esperando!"
+        height="250px"
+      />
 
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50 p-4 md:p-8">
       {/* Contenedor principal con ancho máximo */}

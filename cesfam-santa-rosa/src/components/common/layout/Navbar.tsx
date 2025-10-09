@@ -35,9 +35,12 @@ export const Navbar: React.FC = () => {
         >
           Archivos
         </Link>
-        <button className="text-gray-700 font-semibold text-lg hover:text-red-500 transition">
+        <Link
+          to="/anuncios"
+          className="text-gray-700 font-semibold text-lg hover:text-red-500 transition"
+        >
           Anuncios
-        </button>
+        </Link>
         <Link
           to="/actividades"
           className="text-gray-700 font-semibold text-lg hover:text-purple-500 transition"

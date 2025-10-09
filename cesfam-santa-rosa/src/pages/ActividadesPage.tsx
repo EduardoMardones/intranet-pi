@@ -12,6 +12,11 @@ import type { Activity } from '../types/activity';
 import { mockActivities, sortActivitiesByDate } from '../data/mockActivities';
 import { Sparkles, Users, Calendar } from 'lucide-react';
 import { Navbar } from '@/components/common/layout/Navbar';
+import Footer from '@/components/common/layout/Footer';
+import Banner from '@/components/common/layout/Banner';
+import bannerHome from "@/components/images/banner_images/banner_home.png"
+
+
 
 // ======================================================
 // COMPONENTE PRINCIPAL
@@ -70,7 +75,13 @@ export const ActividadesPage: React.FC = () => {
     <Navbar></Navbar>
     <div className="h-15" /> {/* Este espacio ocupa la altura del Navbar */}
 
-    
+     <Banner
+        imageSrc={bannerHome}
+        title="Bienvenido"
+        subtitle="Te estábamos esperando!"
+        height="250px"
+      />
+
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50">
       
       {/* ======================================================
@@ -205,21 +216,7 @@ export const ActividadesPage: React.FC = () => {
       {/* ======================================================
           FOOTER
           ====================================================== */}
-      <footer className="bg-white border-t border-gray-200 mt-16">
-        <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-6">
-          <div className="text-center text-sm text-gray-500">
-            <p className="font-medium">
-              Tablero de Actividades - CESFAM
-            </p>
-            <p className="mt-1">
-              Centro de Salud Familiar · Fomentando la convivencia y el bienestar
-            </p>
-            <p className="mt-2 text-xs">
-              © 2025 - Todos los derechos reservados
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer></Footer>
 
       {/* ======================================================
           NOTAS PARA DESARROLLO FUTURO
