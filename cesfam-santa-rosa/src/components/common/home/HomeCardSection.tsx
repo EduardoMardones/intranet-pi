@@ -36,7 +36,7 @@ export const HomeCardSection: React.FC = () => {
           iconColor="text-white"
         />
         <HomeCard
-          title="Eventos"
+          title="Actividades"
           icon={FaBirthdayCake} // ícono de celebración
           bgColor="bg-purple-400"
           textColor="text-white"

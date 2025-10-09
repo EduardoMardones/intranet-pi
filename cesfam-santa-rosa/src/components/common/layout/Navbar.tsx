@@ -49,7 +49,7 @@ export const Navbar: React.FC = () => {
         </Link>
         <Link
           to="/calendario"
-          className="text-gray-700 font-semibold text-lg hover:text-blue-500 transition"
+          className="text-gray-700 font-semibold text-lg hover:text-green-500 transition"
         >
           Calendario
         </Link>

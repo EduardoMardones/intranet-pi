@@ -14,7 +14,7 @@ import { Sparkles, Users, Calendar } from 'lucide-react';
 import { Navbar } from '@/components/common/layout/Navbar';
 import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
-import bannerHome from "@/components/images/banner_images/banner_home.png"
+import bannerHome from "@/components/images/banner_images/BannerActividades.png"
 
 
 
@@ -77,8 +77,8 @@ export const ActividadesPage: React.FC = () => {
 
      <Banner
         imageSrc={bannerHome}
-        title="Bienvenido"
-        subtitle="Te estábamos esperando!"
+        title=""
+        subtitle=""
         height="250px"
       />
 

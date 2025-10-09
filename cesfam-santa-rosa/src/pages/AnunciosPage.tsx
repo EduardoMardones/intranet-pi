@@ -13,7 +13,7 @@ import { mockAnnouncements, sortAnnouncementsByDate } from '../data/mockAnnounce
 import { Megaphone, Shield, FileCheck, AlertCircle } from 'lucide-react';
 import { Navbar } from '@/components/common/layout/Navbar';
 import Footer from '@/components/common/layout/Footer';
-import bannerHome from "@/components/images/banner_images/banner_home.png"
+import bannerHome from "@/components/images/banner_images/BannerAnuncios.png"
 import Banner from "@/components/common/layout/Banner";
 
 
@@ -83,8 +83,8 @@ export const AnunciosPage: React.FC = () => {
 
       <Banner
         imageSrc={bannerHome}
-        title="Bienvenido"
-        subtitle="Te estábamos esperando!"
+        title=""
+        subtitle=""
         height="250px"
       />
       {/* ======================================================

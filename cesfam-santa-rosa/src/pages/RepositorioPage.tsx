@@ -3,7 +3,7 @@ import React from "react"
 import { Navbar } from "@/components/common/layout/Navbar"
 import Footer from "@/components/common/layout/Footer"
 import Banner from '@/components/common/layout/Banner';
-import bannerHome from "@/components/images/banner_images/banner_home.png"
+import bannerHome from "@/components/images/banner_images/BannerArchivos.png"
 
 
 
@@ -16,8 +16,8 @@ export const RepositorioPage: React.FC = () => {
 
       <Banner
         imageSrc={bannerHome}
-        title="Bienvenido"
-        subtitle="Te estábamos esperando!"
+        title=""
+        subtitle=""
         height="250px"
       />
       {/* Contenido principal con padding superior igual a la altura del navbar */}

@@ -4,7 +4,7 @@ import { CardSection } from "@/components/common/vacaciones/VacacionesCardSectio
 import { Navbar } from "@/components/common/layout/Navbar"
 import Footer from "@/components/common/layout/Footer"
 import Banner from '@/components/common/layout/Banner';
-import bannerHome from "@/components/images/banner_images/banner_home.png"
+import bannerHome from "@/components/images/banner_images/BannerSolicitudes.png"
 
 
 
@@ -15,8 +15,8 @@ const VacacionesPage: React.FC = () => {
       <div className="h-16" /> {/* Este espacio ocupa la altura del Navbar */}
     <Banner
         imageSrc={bannerHome}
-        title="Bienvenido"
-        subtitle="Te estábamos esperando!"
+        title=""
+        subtitle=""
         height="250px"
       />
     <div className="flex-1 px-[200px]">  {/* 🟢 esta línea tiene el cambio */}      
