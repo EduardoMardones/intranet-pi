@@ -13,8 +13,7 @@ import {
 export const HomeCardSection: React.FC = () => {
   return (
     <div className="mt-20 mb-16 px-4">
-      <h2 className="text-xl font-semibold mb-4">Acciones Rápidas</h2>
-      <div className="flex flex-wrap justify-center gap-6 p-4">
+      <div className="flex flex-wrap justify-center gap-6">
         <HomeCard
           title="Solicitudes"
           icon={FaRegClipboard}

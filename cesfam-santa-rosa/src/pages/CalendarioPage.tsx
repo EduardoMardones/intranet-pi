@@ -101,6 +101,8 @@ const CalendarioPage: React.FC = () => {
     <>
     {/* Navbar */}
       <Navbar />
+      <div className="h-16" /> {/* Este espacio ocupa la altura del Navbar */}
+
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50 p-4 md:p-8">
       {/* Contenedor principal con ancho máximo */}
       <div className="max-w-[1600px] mx-auto">

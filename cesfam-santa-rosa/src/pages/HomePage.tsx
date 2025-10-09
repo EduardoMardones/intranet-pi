@@ -8,6 +8,8 @@ import { UltimosDocumentos } from "@/components/common/home/UltimosDocumentos"
 import Footer from "@/components/common/layout/Footer"
 import { Calendar31 } from "@/components/common/calendario/Calendar31"
 import bannerHome from "@/components/images/banner_images/banner_home.png"
+import Banner from "@/components/common/layout/Banner";
+
 
 
 
@@ -23,39 +25,30 @@ export default function HomePage() {
   return (
     <>
       <Navbar />
-      // En tu componente de página, por ejemplo HomePage o algún layout
+      <div className="h-15" /> {/* Este espacio ocupa la altura del Navbar */}
 
-  <div className="relative w-full h-[400px] pt-120px" >  {/* Ajusta altura según necesidad */}
-    <img
-      src={bannerHome}
-      alt="Banner principal"
-      className="object-cover object-[center_-40px] w-full h-full"
-    />
 
-    {/* Opcional: capa superpuesta (overlay) */}
-    <div className="absolute inset-0 bg-black opacity-10"></div>
-    {/* Contenido sobre el banner */}
-    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-  <h1 className="text-cyan-500 text-4xl font-bold">Bienvenido</h1>
-  <h1 className="text-cyan-500 text-4xl font-bold">Te estábamos esperando!</h1>
-</div>
-
-    
-  </div>
+      <Banner
+        imageSrc={bannerHome}
+        title="Bienvenido"
+        subtitle="Te estábamos esperando!"
+        height="400px"
+      />
 
 
       {/* Fondo azul claro levemente plomo */}
       <div
-        className="flex-1 px-[200px] pt-16 min-h-screen"
+        className="flex-1 px-[200px] pt-1 min-h-screen"
         style={{ backgroundColor: "#E6EEF3" }}  // 🟢 cambio hecho aquí
-      >
+      >        
+      <HomeCardSection />
+
         <Carouselcn slides={slides} />
         <h1 className="text-3xl font-bold mb-4">Bienvenida a la Homepage 🎉</h1>
         <p className="text-lg mb-6">
           Aquí irá el contenido de la página, con padding lateral.
         </p>
 
-        <HomeCardSection />
         <div className="flex justify-between items-start w-full">
           <UltimosDocumentos documentos={mockDocumentos} />
           <Calendar31 />

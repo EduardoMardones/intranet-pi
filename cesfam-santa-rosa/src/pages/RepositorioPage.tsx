@@ -8,9 +8,10 @@ export const RepositorioPage: React.FC = () => {
     <div className="bg-gray-50 min-h-screen flex flex-col">
       {/* Navbar fija */}
       <Navbar />
+      <div className="h-16" /> {/* Este espacio ocupa la altura del Navbar */}
 
       {/* Contenido principal con padding superior igual a la altura del navbar */}
-      <div className="flex-1 px-[200px] pt-20"> 
+      <div className="flex-1 px-[200px] "> 
         <h1 className="text-2xl font-bold text-cyan-600 mb-4">
           Repositorio de Documentos
         </h1>

@@ -59,6 +59,8 @@ export const Navbar: React.FC = () => {
           BV
         </AvatarFallback>
       </Avatar>
+      
     </div>
+    
   )
 }
