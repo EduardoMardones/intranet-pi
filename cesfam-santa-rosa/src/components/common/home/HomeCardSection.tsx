@@ -7,7 +7,7 @@ import {
   FaBullhorn, 
   FaBirthdayCake,
   FaRegCalendarAlt, 
-  FaQuestionCircle 
+  FaUserFriends
 } from "react-icons/fa"
 
 export const HomeCardSection: React.FC = () => {
@@ -50,8 +50,8 @@ export const HomeCardSection: React.FC = () => {
           iconColor="text-white"
         />
         <HomeCard
-          title="Soporte"
-          icon={FaQuestionCircle}
+          title="Directorio"
+          icon={FaUserFriends}
           bgColor="bg-pink-400"
           textColor="text-white"
           iconColor="text-white"

@@ -53,7 +53,13 @@ export const Navbar: React.FC = () => {
         >
           Calendario
         </Link>
-        <button className="text-gray-700 font-semibold text-lg hover:text-pink-500 transition">
+         <Link
+          to="/direcctorio"
+          className="text-gray-700 font-semibold text-lg hover:text-pink-500 transition"
+        >
+          Directorio
+        </Link>
+        <button className="text-gray-700 font-semibold text-lg hover:gray-500 transition">
           Soporte
         </button>
       </div>
