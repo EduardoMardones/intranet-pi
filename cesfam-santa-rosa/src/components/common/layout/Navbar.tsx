@@ -54,7 +54,7 @@ export const Navbar: React.FC = () => {
           Calendario
         </Link>
          <Link
-          to="/direcctorio"
+          to="/directorio"
           className="text-gray-700 font-semibold text-lg hover:text-pink-500 transition"
         >
           Directorio

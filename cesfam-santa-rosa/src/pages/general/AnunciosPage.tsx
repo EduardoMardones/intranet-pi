@@ -8,8 +8,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { AnnouncementList } from '@/components/common/anuncios/AnnouncementList';
-import type { Announcement } from '../types/announcement';
-import { mockAnnouncements, sortAnnouncementsByDate } from '../data/mockAnnouncements';
+import type { Announcement } from '@/types/announcement';
+import { mockAnnouncements, sortAnnouncementsByDate } from '@/data/mockAnnouncements';
 import { Megaphone, Shield, FileCheck, AlertCircle } from 'lucide-react';
 import { Navbar } from '@/components/common/layout/Navbar';
 import Footer from '@/components/common/layout/Footer';

@@ -7,10 +7,10 @@
 import React, { useState } from 'react';
 import CalendarHeader from '@/components/common/calendario/CalendarHeader';
 import CalendarGrid from '@/components/common/calendario/CalendarGrid';
-import { EventModal } from '../components/common/calendario/EventModal';
-import type { CalendarEvent } from '../types/calendar';
-import { mockEvents } from '../data/mockEvents';
-import { getPreviousMonth, getNextMonth } from '../utils/dateUtils';
+import { EventModal } from '@/components/common/calendario/EventModal';
+import type { CalendarEvent } from '@/types/calendar';
+import { mockEvents } from '@/data/mockEvents';
+import { getPreviousMonth, getNextMonth } from '@/utils/dateUtils';
 import { Navbar } from '@/components/common/layout/Navbar';
 import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';

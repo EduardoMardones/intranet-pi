@@ -8,8 +8,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { ActivitiesGrid } from '@/components/common/actividades/ActivitiesGrid';
-import type { Activity } from '../types/activity';
-import { mockActivities, sortActivitiesByDate } from '../data/mockActivities';
+import type { Activity } from '@/types/activity';
+import { mockActivities, sortActivitiesByDate } from '@/data/mockActivities';
 import { Sparkles, Users, Calendar } from 'lucide-react';
 import { Navbar } from '@/components/common/layout/Navbar';
 import Footer from '@/components/common/layout/Footer';

@@ -1,11 +1,12 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
-import HomePage from "@/pages/HomePage"
-import { RepositorioPage } from "@/pages/RepositorioPage"
-import VacacionesPage  from "@/pages/VacacionesPage"
-import CalendarioPage from "@/pages/CalendarioPage"
-import { ActividadesPage } from "@/pages/ActividadesPage"
-import { AnunciosPage } from "./pages/AnunciosPage"
-import { DirectorioPage } from "./pages/DirectorioPage"
+import HomePage from "@/pages/general/HomePage"
+import { RepositorioPage } from "@/pages/general/RepositorioPage"
+import VacacionesPage  from "@/pages/general/VacacionesPage"
+import CalendarioPage from "@/pages/general/CalendarioPage"
+import { ActividadesPage } from "@/pages/general/ActividadesPage"
+import { AnunciosPage } from "./pages/general/AnunciosPage"
+import { DirectorioPage } from "./pages/general/DirectorioPage"
+import { LicenciasMedicasPage } from "./pages/administrador/LicenciasMedicasPage"
 
 function App() {
   return (
@@ -17,7 +18,9 @@ function App() {
         <Route path="/calendario" element={<CalendarioPage />} />
         <Route path="/actividades" element={<ActividadesPage />} />
         <Route path="/anuncios" element={<AnunciosPage />} />
-        <Route path="/direcctorio" element={<DirectorioPage />} />
+        <Route path="/directorio" element={<DirectorioPage />} />
+        <Route path="/licencias" element={<LicenciasMedicasPage />} />
+
 
 
 
