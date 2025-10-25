@@ -1,18 +1,11 @@
-// ======================================================
-// PÁGINA PRINCIPAL: Perfil de Usuario
-// Ubicación: src/pages/PerfilUsuario.tsx
-// Descripción: Vista moderna y limpia de perfil de usuario
-// ======================================================
-
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { UserProfile, Activity, PersonalDocument, Notification } from '@/types/perfil';
 import { ACTIVITY_COLORS, DOCUMENT_COLORS } from '@/types/perfil';
-import { Navbar } from '@/components/common/layout/Navbar';
+import { Navbar } from '@/components/common/layout/Navbar'; // Asegúrate de que sea la Navbar actualizada
 import Footer from '@/components/common/layout/Footer';
-
 
 import {
   mockUserProfile,
@@ -24,7 +17,7 @@ import {
 } from '@/data/mockPerfil';
 import {
   User, Mail, Phone, Briefcase, Calendar, Shield, Edit, Download,
-  FileText, Bell, Plane, Key, Eye, Clock, Heart
+  FileText, Bell, Plane, Key, Eye, Clock, Heart, Upload
 } from 'lucide-react';
 
 // ======================================================
@@ -36,13 +29,19 @@ export const PerfilUsuarioPage: React.FC = () => {
   // ESTADOS
   // ======================================================
 
-  const [profile] = useState<UserProfile>(mockUserProfile);
+  const [profile, setProfile] = useState<UserProfile>(mockUserProfile); // Ahora el perfil puede ser modificado
   const [activities] = useState<Activity[]>(mockActivities);
   const [documents] = useState<PersonalDocument[]>(mockDocuments);
   const [notifications] = useState<Notification[]>(mockNotifications);
   const [feriadosStatus] = useState(mockFeriadosStatus);
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(profile.avatar);
 
   const unreadNotifications = notifications.filter(n => !n.leida).length;
+
+  // Actualiza el avatarPreview si la URL del perfil cambia
+  useEffect(() => {
+    setAvatarPreview(profile.avatar);
+  }, [profile.avatar]);
 
   // ======================================================
   // FUNCIONES AUXILIARES
@@ -60,13 +59,30 @@ export const PerfilUsuarioPage: React.FC = () => {
     return `${nombre.charAt(0)}${apellidos.charAt(0)}`;
   };
 
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const newAvatarUrl = reader.result as string;
+        setAvatarPreview(newAvatarUrl);
+        // Aquí deberías subir la imagen a tu servidor
+        // y luego actualizar la URL del avatar en el estado global/contexto del usuario
+        // Por ahora, solo actualizamos el mock local y el estado del componente
+        setProfile(prevProfile => ({ ...prevProfile, avatar: newAvatarUrl }));
+        // Idealmente, notificar a la Navbar que el avatar ha cambiado (usando contexto o props)
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // ======================================================
   // RENDERIZADO
   // ======================================================
 
   return (
     <>
-    <Navbar></Navbar>
+    <Navbar /> {/* La Navbar ahora toma la URL del avatar desde el estado de usuario real/contexto */}
     <div className="h-15" />
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50">
       {/* ======================================================
@@ -98,10 +114,10 @@ export const PerfilUsuarioPage: React.FC = () => {
             {/* Layout Flex para Avatar e Información */}
             <div className="flex flex-col md:flex-row gap-8 items-start">
               {/* AVATAR */}
-              <div className="flex-shrink-0">
-                {profile.avatar ? (
+              <div className="flex-shrink-0 relative">
+                {avatarPreview ? (
                   <img
-                    src={profile.avatar}
+                    src={avatarPreview}
                     alt={`${profile.nombre} ${profile.apellidos}`}
                     className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl ring-4 ring-gray-100"
                   />
@@ -112,6 +128,21 @@ export const PerfilUsuarioPage: React.FC = () => {
                     </span>
                   </div>
                 )}
+                {/* Botón para cambiar foto de perfil */}
+                <label
+                  htmlFor="avatar-upload"
+                  className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-md cursor-pointer hover:bg-gray-100 transition-colors"
+                  title="Cambiar foto de perfil"
+                >
+                  <Upload className="w-5 h-5 text-gray-700" />
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
+                </label>
                 <div className="mt-4 text-center">
                   <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -421,4 +452,3 @@ export const PerfilUsuarioPage: React.FC = () => {
     </>
   );
 };
-

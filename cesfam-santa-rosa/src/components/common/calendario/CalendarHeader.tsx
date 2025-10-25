@@ -7,7 +7,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Calendar, Plus } from 'lucide-react';
-import { formatMonthYear } from '../../../utils/dateUtils';
+import { formatMonthYear } from '@/utils/dateUtils';
 
 // ======================================================
 // INTERFACES

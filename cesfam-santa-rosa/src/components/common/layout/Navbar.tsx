@@ -1,10 +1,16 @@
-// src/components/common/navbar/Navbar.tsx
-import React from "react"
-import { Link } from "react-router-dom"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { FaClinicMedical } from "react-icons/fa"
+import React from "react";
+import { Link } from "react-router-dom";
+import { FaClinicMedical } from "react-icons/fa";
+import { PerfilIconButton } from "../buttons/PerfilIconButton";
+import { mockUserProfile } from "@/data/mockPerfil"; // Importa mockUserProfile
 
 export const Navbar: React.FC = () => {
+  // Aquí puedes obtener la URL del avatar y las iniciales del usuario loggeado.
+  // Por ahora, usaremos los datos mock. En una app real, vendrían de tu estado de autenticación.
+  const userAvatarUrl = mockUserProfile.avatar; // 'mockUserProfile.avatar' puede ser undefined si no hay foto
+  const userInitials = `${mockUserProfile.nombre.charAt(0)}${mockUserProfile.apellidos.charAt(0)}`;
+  const userName = `${mockUserProfile.nombre} ${mockUserProfile.apellidos}`;
+
   return (
     <div className="fixed top-0 left-0 w-full h-16 shadow flex items-center justify-between px-6 z-50 bg-white">
       {/* Logo a la izquierda */}
@@ -53,7 +59,7 @@ export const Navbar: React.FC = () => {
         >
           Calendario
         </Link>
-         <Link
+        <Link
           to="/directorio"
           className="text-gray-700 font-semibold text-lg hover:text-pink-500 transition"
         >
@@ -64,15 +70,12 @@ export const Navbar: React.FC = () => {
         </button>
       </div>
 
-      {/* Avatar a la derecha */}
-      <Avatar>
-        <AvatarImage src="/ruta/a/tu/avatar.jpg" alt="Perfil" />
-        <AvatarFallback className="font-bold bg-[#009DDC] text-white">
-          BV
-        </AvatarFallback>
-      </Avatar>
-      
+      {/* Reemplaza el Avatar existente con PerfilIconButton */}
+      <PerfilIconButton
+        userName={userName}
+        userInitials={userInitials}
+        userAvatarUrl={userAvatarUrl} // Pasa la URL del avatar aquí
+      />
     </div>
-    
-  )
-}
+  );
+};

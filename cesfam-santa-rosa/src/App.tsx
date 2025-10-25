@@ -8,6 +8,7 @@ import { AnunciosPage } from "@/pages/general/AnunciosPage"
 import { DirectorioPage } from "@/pages/general/DirectorioPage"
 import { LicenciasMedicasPage } from "@/pages/administrador/LicenciasMedicasPage"
 import { PerfilUsuarioPage } from "@/pages/general/PerfilUsuarioPage"
+import LoginPage from "@/pages/general/LoginPage"
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/directorio" element={<DirectorioPage />} />
         <Route path="/licencias" element={<LicenciasMedicasPage />} />
         <Route path="/perfil" element={<PerfilUsuarioPage />} />
+        <Route path="/login" element={<LoginPage />} />
 
       </Routes>
     </Router>
