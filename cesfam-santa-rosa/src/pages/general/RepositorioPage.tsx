@@ -1,6 +1,7 @@
 import { RepositorioTable } from "@/components/common/repositorio/RepositorioTable"
 import React from "react"
 import { Navbar } from "@/components/common/layout/Navbar"
+import RepositorioHeader from "@/components/common/repositorio/RepositorioHeader"
 import Footer from "@/components/common/layout/Footer"
 import Banner from '@/components/common/layout/Banner';
 import bannerHome from "@/components/images/banner_images/BannerArchivos.png"
@@ -20,15 +21,16 @@ export const RepositorioPage: React.FC = () => {
         subtitle=""
         height="250px"
       />
-      {/* Contenido principal con padding superior igual a la altura del navbar */}
-      <div className="flex-1 px-[200px] "> 
-        <h1 className="text-2xl font-bold text-cyan-600 mb-4">
-          Repositorio de Documentos
-        </h1>
+      
+      {/* Nuevo contenedor principal para aplicar el padding y ancho máximo */}
+      <div className="flex-1 min-h-screen bg-gray-50 p-4 md:p-8"> {/* Usa p-4 md:p-8 como en CalendarioPage */}
+        <div className="max-w-[1600px] mx-auto"> {/* Contenedor para el ancho máximo y centrado */}
+          <RepositorioHeader />
 
-        <main className="">
-          <RepositorioTable />
-        </main>
+          <main className="">
+            <RepositorioTable />
+          </main>
+        </div>
       </div>
 
       {/* Footer */}

@@ -5,35 +5,64 @@ import { Navbar } from "@/components/common/layout/Navbar"
 import Footer from "@/components/common/layout/Footer"
 import Banner from '@/components/common/layout/Banner';
 import bannerHome from "@/components/images/banner_images/BannerSolicitudes.png"
-
-
+import { CalendarDays } from "lucide-react"; // Importamos el ícono para el header
 
 const VacacionesPage: React.FC = () => {
   return (
-    <div>
-      <Navbar></Navbar>
+    <>
+      <Navbar />
       <div className="h-16" /> {/* Este espacio ocupa la altura del Navbar */}
-    <Banner
+      <Banner
         imageSrc={bannerHome}
         title=""
         subtitle=""
         height="250px"
       />
-    <div className="flex-1 px-[200px]">  {/* 🟢 esta línea tiene el cambio */}      
-      
 
-    <h1 className="text-2xl font-bold text-cyan-600 mb-4">Solicitudes de Vacaciones</h1>
+      {/* Nuevo contenedor principal para el padding y ancho máximo */}
+      <div className="flex-1 min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 p-4 md:p-8">
+        {/* Contenedor para el ancho máximo */}
+        <div className="max-w-[1600px] mx-auto">
 
-        <CardSection></CardSection>
+          {/* ======================================================
+              HEADER DE SOLICITUDES (Nuevo, similar a los anteriores)
+              ====================================================== */}
+          <header className="bg-white shadow-xl border-b-4 border-[#009DDC] rounded-xl overflow-hidden mb-6">
+            <div className="py-8 px-6">
+              <div className="flex items-center gap-4">
+                {/* Ícono decorativo */}
+                <div className="p-4 bg-gradient-to-br from-[#009DDC] to-[#0088c4] rounded-2xl shadow-lg">
+                  <CalendarDays className="w-8 h-8 text-white" />
+                </div>
 
-      {/* Contenedor de contenido */}
-      <main className="">
-        <VacacionesTable />
-      </main>
-      
-    </div>
-    <Footer></Footer>
-    </div>
+                {/* Título y subtítulo */}
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-bold text-gray-900 flex items-center gap-2">
+                    Solicitudes de Vacaciones
+                  </h1>
+                  <p className="text-gray-600 mt-1">
+                    Gestión centralizada de tus días de descanso
+                  </p>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* Sección de tarjetas de resumen (CardSection) */}
+          <section className="mb-6"> {/* Añadimos un margen inferior para separar de la tabla */}
+            <CardSection />
+          </section>
+
+          {/* Contenedor de contenido principal (tabla) */}
+          <main className="py-6"> {/* Ajustado a py-6 para consistencia */}
+            <VacacionesTable />
+          </main>
+
+        </div> {/* Cierre del div max-w-[1600px] */}
+      </div> {/* Cierre del div p-4 md:p-8 */}
+
+      <Footer />
+    </>
   )
 }
 

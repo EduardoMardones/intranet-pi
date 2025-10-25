@@ -72,7 +72,7 @@ const GenericTable: React.FC<GenericTableProps> = ({
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl shadow-md border border-cyan-400 p-4">
+    <div className="overflow-x-auto rounded-2xl shadow-md border border-[#009DDC] p-4"> {/* Borde del contenedor: #009DDC */}
       {/* Buscador */}
       <div className="mb-4 flex justify-start">
         <input
@@ -83,18 +83,19 @@ const GenericTable: React.FC<GenericTableProps> = ({
             setSearch(e.target.value)
             setCurrentPage(1) // Reinicia a página 1 al buscar
           }}
-          className="border border-gray-300 rounded-md px-3 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          className="border border-gray-300 rounded-md px-3 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-[#009DDC]" // Foco: #009DDC
         />
       </div>
 
       {/* Tabla */}
       <Table className="min-w-full border-collapse">
-        <TableHeader className="bg-[hsla(176,100%,65%,1)] text-white">
+        {/* Cabecera de la tabla con el degradado */}
+        <TableHeader className="bg-gradient-to-r from-[#009DDC] to-[#4DFFF3] text-white">
           <TableRow>
             {headers.map((header, i) => (
               <TableHead
                 key={i}
-                className="text-center font-semibold uppercase border border-cyan-300 cursor-pointer select-none"
+                className="text-center font-semibold uppercase border border-[#4DFFF3] cursor-pointer select-none" // Borde de celda de cabecera: #4DFFF3
                 onClick={() => handleSort(header)}
               >
                 <div className="flex items-center justify-center gap-1">
@@ -113,12 +114,12 @@ const GenericTable: React.FC<GenericTableProps> = ({
             paginatedData.map((row, i) => (
               <TableRow
                 key={i}
-                className="hover:bg-[rgba(77,255,243,0.2)] transition-colors"
+                className="hover:bg-[rgba(77,255,243,0.1)] transition-colors" // Hover: un cian muy claro, ajustado para ser más sutil
               >
                 {headers.map((header, j) => (
                   <TableCell
                     key={j}
-                    className="text-center border border-cyan-200 p-3"
+                    className="text-center border border-[#CCF8FE] p-3" // Borde de celda de cuerpo: un azul muy claro
                   >
                     {row[header] ?? "-"}
                   </TableCell>
@@ -152,7 +153,7 @@ const GenericTable: React.FC<GenericTableProps> = ({
             key={i}
             onClick={() => setCurrentPage(i + 1)}
             className={`px-3 py-1 rounded ${
-              currentPage === i + 1 ? "bg-cyan-500 text-white" : "bg-gray-200"
+              currentPage === i + 1 ? "bg-[#009DDC] text-white" : "bg-gray-200" // Botón activo: #009DDC
             }`}
           >
             {i + 1}
