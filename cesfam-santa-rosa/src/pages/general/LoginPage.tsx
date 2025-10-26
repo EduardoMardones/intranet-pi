@@ -6,6 +6,8 @@
 
 import React from 'react';
 import LoginForm from '@/components/common/login/LoginForm';
+import { useNavigate } from 'react-router-dom'; // Importa useNavigate
+
 // Si el alias @ no funciona, usa:
 // import { LoginForm } from '../components/ui/LoginForm';
 
@@ -26,6 +28,7 @@ const LoginPage: React.FC = () => {
   // ==========================
   // Manejadores de Eventos
   // ==========================
+const navigate = useNavigate(); // Inicializa useNavigate
 
   /**
    * Maneja el envío exitoso del formulario
@@ -34,7 +37,9 @@ const LoginPage: React.FC = () => {
     console.log('Datos de login recibidos:', data);
     // Aquí puedes agregar la lógica de autenticación
     // Por ejemplo: dispatch(loginUser(data))
-    // O: navigate('/dashboard')
+    
+    // Redirige a la HomePage después del login exitoso
+    navigate('/home'); 
   };
 
   // ==========================

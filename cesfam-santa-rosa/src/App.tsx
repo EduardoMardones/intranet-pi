@@ -9,12 +9,13 @@ import { DirectorioPage } from "@/pages/general/DirectorioPage"
 import { LicenciasMedicasPage } from "@/pages/administrador/LicenciasMedicasPage"
 import { PerfilUsuarioPage } from "@/pages/general/PerfilUsuarioPage"
 import LoginPage from "@/pages/general/LoginPage"
+import LandingPage from "./pages/general/LandingPage"
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/home" element={<HomePage />} />
         <Route path="/repositorio" element={<RepositorioPage />} />
         <Route path="/vacaciones" element={<VacacionesPage />} />
         <Route path="/calendario" element={<CalendarioPage />} />
@@ -24,6 +25,8 @@ function App() {
         <Route path="/licencias" element={<LicenciasMedicasPage />} />
         <Route path="/perfil" element={<PerfilUsuarioPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<LandingPage />} />
+
 
       </Routes>
     </Router>
