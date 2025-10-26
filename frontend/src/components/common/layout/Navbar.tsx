@@ -24,7 +24,7 @@ export const Navbar: React.FC = () => {
       {/* Navegación */}
       <div className="flex gap-12">
         <Link
-          to="/"
+          to="/home"
           className="text-gray-700 font-semibold text-lg hover:text-orange-500 transition"
         >
           Inicio
