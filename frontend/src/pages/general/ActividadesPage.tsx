@@ -84,18 +84,20 @@ export const ActividadesPage: React.FC = () => {
               <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
                 <div className="flex items-center gap-4">
                   {/* Icono decorativo */}
-                  <div className="p-4 bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] rounded-2xl shadow-lg">
-                    <Sparkles className="w-8 h-8 text-white" />
+                  <div className="p-3 bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] rounded-xl">
+                    <Sparkles className="w-6 h-6 text-white" />
                   </div>
                   
                   {/* Título y subtítulo */}
                   <div>
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-800 flex items-center gap-2">
-                      🎉 Tablón de Convivencia CESFAM
+                    <h1 className="text-2xl font-bold text-gray-800">
+                      Tablón de Convivencia CESFAM
                     </h1>
-                    <p className="text-gray-600 mt-1">
+                    <p className="text-sm text-gray-500">
                       Actividades, celebraciones y novedades de nuestra comunidad
                     </p>
+
+                   
                   </div>
                 </div>
 

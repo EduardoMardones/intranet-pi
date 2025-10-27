@@ -80,16 +80,16 @@ export const AnunciosPage: React.FC = () => {
               <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
                 <div className="flex items-center gap-4">
                   {/* Ícono decorativo */}
-                  <div className="p-4 bg-gradient-to-br from-[#009DDC] to-[#0088c4] rounded-2xl shadow-lg">
-                    <Megaphone className="w-8 h-8 text-white" />
+                  <div className="p-3 bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] rounded-xl">
+                    <Megaphone className="w-6 h-6 text-white" />
                   </div>
                   
                   {/* Título y subtítulo */}
                   <div>
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900 flex items-center gap-2">
-                      📢 Comunicados Oficiales
+                    <h1 className="text-2xl font-bold text-gray-800">
+                      Comunicados Oficiales
                     </h1>
-                    <p className="text-gray-600 mt-1">
+                    <p className="text-sm text-gray-500">
                       Canal único de información institucional verificada
                     </p>
                   </div>
@@ -101,23 +101,7 @@ export const AnunciosPage: React.FC = () => {
                 {/* ... (tu código comentado para el botón) ... */}
               </div>
 
-              {/* ======================================================
-                  BANNER INFORMATIVO
-                  ====================================================== */}
-              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-[#009DDC] rounded-lg p-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <Shield className="w-6 h-6 text-[#009DDC] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-1">
-                      Canal Oficial Verificado
-                    </h3>
-                    <p className="text-sm text-gray-700">
-                      Esta es la fuente única y oficial de comunicación institucional del CESFAM. 
-                      Toda la información publicada aquí ha sido verificada y autorizada por la Dirección.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              
 
               {/* ======================================================
                   ESTADÍSTICAS DEL TABLERO
@@ -139,6 +123,8 @@ export const AnunciosPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                
 
                 {/* Comunicados recientes */}
                 <div className="bg-white rounded-xl p-4 border-2 border-green-100 shadow-sm hover:shadow-md transition-shadow">
@@ -176,6 +162,24 @@ export const AnunciosPage: React.FC = () => {
               </div>
             </div>
           </header>
+
+          {/* ======================================================
+                  BANNER INFORMATIVO
+                  ====================================================== */}
+              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-[#009DDC] rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <Shield className="w-6 h-6 text-[#009DDC] flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-1">
+                      Canal Oficial Verificado
+                    </h3>
+                    <p className="text-sm text-gray-700">
+                      Esta es la fuente única y oficial de comunicación institucional del CESFAM. 
+                      Toda la información publicada aquí ha sido verificada y autorizada por la Dirección.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
           {/* ======================================================
               CONTENIDO PRINCIPAL - LISTA DE COMUNICADOS (Ahora sin padding ni max-w propios)

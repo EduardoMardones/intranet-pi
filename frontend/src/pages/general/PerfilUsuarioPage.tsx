@@ -83,7 +83,9 @@ export const PerfilUsuarioPage: React.FC = () => {
   return (
     <>
     <Navbar /> {/* La Navbar ahora toma la URL del avatar desde el estado de usuario real/contexto */}
-    <div className="h-15" />
+    <div className="h-16" /> {/* Ajustado a h-16 para que coincida con el Navbar de 4rem */}
+
+    {/* El fondo degradado principal de toda la página, similar al directorio */}
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50">
       {/* ======================================================
           BANNER SUPERIOR CON PATRÓN
@@ -103,9 +105,11 @@ export const PerfilUsuarioPage: React.FC = () => {
       </div>
 
       {/* ======================================================
-          CONTENEDOR PRINCIPAL CON PADDING
+          CONTENEDOR PRINCIPAL CON PADDING y ANCHO MÁXIMO
           ====================================================== */}
-      <div className="max-w-7xl mx-auto px-6 -mt-40 pb-12 relative z-10">
+      {/* Modificado max-w-7xl a max-w-[1600px] para consistencia si ese es el objetivo */}
+      {/* Añadido px-4 md:px-8 para el padding responsivo como en el directorio, y se remueve el px-6 de abajo */}
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8 -mt-40 pb-12 relative z-10">
         {/* ======================================================
             CARD PRINCIPAL DEL PERFIL
             ====================================================== */}

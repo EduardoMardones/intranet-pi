@@ -65,9 +65,13 @@ export const Navbar: React.FC = () => {
         >
           Directorio
         </Link>
-        <button className="text-gray-700 font-semibold text-lg hover:gray-500 transition">
+        <Link
+          to="/soporte"
+          className="text-gray-700 font-semibold text-lg hover:text-gray-500 transition"
+        >
           Soporte
-        </button>
+        </Link>
+        
       </div>
 
       {/* Reemplaza el Avatar existente con PerfilIconButton */}

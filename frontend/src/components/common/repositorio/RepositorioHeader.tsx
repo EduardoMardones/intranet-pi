@@ -32,6 +32,8 @@ export const RepositorioHeader: React.FC = () => {
             <p className="text-sm text-gray-500">
               Accede y gestiona los archivos institucionales
             </p>
+            
+            
           </div>
         </div>
 

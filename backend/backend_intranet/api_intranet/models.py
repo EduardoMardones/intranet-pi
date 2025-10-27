@@ -80,7 +80,6 @@ class Usuario(models.Model):
     telefono = models.CharField(max_length=20, null=True, blank=True)
     fecha_nacimiento = models.DateField(null=True, blank=True)
     direccion = models.TextField(null=True, blank=True)
-    estado_civil = models.CharField(max_length=20, null=True, blank=True)
     avatar_url = models.URLField(max_length=200, null=True, blank=True)
     fecha_ingreso = models.DateField(default=timezone.now)
     ESTADO_CHOICES = [

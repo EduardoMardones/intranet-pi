@@ -51,7 +51,7 @@ class UsuarioAdmin(admin.ModelAdmin):
             'fields': ('rut', 'nombre', 'apellidos', 'email', 'password_hash')
         }),
         ('Información de Contacto y Personal', {
-            'fields': ('telefono', 'fecha_nacimiento', 'direccion', 'estado_civil', 'avatar_url'),
+            'fields': ('telefono', 'fecha_nacimiento', 'direccion', 'avatar_url'),
             'classes': ('collapse',), # Oculta esta sección por defecto
         }),
         ('Información Laboral', {
