@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 // Importaciones de Layout (Igual que en la página pública)
-import { Navbar } from '@/components/common/layout/Navbar';
+import { NavbarAdmin } from '@/components/common/layout/NavbarAdmin';
 import Footer from '@/components/common/layout/Footer';
 import bannerHome from "@/components/images/banner_images/BannerAnuncios.png";
 import Banner from "@/components/common/layout/Banner";
@@ -137,7 +137,7 @@ export const AnunciosAdminPage: React.FC = () => {
   return (
     <>
       {/* 1. Navbar Global */}
-      <Navbar />
+      <NavbarAdmin />
       <div className="h-16" /> 
 
       {/* 2. Banner idéntico a la pública */}

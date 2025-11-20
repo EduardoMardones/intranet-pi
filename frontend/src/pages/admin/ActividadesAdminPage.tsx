@@ -7,7 +7,7 @@
 
 import React, { useState, useMemo } from 'react';
 // Importamos los componentes de layout que faltaban
-import { Navbar } from '@/components/common/layout/Navbar';
+import { NavbarAdmin } from '@/components/common/layout/NavbarAdmin';
 import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
 import bannerHome from "@/components/images/banner_images/BannerActividades.png";
@@ -103,7 +103,7 @@ export const ActividadesAdminPage: React.FC = () => {
   return (
     <>
       {/* 1. Navbar igual que la página pública */}
-      <Navbar />
+      <NavbarAdmin />
       <div className="h-16" /> 
 
       {/* 2. Banner igual que la página pública */}

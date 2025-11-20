@@ -12,7 +12,7 @@ import { LicenciasTable } from '@/components/common/licencias/LicenciasTable';
 import type { LicenciaMedica } from '@/types/licencia';
 import { mockLicencias } from '@/data/mockLicencias';
 import { FileText, TrendingUp, Clock, AlertTriangle } from 'lucide-react';
-import { Navbar } from '@/components/common/layout/Navbar';
+import { NavbarAdmin } from '@/components/common/layout/NavbarAdmin';
 import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
 import bannerHome from "@/components/images/banner_images/BannerActividades.png"
@@ -101,7 +101,7 @@ export const LicenciasMedicasPage: React.FC = () => {
 
   return (
     <>
-    <Navbar></Navbar>
+    <NavbarAdmin></NavbarAdmin>
     <div className="h-15" /> {/* Este espacio ocupa la altura del Navbar */}
 
      <Banner

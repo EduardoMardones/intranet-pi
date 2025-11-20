@@ -19,7 +19,7 @@ import { getPreviousMonth, getNextMonth } from '@/utils/dateUtils';
 import { Plus, Shield } from 'lucide-react';
 
 // Importaciones de Layout (Igual que la página pública)
-import { Navbar } from '@/components/common/layout/Navbar';
+import { NavbarAdmin } from '@/components/common/layout/NavbarAdmin';
 import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
 import bannerHome from "@/components/images/banner_images/BannerCalendario.png";
@@ -164,7 +164,7 @@ export const CalendarioAdminPage: React.FC = () => {
   return (
     <>
       {/* 1. Navbar y Banner igual que la página pública */}
-      <Navbar />
+      <NavbarAdmin />
       <div className="h-16" /> 
       
       <Banner
