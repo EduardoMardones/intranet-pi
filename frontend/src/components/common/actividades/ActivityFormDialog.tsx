@@ -1,0 +1,440 @@
+// ======================================================
+// COMPONENTE: Diálogo de Formulario de Actividad
+// Ubicación: src/components/common/ActivityFormDialog.tsx
+// Descripción: Modal con formulario completo para crear/editar actividades
+// ======================================================
+
+import React, { useState, useEffect } from 'react';
+import type { Activity, ActivityType } from '@/types/activity';
+import { ACTIVITY_COLORS } from '@/types/activity';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../ui/dialog';
+import { Button } from '../../ui/button';
+import { Input } from '../../ui/input';
+import { Label } from '../../ui/label';
+import { Calendar, MapPin, FileText, Image, Clock, Tag } from 'lucide-react';
+
+// ======================================================
+// INTERFACES
+// ======================================================
+
+interface ActivityFormDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (activity: Omit<Activity, 'id'>) => void;
+  activity?: Activity | null; // Si existe, modo edición; si null, modo creación
+}
+
+// ======================================================
+// DATOS DEL FORMULARIO
+// ======================================================
+
+const ACTIVITY_TYPES: { value: ActivityType; label: string; emoji: string }[] = [
+  { value: 'gastronomica', label: 'Gastronómica', emoji: '🍽️' },
+  { value: 'deportiva', label: 'Deportiva', emoji: '⚽' },
+  { value: 'celebracion', label: 'Celebración', emoji: '🎉' },
+  { value: 'comunitaria', label: 'Comunitaria', emoji: '🌱' },
+  { value: 'otra', label: 'Otra', emoji: '📌' },
+];
+
+// ======================================================
+// COMPONENTE PRINCIPAL
+// ======================================================
+
+export const ActivityFormDialog: React.FC<ActivityFormDialogProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+  activity
+}) => {
+  // ======================================================
+  // ESTADOS DEL FORMULARIO
+  // ======================================================
+
+  const [formData, setFormData] = useState<Omit<Activity, 'id'>>({
+    title: '',
+    description: '',
+    date: new Date(),
+    location: '',
+    imageUrl: '',
+    type: 'otra'
+  });
+
+  const [errors, setErrors] = useState<Partial<Record<keyof Omit<Activity, 'id'>, string>>>({});
+
+  // ======================================================
+  // EFECTOS
+  // ======================================================
+
+  /**
+   * Carga los datos de la actividad en edición o resetea el formulario
+   */
+  useEffect(() => {
+    if (isOpen) {
+      if (activity) {
+        // MODO EDICIÓN: cargar datos existentes
+        setFormData({
+          title: activity.title,
+          description: activity.description,
+          date: activity.date,
+          location: activity.location,
+          imageUrl: activity.imageUrl,
+          type: activity.type
+        });
+      } else {
+        // MODO CREACIÓN: resetear formulario
+        setFormData({
+          title: '',
+          description: '',
+          date: new Date(),
+          location: '',
+          imageUrl: '',
+          type: 'otra'
+        });
+      }
+      setErrors({});
+    }
+  }, [isOpen, activity]);
+
+  // ======================================================
+  // HANDLERS
+  // ======================================================
+
+  /**
+   * Maneja cambios en campos de texto
+   */
+  const handleChange = (field: keyof Omit<Activity, 'id'>, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Limpiar error del campo al comenzar a escribir
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  /**
+   * Maneja cambio de fecha
+   */
+  const handleDateChange = (value: string) => {
+    const date = new Date(value);
+    setFormData(prev => ({ ...prev, date }));
+    if (errors.date) {
+      setErrors(prev => ({ ...prev, date: undefined }));
+    }
+  };
+
+  /**
+   * Maneja cambio de tipo de actividad
+   */
+  const handleTypeChange = (type: ActivityType) => {
+    setFormData(prev => ({ ...prev, type }));
+  };
+
+  /**
+   * Valida el formulario
+   */
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof Omit<Activity, 'id'>, string>> = {};
+
+    if (!formData.title.trim()) {
+      newErrors.title = 'El título es obligatorio';
+    } else if (formData.title.length < 5) {
+      newErrors.title = 'El título debe tener al menos 5 caracteres';
+    } else if (formData.title.length > 100) {
+      newErrors.title = 'El título no puede exceder 100 caracteres';
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'La descripción es obligatoria';
+    } else if (formData.description.length < 20) {
+      newErrors.description = 'La descripción debe tener al menos 20 caracteres';
+    } else if (formData.description.length > 500) {
+      newErrors.description = 'La descripción no puede exceder 500 caracteres';
+    }
+
+    if (!formData.location.trim()) {
+      newErrors.location = 'La ubicación es obligatoria';
+    }
+
+    if (!formData.imageUrl.trim()) {
+      newErrors.imageUrl = 'La URL de la imagen es obligatoria';
+    } else if (!isValidUrl(formData.imageUrl)) {
+      newErrors.imageUrl = 'Ingresa una URL válida';
+    }
+
+    if (formData.date < new Date(new Date().setHours(0, 0, 0, 0))) {
+      newErrors.date = 'La fecha no puede ser anterior a hoy';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  /**
+   * Valida si una cadena es una URL válida
+   */
+  const isValidUrl = (url: string): boolean => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  /**
+   * Maneja el envío del formulario
+   */
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (validateForm()) {
+      onSave(formData);
+    }
+  };
+
+  /**
+   * Formatea fecha para input datetime-local
+   */
+  const formatDateForInput = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  // ======================================================
+  // RENDERIZADO
+  // ======================================================
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+            {activity ? (
+              <>
+                <FileText className="w-6 h-6 text-[#009DDC]" />
+                Editar Actividad
+              </>
+            ) : (
+              <>
+                <Calendar className="w-6 h-6 text-[#009DDC]" />
+                Nueva Actividad
+              </>
+            )}
+          </DialogTitle>
+          <DialogDescription>
+            {activity
+              ? 'Modifica los campos que desees actualizar de esta actividad.'
+              : 'Completa los siguientes campos para crear una nueva actividad en el tablón.'}
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-6 py-4">
+          {/* ======================================================
+              TÍTULO
+              ====================================================== */}
+          <div className="space-y-2">
+            <Label htmlFor="title" className="text-base font-semibold">
+              <FileText className="w-4 h-4 inline mr-1" />
+              Título de la Actividad *
+            </Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => handleChange('title', e.target.value)}
+              placeholder="Ej: Almuerzo de Camaradería - Día del Funcionario"
+              maxLength={100}
+              aria-invalid={!!errors.title}
+              className="text-base"
+            />
+            {errors.title && (
+              <p className="text-sm text-red-600 font-medium">{errors.title}</p>
+            )}
+            <p className="text-xs text-gray-500">
+              {formData.title.length}/100 caracteres
+            </p>
+          </div>
+
+          {/* ======================================================
+              DESCRIPCIÓN
+              ====================================================== */}
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-base font-semibold">
+              <FileText className="w-4 h-4 inline mr-1" />
+              Descripción *
+            </Label>
+            <textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              placeholder="Describe la actividad, su propósito y qué pueden esperar los participantes..."
+              maxLength={500}
+              rows={4}
+              aria-invalid={!!errors.description}
+              className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-[#009DDC] focus:border-[#009DDC] outline-none resize-none"
+            />
+            {errors.description && (
+              <p className="text-sm text-red-600 font-medium">{errors.description}</p>
+            )}
+            <p className="text-xs text-gray-500">
+              {formData.description.length}/500 caracteres
+            </p>
+          </div>
+
+          {/* ======================================================
+              FECHA Y HORA
+              ====================================================== */}
+          <div className="space-y-2">
+            <Label htmlFor="date" className="text-base font-semibold">
+              <Clock className="w-4 h-4 inline mr-1" />
+              Fecha y Hora *
+            </Label>
+            <Input
+              id="date"
+              type="datetime-local"
+              value={formatDateForInput(formData.date)}
+              onChange={(e) => handleDateChange(e.target.value)}
+              aria-invalid={!!errors.date}
+              className="text-base"
+            />
+            {errors.date && (
+              <p className="text-sm text-red-600 font-medium">{errors.date}</p>
+            )}
+          </div>
+
+          {/* ======================================================
+              UBICACIÓN
+              ====================================================== */}
+          <div className="space-y-2">
+            <Label htmlFor="location" className="text-base font-semibold">
+              <MapPin className="w-4 h-4 inline mr-1" />
+              Ubicación *
+            </Label>
+            <Input
+              id="location"
+              value={formData.location}
+              onChange={(e) => handleChange('location', e.target.value)}
+              placeholder="Ej: Patio Central CESFAM"
+              aria-invalid={!!errors.location}
+              className="text-base"
+            />
+            {errors.location && (
+              <p className="text-sm text-red-600 font-medium">{errors.location}</p>
+            )}
+          </div>
+
+          {/* ======================================================
+              URL DE IMAGEN
+              ====================================================== */}
+          <div className="space-y-2">
+            <Label htmlFor="imageUrl" className="text-base font-semibold">
+              <Image className="w-4 h-4 inline mr-1" />
+              URL de la Imagen *
+            </Label>
+            <Input
+              id="imageUrl"
+              type="url"
+              value={formData.imageUrl}
+              onChange={(e) => handleChange('imageUrl', e.target.value)}
+              placeholder="https://picsum.photos/seed/cesfam-activity/600/400"
+              aria-invalid={!!errors.imageUrl}
+              className="text-base"
+            />
+            {errors.imageUrl && (
+              <p className="text-sm text-red-600 font-medium">{errors.imageUrl}</p>
+            )}
+            <p className="text-xs text-gray-500">
+              💡 Sugerencia: Usa <a href="https://picsum.photos/" target="_blank" rel="noopener noreferrer" className="text-[#009DDC] underline">Lorem Picsum</a> para imágenes de prueba
+            </p>
+            {formData.imageUrl && isValidUrl(formData.imageUrl) && (
+              <div className="mt-2 rounded-lg overflow-hidden border-2 border-gray-200">
+                <img
+                  src={formData.imageUrl}
+                  alt="Vista previa"
+                  className="w-full h-48 object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://via.placeholder.com/600x400?text=Error+al+cargar+imagen';
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* ======================================================
+              TIPO DE ACTIVIDAD
+              ====================================================== */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">
+              <Tag className="w-4 h-4 inline mr-1" />
+              Tipo de Actividad *
+            </Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {ACTIVITY_TYPES.map((type) => {
+                const colorConfig = ACTIVITY_COLORS[type.value];
+                const isSelected = formData.type === type.value;
+                
+                return (
+                  <button
+                    key={type.value}
+                    type="button"
+                    onClick={() => handleTypeChange(type.value)}
+                    className={`
+                      p-4 rounded-lg border-2 transition-all font-medium text-sm
+                      flex flex-col items-center justify-center gap-2
+                      ${isSelected
+                        ? `${colorConfig.bg} ${colorConfig.badge} border-current shadow-md scale-105`
+                        : 'bg-white border-gray-200 text-gray-700 hover:border-gray-400 hover:shadow-sm'
+                      }
+                    `}
+                  >
+                    <span className="text-2xl">{type.emoji}</span>
+                    <span>{type.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ======================================================
+              SEPARADOR
+              ====================================================== */}
+          <div className="border-t border-gray-200 pt-4">
+            <p className="text-xs text-gray-500 italic">
+              * Campos obligatorios
+            </p>
+          </div>
+        </form>
+
+        {/* ======================================================
+            FOOTER CON BOTONES DE ACCIÓN
+            ====================================================== */}
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="min-w-[100px]"
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            onClick={handleSubmit}
+            className="min-w-[100px] bg-gradient-to-r from-[#009DDC] to-[#4DFFF3] hover:from-[#0088c4] hover:to-[#3de8d9]"
+          >
+            {activity ? 'Actualizar' : 'Crear Actividad'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

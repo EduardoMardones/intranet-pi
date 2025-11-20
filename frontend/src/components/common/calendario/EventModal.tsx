@@ -15,16 +15,19 @@ import {
 import type { CalendarEvent } from '@/types/calendar';
 import { EVENT_COLORS } from '@/types/calendar';
 import { formatTime } from '@/utils/dateUtils';
-import { Calendar, Clock, MapPin, User, } from 'lucide-react';
+import { Calendar, Clock, MapPin, User } from 'lucide-react';
 
 // ======================================================
-// INTERFACES
+// INTERFACES - EXPORTADAS
 // ======================================================
 
-interface EventModalProps {
+export interface EventModalProps {
   event: CalendarEvent | null;
   isOpen: boolean;
   onClose: () => void;
+  isAdminView?: boolean;
+  onEdit?: (event: CalendarEvent) => void;
+  onDelete?: (event: CalendarEvent) => void;
 }
 
 // ======================================================
@@ -34,7 +37,10 @@ interface EventModalProps {
 export const EventModal: React.FC<EventModalProps> = ({
   event,
   isOpen,
-  onClose
+  onClose,
+  isAdminView = false,
+  onEdit,
+  onDelete
 }) => {
   if (!event) return null;
 
@@ -66,7 +72,7 @@ export const EventModal: React.FC<EventModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden bg-white">
         {/* ======================================================
             CABECERA CON COLOR DEL TIPO DE EVENTO
             ====================================================== */}
@@ -96,7 +102,7 @@ export const EventModal: React.FC<EventModalProps> = ({
         {/* ======================================================
             CONTENIDO DEL MODAL - DETALLES DEL EVENTO
             ====================================================== */}
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 bg-white">
           {/* Fecha */}
           <div className="flex items-start gap-3">
             <div className={`p-2 rounded-lg ${colors.bg}`}>
@@ -158,27 +164,34 @@ export const EventModal: React.FC<EventModalProps> = ({
           {/* ======================================================
               NOTA INFORMATIVA PARA FUNCIONARIOS
               ====================================================== */}
-          <div className="mt-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded">
-            <p className="text-sm text-blue-700">
-              <strong>Nota:</strong> Este es un evento de consulta. Si necesitas 
-              modificar o agregar eventos, contacta al administrador del sistema.
-            </p>
-          </div>
+          {!isAdminView && (
+            <div className="mt-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded">
+              <p className="text-sm text-blue-700">
+                <strong>Nota:</strong> Este es un evento de consulta. Si necesitas 
+                modificar o agregar eventos, contacta al administrador del sistema.
+              </p>
+            </div>
+          )}
 
           {/* ======================================================
-              SECCIÓN PARA FUTURAS ACCIONES ADMINISTRATIVAS
-              Esta sección estará oculta para funcionarios y visible para admin
+              BOTONES DE ADMINISTRACIÓN
               ====================================================== */}
-          {/* 
-          <div className="mt-6 flex gap-3">
-            <button className="flex-1 px-4 py-2 bg-[#009DDC] text-white rounded-lg hover:bg-[#0088c4] transition-colors">
-              Editar Evento
-            </button>
-            <button className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
-              Eliminar Evento
-            </button>
-          </div>
-          */}
+          {isAdminView && onEdit && onDelete && (
+            <div className="mt-6 pt-6 border-t border-gray-200 flex gap-3">
+              <button 
+                onClick={() => onEdit(event)}
+                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+              >
+                ✏️ Editar Evento
+              </button>
+              <button 
+                onClick={() => onDelete(event)}
+                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+              >
+                🗑️ Eliminar
+              </button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

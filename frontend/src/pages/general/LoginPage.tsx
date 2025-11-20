@@ -7,6 +7,8 @@
 import React from 'react';
 import LoginForm from '@/components/common/login/LoginForm';
 import { useNavigate } from 'react-router-dom'; // Importa useNavigate
+import medicinaGeneralImg from '@/components/images/medicina-general.jpg'; 
+
 
 // Si el alias @ no funciona, usa:
 // import { LoginForm } from '../components/ui/LoginForm';
@@ -117,7 +119,7 @@ const navigate = useNavigate(); // Inicializa useNavigate
             {/* Contenedor de imagen */}
             <div className="mb-8 rounded-2xl overflow-hidden shadow-2xl">
               <img
-                src="/ruta/a/imagen-medicina.jpg"
+                src={medicinaGeneralImg}
                 alt="Equipo médico profesional"
                 className="w-full h-[500px] object-cover"
                 onError={(e) => {

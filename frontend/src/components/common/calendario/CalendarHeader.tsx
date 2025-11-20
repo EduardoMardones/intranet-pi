@@ -18,7 +18,8 @@ interface CalendarHeaderProps {
   onPreviousMonth: () => void;
   onNextMonth: () => void;
   onToday: () => void;
-  showAddButton?: boolean; // Para futura funcionalidad administrativa
+  showAddButton?: boolean;
+  onAddEvent?: () => void; // Nueva prop
 }
 
 // ======================================================

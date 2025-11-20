@@ -27,7 +27,7 @@ const VacacionesPage: React.FC = () => {
           {/* ======================================================
               HEADER DE SOLICITUDES (Nuevo, similar a los anteriores)
               ====================================================== */}
-          <header className="bg-white shadow-xl border-b-4 border-[#009DDC] rounded-xl overflow-hidden mb-6">
+          <header className="bg-white shadow-xl   rounded-xl overflow-hidden mb-6">
             <div className="py-8 px-6">
               <div className="flex items-center gap-4">
                 {/* Ícono decorativo */}

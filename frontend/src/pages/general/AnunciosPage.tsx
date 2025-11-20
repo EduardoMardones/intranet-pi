@@ -74,7 +74,7 @@ export const AnunciosPage: React.FC = () => {
           {/* ======================================================
               HEADER DEL TABLERO (Ahora sin padding ni max-w propios)
               ====================================================== */}
-          <header className="bg-white shadow-xl border-b-4 border-[#009DDC] rounded-xl overflow-hidden mb-6"> {/* Añadido rounded-xl y mb-6 para estética */}
+          <header className="bg-white shadow-xl  rounded-xl overflow-hidden mb-6"> {/* Añadido rounded-xl y mb-6 para estética */}
             <div className="py-8 px-6"> {/* Ajustado a px-6 para mejor look dentro del contenedor redondeado */}
               {/* Título principal */}
               <div className="flex items-center justify-between flex-wrap gap-4 mb-6">

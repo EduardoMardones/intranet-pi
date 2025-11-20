@@ -78,7 +78,7 @@ export const ActividadesPage: React.FC = () => {
           {/* ======================================================
               HEADER DEL TABLERO (Ahora sin padding ni max-w propios)
               ====================================================== */}
-          <header className="bg-white shadow-lg border-b-4 border-[#009DDC] rounded-xl overflow-hidden mb-6"> {/* Añadido rounded-xl y mb-6 para estética */}
+          <header className="bg-white shadow-lg  rounded-xl overflow-hidden mb-6"> {/* Añadido rounded-xl y mb-6 para estética */}
             <div className="py-8 px-6"> {/* Ajustado a px-6 para un look consistente */}
               {/* Título principal */}
               <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
@@ -165,7 +165,7 @@ export const ActividadesPage: React.FC = () => {
             {/* Mensaje motivacional */}
             <div className="mb-8 text-center">
               <p className="text-lg text-gray-700">
-                ✨ <span className="font-semibold">¡Únete a nuestras actividades!</span> ✨
+                 <span className="font-semibold">¡Únete a nuestras actividades!</span> 
               </p>
               <p className="text-gray-600 mt-1">
                 Participa, comparte y fortalece los lazos con tu equipo de trabajo

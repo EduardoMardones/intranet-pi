@@ -98,7 +98,7 @@ export const SoporteTecnicoPage = () => {
         {/* Contenedor para el ancho máximo */}
         <div className="max-w-[1600px] mx-auto">
           {/* Header/Mini Banner para Soporte Técnico */}
-          <header className="bg-white shadow-lg border-b-2 border-[#009DDC] rounded-xl overflow-hidden mb-6"> {/* Añadido rounded-xl y mb-6 */}
+          <header className="bg-white shadow-lg  rounded-xl overflow-hidden mb-6"> {/* Añadido rounded-xl y mb-6 */}
             <div className="max-w-[1800px] mx-auto px-6 py-6"> {/* Ajustado a px-6 para mejor look */}
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] rounded-xl shadow-lg">

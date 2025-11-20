@@ -22,3 +22,5 @@ Actividades Page invoclucra los siguientes modulos
     -mockActivities.tsx
 -types/
     -activity.tsx
+
+    ()-_{}
