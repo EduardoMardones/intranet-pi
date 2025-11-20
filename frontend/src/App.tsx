@@ -16,6 +16,7 @@ import { AnunciosAdminPage } from "./pages/admin/AnunciosAdminPage"
 import CrearUsuarioPage from "./pages/admin/CrearUsuarioPage"
 import { DirectorioAdminPage } from "./pages/admin/DirectorioAdminPage"
 import { ActividadesAdminPage } from "./pages/admin/ActividadesAdminPage"
+import { AprobacionesAdminPage } from "./pages/admin/AprobacionesAdminPage"
 import ToastProvider from "./components/common/actividades/Toast"
 
 
@@ -41,6 +42,7 @@ function App() {
         <Route path="/crearusuarioadmin" element={<CrearUsuarioPage />} />
         <Route path="/directorioadmin" element={<DirectorioAdminPage />} />
         <Route path="/actividadesadmin" element={<ActividadesAdminPage />} />
+        <Route path="/aprobacionesadmin" element={<AprobacionesAdminPage />} />
 
 
 
