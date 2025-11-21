@@ -40,6 +40,7 @@ class UsuarioViewSet(viewsets.ModelViewSet):
     ViewSet para gestión de usuarios
     """
     queryset = Usuario.objects.select_related('rol', 'area').all()
+    serializer_class = UsuarioDetailSerializer  # ← Usar el serializer completo
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['area', 'rol', 'is_active', 'es_jefe_de_area']

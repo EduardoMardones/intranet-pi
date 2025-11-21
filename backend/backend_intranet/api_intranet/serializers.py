@@ -76,55 +76,51 @@ class UsuarioListSerializer(serializers.ModelSerializer):
 
 
 class UsuarioDetailSerializer(serializers.ModelSerializer):
-    """Serializer completo para detalle de usuario"""
+    """Serializer completo del usuario con todos los campos"""
+    
+    # Campos anidados de solo lectura
     rol_nombre = serializers.CharField(source='rol.nombre', read_only=True)
     area_nombre = serializers.CharField(source='area.nombre', read_only=True)
-    nombre_completo = serializers.SerializerMethodField()
-    
-    # Días disponibles
-    dias_info = serializers.SerializerMethodField()
+    nombre_completo = serializers.CharField(source='get_nombre_completo', read_only=True)
     
     class Meta:
         model = Usuario
         fields = [
-            'id', 'rut', 'nombre', 'apellido_paterno', 'apellido_materno',
-            'nombre_completo', 'email', 'telefono', 'fecha_nacimiento', 'direccion',
+            # Identificación
+            'id', 'rut',
+            
+            # Datos personales
+            'nombre', 'apellido_paterno', 'apellido_materno', 'nombre_completo',
+            'email', 'telefono', 'fecha_nacimiento', 'direccion',
+            
+            # Información profesional
             'cargo', 'area', 'area_nombre', 'rol', 'rol_nombre', 'fecha_ingreso',
             'es_jefe_de_area',
-            'contacto_emergencia_nombre', 'contacto_emergencia_telefono',
+            
+            # Contacto de emergencia
+            'contacto_emergencia_nombre',
+            'contacto_emergencia_telefono',
             'contacto_emergencia_relacion',
-            'dias_vacaciones_anuales', 'dias_vacaciones_disponibles', 'dias_vacaciones_usados',
-            'dias_administrativos_anuales', 'dias_administrativos_disponibles', 'dias_administrativos_usados',
-            'dias_info',
-            'avatar', 'tema_preferido', 'is_active',
-            'creado_en', 'actualizado_en', 'ultimo_acceso'
+            
+            # Días disponibles
+            'dias_vacaciones_anuales',
+            'dias_vacaciones_disponibles',
+            'dias_vacaciones_usados',
+            'dias_administrativos_anuales',
+            'dias_administrativos_disponibles',
+            'dias_administrativos_usados',
+            
+            # Avatar y preferencias
+            'avatar', 'tema_preferido',
+            
+            # Estado
+            'is_active',
+            
+            # Auditoría
+            'creado_en', 'actualizado_en', 'ultimo_acceso',
         ]
-        read_only_fields = (
-            'id', 'dias_vacaciones_usados', 'dias_administrativos_usados',
-            'creado_en', 'actualizado_en', 'ultimo_acceso'
-        )
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
-    
-    def get_nombre_completo(self, obj):
-        return obj.get_nombre_completo()
-    
-    def get_dias_info(self, obj):
-        return {
-            'vacaciones': {
-                'total_anuales': obj.dias_vacaciones_anuales,
-                'disponibles': obj.dias_vacaciones_disponibles,
-                'usados': obj.dias_vacaciones_usados,
-                'porcentaje_usado': (obj.dias_vacaciones_usados / obj.dias_vacaciones_anuales * 100) if obj.dias_vacaciones_anuales > 0 else 0
-            },
-            'administrativos': {
-                'total_anuales': obj.dias_administrativos_anuales,
-                'disponibles': obj.dias_administrativos_disponibles,
-                'usados': obj.dias_administrativos_usados,
-                'porcentaje_usado': (obj.dias_administrativos_usados / obj.dias_administrativos_anuales * 100) if obj.dias_administrativos_anuales > 0 else 0
-            }
-        }
+        read_only_fields = ['id', 'creado_en', 'actualizado_en']
+
 
 
 class UsuarioCreateSerializer(serializers.ModelSerializer):

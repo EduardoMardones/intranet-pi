@@ -1,15 +1,23 @@
+// ======================================================
+// NAVBAR - ACTUALIZADO CON DATOS REALES DEL USUARIO
+// Ubicación: src/components/common/layout/Navbar.tsx
+// ======================================================
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { FaClinicMedical } from "react-icons/fa";
 import { PerfilIconButton } from "../buttons/PerfilIconButton";
-import { mockUserProfile } from "@/data/mockPerfil"; // Importa mockUserProfile
+import { useAuth } from "@/api/contexts/AuthContext";
 
 export const Navbar: React.FC = () => {
-  // Aquí puedes obtener la URL del avatar y las iniciales del usuario loggeado.
-  // Por ahora, usaremos los datos mock. En una app real, vendrían de tu estado de autenticación.
-  const userAvatarUrl = mockUserProfile.avatar; // 'mockUserProfile.avatar' puede ser undefined si no hay foto
-  const userInitials = `${mockUserProfile.nombre.charAt(0)}${mockUserProfile.apellidos.charAt(0)}`;
-  const userName = `${mockUserProfile.nombre} ${mockUserProfile.apellidos}`;
+  const { user } = useAuth();
+
+  // Obtener datos del usuario autenticado
+  const userAvatarUrl = user?.avatar;
+  const userInitials = user 
+    ? `${user.nombre.charAt(0)}${user.apellido_paterno.charAt(0)}`
+    : "U";
+  const userName = user?.nombre_completo || "Usuario";
 
   return (
     <div className="fixed top-0 left-0 w-full h-16 shadow flex items-center justify-between px-6 z-50 bg-white">
@@ -71,14 +79,13 @@ export const Navbar: React.FC = () => {
         >
           Soporte
         </Link>
-        
       </div>
 
-      {/* Reemplaza el Avatar existente con PerfilIconButton */}
+      {/* Botón de perfil con datos reales */}
       <PerfilIconButton
         userName={userName}
         userInitials={userInitials}
-        userAvatarUrl={userAvatarUrl} // Pasa la URL del avatar aquí
+        userAvatarUrl={userAvatarUrl}
       />
     </div>
   );

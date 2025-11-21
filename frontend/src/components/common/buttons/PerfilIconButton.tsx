@@ -1,4 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+// ======================================================
+// PERFIL ICON BUTTON - CORREGIDO CON LOGOUT FUNCIONAL
+// Ubicación: src/components/common/buttons/PerfilIconButton.tsx
+// ======================================================
+
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -9,10 +14,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { mockUserProfile } from "@/data/mockPerfil"; // Asume que la info del usuario se carga de aquí o de un contexto global
+import { useAuth } from "@/api/contexts/AuthContext";
 
 interface PerfilIconButtonProps {
-  // Puedes pasar la información del usuario como props si no usas un contexto global
   userName?: string;
   userInitials?: string;
   userAvatarUrl?: string;
@@ -24,38 +28,32 @@ export const PerfilIconButton: React.FC<PerfilIconButtonProps> = ({
   userAvatarUrl: propUserAvatarUrl,
 }) => {
   const navigate = useNavigate();
-  // Usaremos un estado local para el avatar si se cambia en el perfil
-  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(propUserAvatarUrl);
-  const [initials, setInitials] = useState<string>(
-    propUserInitials || getInitials(mockUserProfile.nombre, mockUserProfile.apellidos)
-  );
-  const [fullName, setFullName] = useState<string>(
-    propUserName || `${mockUserProfile.nombre} ${mockUserProfile.apellidos}`
-  );
+  const { user, logout } = useAuth();
 
-  // Efecto para actualizar el estado del avatar si las props cambian (ej. desde el perfil)
-  useEffect(() => {
-    setAvatarUrl(propUserAvatarUrl);
-  }, [propUserAvatarUrl]);
+  // Usar datos del usuario autenticado si están disponibles, sino usar props
+  const fullName = user?.nombre_completo || propUserName || "Usuario";
+  const email = user?.email || "";
+  const initials = user 
+    ? `${user.nombre.charAt(0)}${user.apellido_paterno.charAt(0)}`
+    : propUserInitials || "U";
+  const avatarUrl = user?.avatar || propUserAvatarUrl;
 
-  useEffect(() => {
-    setInitials(propUserInitials || getInitials(mockUserProfile.nombre, mockUserProfile.apellidos));
-  }, [propUserInitials]);
-
-  useEffect(() => {
-    setFullName(propUserName || `${mockUserProfile.nombre} ${mockUserProfile.apellidos}`);
-  }, [propUserName]);
-
-
-  // Función para obtener las iniciales del nombre completo
-  function getInitials(nombre: string, apellidos: string): string {
-    return `${nombre.charAt(0)}${apellidos.charAt(0)}`;
-  }
-
-  const handleLogout = () => {
-    // Aquí iría tu lógica para cerrar sesión (limpiar tokens, etc.)
-    console.log("Cerrando sesión...");
-    navigate("/login"); // Redirige al LoginPage
+  const handleLogout = async () => {
+    try {
+      console.log("🚪 Cerrando sesión...");
+      
+      // Ejecutar logout del contexto
+      await logout();
+      
+      // Redirigir al login
+      navigate("/login", { replace: true });
+      
+      console.log("✅ Sesión cerrada, redirigiendo...");
+    } catch (error) {
+      console.error("❌ Error al cerrar sesión:", error);
+      // Aún así, intentar redirigir
+      navigate("/login", { replace: true });
+    }
   };
 
   return (
@@ -78,8 +76,18 @@ export const PerfilIconButton: React.FC<PerfilIconButtonProps> = ({
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{fullName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {mockUserProfile.email}
+              {email}
             </p>
+            {user?.cargo && (
+              <p className="text-xs leading-none text-muted-foreground mt-1">
+                {user.cargo}
+              </p>
+            )}
+            {user?.area_nombre && (
+              <p className="text-xs leading-none text-muted-foreground">
+                {user.area_nombre}
+              </p>
+            )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -89,7 +97,10 @@ export const PerfilIconButton: React.FC<PerfilIconButtonProps> = ({
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout} className="text-red-600 hover:bg-red-50 hover:text-red-700">
+        <DropdownMenuItem 
+          onClick={handleLogout} 
+          className="text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer"
+        >
           Cerrar Sesión
         </DropdownMenuItem>
       </DropdownMenuContent>

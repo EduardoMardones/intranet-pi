@@ -1,20 +1,23 @@
 // ======================================================
-// COMPONENTE: Navbar para Administradores
+// NAVBAR ADMIN - ACTUALIZADO CON DATOS REALES DEL USUARIO
 // Ubicación: src/components/common/layout/NavbarAdmin.tsx
-// Descripción: Navbar con rutas específicas para usuarios admin
 // ======================================================
 
 import React from "react";
 import { Link } from "react-router-dom";
 import { FaClinicMedical } from "react-icons/fa";
 import { PerfilIconButton } from "../buttons/PerfilIconButton";
-import { mockUserProfile } from "@/data/mockPerfil";
+import { useAuth } from "@/api/contexts/AuthContext";
 
 export const NavbarAdmin: React.FC = () => {
-  // Obtener datos del usuario (en producción vendrían del contexto de autenticación)
-  const userAvatarUrl = mockUserProfile.avatar;
-  const userInitials = `${mockUserProfile.nombre.charAt(0)}${mockUserProfile.apellidos.charAt(0)}`;
-  const userName = `${mockUserProfile.nombre} ${mockUserProfile.apellidos}`;
+  const { user } = useAuth();
+
+  // Obtener datos del usuario autenticado
+  const userAvatarUrl = user?.avatar;
+  const userInitials = user 
+    ? `${user.nombre.charAt(0)}${user.apellido_paterno.charAt(0)}`
+    : "A";
+  const userName = user?.nombre_completo || "Administrador";
 
   return (
     <div className="fixed top-0 left-0 w-full h-16 shadow flex items-center justify-between px-6 z-50 bg-white">
@@ -87,7 +90,7 @@ export const NavbarAdmin: React.FC = () => {
         </Link>
       </div>
 
-      {/* Botón de perfil */}
+      {/* Botón de perfil con datos reales */}
       <PerfilIconButton
         userName={userName}
         userInitials={userInitials}

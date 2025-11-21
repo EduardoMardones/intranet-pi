@@ -1,5 +1,5 @@
 // ======================================================
-// AUTH CONTEXT - Contexto de Autenticación
+// AUTH CONTEXT - CORREGIDO CON LOGOUT FUNCIONAL
 // Ubicación: frontend/src/contexts/AuthContext.tsx
 // ======================================================
 
@@ -10,7 +10,6 @@ import { authService } from '../../api';
 // TIPOS
 // ======================================================
 
-// Tipo Usuario simplificado (puedes ajustarlo según tu necesidad)
 export interface Usuario {
   id: string;
   rut: string;
@@ -58,16 +57,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       try {
+        console.log('🔍 Verificando autenticación...');
+        
         if (authService.isAuthenticated()) {
+          console.log('✅ Token encontrado, obteniendo usuario...');
           const currentUser = await authService.getCurrentUser();
           setUser(currentUser as Usuario);
+          console.log('✅ Usuario cargado:', currentUser.nombre_completo);
+        } else {
+          console.log('ℹ️ No hay token, usuario no autenticado');
         }
       } catch (error) {
-        console.error('Error al inicializar autenticación:', error);
+        console.error('❌ Error al inicializar autenticación:', error);
         // Limpiar si hay error
         localStorage.removeItem('auth_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -79,10 +85,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (rut: string, password: string) => {
     setIsLoading(true);
     try {
+      console.log('🔐 Intentando login...');
       const response = await authService.login({ rut, password });
       setUser(response.user as Usuario);
+      console.log('✅ Login exitoso:', response.user.nombre_completo);
     } catch (error) {
-      console.error('Error en login:', error);
+      console.error('❌ Error en login:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -90,23 +98,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    setIsLoading(true);
     try {
+      console.log('🚪 Cerrando sesión...');
+      
+      // 1. Llamar al servicio de logout (limpia localStorage)
       await authService.logout();
-    } catch (error) {
-      console.error('Error en logout:', error);
-    } finally {
+      
+      // 2. Limpiar el estado del usuario (IMPORTANTE)
       setUser(null);
-      setIsLoading(false);
+      
+      console.log('✅ Sesión cerrada exitosamente');
+      
+      // 3. Opcional: recargar la página para asegurar que todo se limpie
+      // window.location.href = '/login';
+      
+    } catch (error) {
+      console.error('❌ Error al cerrar sesión:', error);
+      // Incluso si hay error, limpiar todo
+      setUser(null);
+      localStorage.clear();
     }
   };
 
   const refreshUser = async () => {
     try {
+      console.log('🔄 Refrescando datos del usuario...');
       const currentUser = await authService.getCurrentUser();
       setUser(currentUser as Usuario);
+      console.log('✅ Usuario actualizado');
     } catch (error) {
-      console.error('Error al refrescar usuario:', error);
+      console.error('❌ Error al refrescar usuario:', error);
       throw error;
     }
   };
