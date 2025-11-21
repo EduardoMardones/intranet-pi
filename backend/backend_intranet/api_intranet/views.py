@@ -1,225 +1,575 @@
-# api_intranet/views.py
-from rest_framework import viewsets, status
-from rest_framework.response import Response
+# ======================================================
+# VIEWS.PY - Django REST Framework ViewSets
+# Ubicación: api_intranet/views.py
+# ======================================================
+
+from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Q, Count
 from django.utils import timezone
 
 from .models import (
-    Rol, ConfiguracionSistema, Area, Usuario, ContactoEmergencia,
-    CalendarioEvento, ActividadTablero, ActividadInteresado,
-    ComunicadoOficial, AdjuntoComunicado, LicenciaMedica,
-    HistorialActividadUsuario, DocumentoPersonal, Notificacion,
-    FeriadoLegal, SolicitudFeriado, Sesion, LogAuditoria, RecursoMultimedia
-)
-from .serializers import (
-    RolSerializer, ConfiguracionSistemaSerializer, AreaSerializer, UsuarioSerializer,
-    ContactoEmergenciaSerializer, CalendarioEventoSerializer, ActividadTableroSerializer,
-    ActividadInteresadoSerializer, ComunicadoOficialSerializer, AdjuntoComunicadoSerializer,
-    LicenciaMedicaSerializer, HistorialActividadUsuarioSerializer, DocumentoPersonalSerializer,
-    NotificacionSerializer, FeriadoLegalSerializer, SolicitudFeriadoSerializer,
-    SesionSerializer, LogAuditoriaSerializer, RecursoMultimediaSerializer
+    Usuario, Rol, Area, Solicitud,
+    LicenciaMedica, Actividad, InscripcionActividad,
+    Anuncio, AdjuntoAnuncio, Documento, CategoriaDocumento,
+    Notificacion, LogAuditoria
 )
 
+from .serializers import (
+    UsuarioListSerializer, UsuarioDetailSerializer, UsuarioCreateSerializer,
+    RolSerializer, AreaSerializer,
+    SolicitudListSerializer, SolicitudDetailSerializer, SolicitudCreateSerializer,
+    SolicitudAprobacionSerializer,
+    LicenciaMedicaSerializer,
+    ActividadListSerializer, ActividadDetailSerializer, InscripcionActividadSerializer,
+    AnuncioListSerializer, AnuncioDetailSerializer, AdjuntoAnuncioSerializer,
+    DocumentoListSerializer, DocumentoDetailSerializer, CategoriaDocumentoSerializer,
+    NotificacionSerializer, LogAuditoriaSerializer
+)
+
+
 # ======================================================
-# ViewSets para todos los modelos
+# USUARIO VIEWSET
+# ======================================================
+
+class UsuarioViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet para gestión de usuarios
+    """
+    queryset = Usuario.objects.select_related('rol', 'area').all()
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['area', 'rol', 'is_active', 'es_jefe_de_area']
+    search_fields = ['nombre', 'apellido_paterno', 'apellido_materno', 'rut', 'email']
+    ordering_fields = ['apellido_paterno', 'nombre', 'fecha_ingreso']
+    ordering = ['apellido_paterno', 'apellido_materno', 'nombre']
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return UsuarioListSerializer
+        elif self.action == 'create':
+            return UsuarioCreateSerializer
+        return UsuarioDetailSerializer
+    
+    @action(detail=True, methods=['get'])
+    def dias_disponibles(self, request, pk=None):
+        """Obtener días disponibles del usuario"""
+        usuario = self.get_object()
+        return Response({
+            'vacaciones': {
+                'total_anuales': usuario.dias_vacaciones_anuales,
+                'disponibles': usuario.dias_vacaciones_disponibles,
+                'usados': usuario.dias_vacaciones_usados,
+                'porcentaje_usado': (usuario.dias_vacaciones_usados / usuario.dias_vacaciones_anuales * 100) 
+                    if usuario.dias_vacaciones_anuales > 0 else 0
+            },
+            'administrativos': {
+                'total_anuales': usuario.dias_administrativos_anuales,
+                'disponibles': usuario.dias_administrativos_disponibles,
+                'usados': usuario.dias_administrativos_usados,
+                'porcentaje_usado': (usuario.dias_administrativos_usados / usuario.dias_administrativos_anuales * 100) 
+                    if usuario.dias_administrativos_anuales > 0 else 0
+            }
+        })
+    
+    @action(detail=True, methods=['post'])
+    def actualizar_dias(self, request, pk=None):
+        """Recalcular días disponibles del usuario"""
+        usuario = self.get_object()
+        usuario.actualizar_dias_disponibles()
+        return Response({
+            'message': 'Días actualizados correctamente',
+            'vacaciones_disponibles': usuario.dias_vacaciones_disponibles,
+            'administrativos_disponibles': usuario.dias_administrativos_disponibles
+        })
+    
+    @action(detail=False, methods=['get'])
+    def me(self, request):
+        """Obtener información del usuario actual"""
+        serializer = UsuarioDetailSerializer(request.user)
+        return Response(serializer.data)
+
+
+# ======================================================
+# ROL VIEWSET
 # ======================================================
 
 class RolViewSet(viewsets.ModelViewSet):
-    queryset = Rol.objects.all().order_by('id')
+    """ViewSet para gestión de roles"""
+    queryset = Rol.objects.all()
     serializer_class = RolSerializer
+    permission_classes = [IsAuthenticated]
+    ordering = ['-nivel']
 
-class ConfiguracionSistemaViewSet(viewsets.ModelViewSet):
-    queryset = ConfiguracionSistema.objects.all().order_by('id')
-    serializer_class = ConfiguracionSistemaSerializer
 
-    def perform_update(self, serializer):
-        # Asegurarse de que `updated_at` se actualice en cada modificación
-        serializer.save(updated_at=timezone.now())
-
-class UsuarioViewSet(viewsets.ModelViewSet):
-    queryset = Usuario.objects.all().order_by('apellidos', 'nombre')
-    serializer_class = UsuarioSerializer
-
-    # Podrías agregar acciones personalizadas, por ejemplo, para cambiar la contraseña
-    # @action(detail=True, methods=['post'])
-    # def set_password(self, request, pk=None):
-    #     user = self.get_object()
-    #     serializer = PasswordSerializer(data=request.data)
-    #     if serializer.is_valid():
-    #         user.set_password(serializer.validated_data['password'])
-    #         user.save()
-    #         return Response({'status': 'password set'})
-    #     else:
-    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def perform_update(self, serializer):
-        serializer.save(updated_at=timezone.now())
+# ======================================================
+# ÁREA VIEWSET
+# ======================================================
 
 class AreaViewSet(viewsets.ModelViewSet):
-    queryset = Area.objects.all().order_by('nombre')
+    """ViewSet para gestión de áreas"""
+    queryset = Area.objects.select_related('jefe').all()
     serializer_class = AreaSerializer
-
-    # Puedes agregar una acción personalizada para obtener los usuarios de un área
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['nombre', 'codigo']
+    ordering = ['nombre']
+    
     @action(detail=True, methods=['get'])
-    def usuarios(self, request, pk=None):
+    def funcionarios(self, request, pk=None):
+        """Listar funcionarios del área"""
         area = self.get_object()
-        usuarios = area.usuarios.all().order_by('apellidos')
-        serializer = UsuarioSerializer(usuarios, many=True)
+        funcionarios = area.funcionarios.all()
+        serializer = UsuarioListSerializer(funcionarios, many=True)
         return Response(serializer.data)
 
 
-class ContactoEmergenciaViewSet(viewsets.ModelViewSet):
-    queryset = ContactoEmergencia.objects.all().order_by('nombre')
-    serializer_class = ContactoEmergenciaSerializer
+# ======================================================
+# SOLICITUD VIEWSET
+# ======================================================
 
-class CalendarioEventoViewSet(viewsets.ModelViewSet):
-    queryset = CalendarioEvento.objects.all().order_by('-fecha', '-hora_inicio')
-    serializer_class = CalendarioEventoSerializer
-
-    def perform_update(self, serializer):
-        serializer.save(updated_at=timezone.now())
-
-class ActividadTableroViewSet(viewsets.ModelViewSet):
-    queryset = ActividadTablero.objects.all().order_by('-fecha', '-created_at')
-    serializer_class = ActividadTableroSerializer
-
-    def perform_update(self, serializer):
-        serializer.save(updated_at=timezone.now())
-
-class ActividadInteresadoViewSet(viewsets.ModelViewSet):
-    queryset = ActividadInteresado.objects.all().order_by('fecha_registro')
-    serializer_class = ActividadInteresadoSerializer
-
-class ComunicadoOficialViewSet(viewsets.ModelViewSet):
-    queryset = ComunicadoOficial.objects.all().order_by('-fecha_publicacion', '-created_at')
-    serializer_class = ComunicadoOficialSerializer
-
-    # Incrementa las vistas cuando se recupera un comunicado individual
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        instance.vistas = (instance.vistas or 0) + 1 # Asegura que no sea None y luego incrementa
-        instance.save(update_fields=['vistas'])
-        serializer = self.get_serializer(instance)
+class SolicitudViewSet(viewsets.ModelViewSet):
+    """ViewSet para gestión de solicitudes"""
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['tipo', 'estado', 'usuario__area']
+    search_fields = ['numero_solicitud', 'usuario__nombre', 'usuario__rut']
+    ordering_fields = ['fecha_solicitud', 'fecha_inicio']
+    ordering = ['-fecha_solicitud']
+    
+    def get_queryset(self):
+        user = self.request.user
+        
+        # Si es dirección o subdirección, ve todas
+        if user.rol.nivel >= 3:
+            return Solicitud.objects.select_related('usuario', 'usuario__area').all()
+        
+        # Si es jefatura, ve las de su área
+        elif user.rol.nivel == 2:
+            return Solicitud.objects.filter(usuario__area=user.area).select_related('usuario', 'usuario__area')
+        
+        # Funcionario ve solo las suyas
+        else:
+            return Solicitud.objects.filter(usuario=user).select_related('usuario', 'usuario__area')
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return SolicitudListSerializer
+        elif self.action == 'create':
+            return SolicitudCreateSerializer
+        return SolicitudDetailSerializer
+    
+    def perform_create(self, serializer):
+        """Crear solicitud asociándola al usuario actual"""
+        serializer.save(usuario=self.request.user)
+    
+    @action(detail=True, methods=['post'])
+    def aprobar_jefatura(self, request, pk=None):
+        """Aprobar solicitud como jefatura"""
+        solicitud = self.get_object()
+        user = request.user
+        
+        # Verificar permisos
+        if not user.puede_aprobar_solicitud(solicitud):
+            return Response(
+                {'error': 'No tienes permisos para aprobar esta solicitud'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Validar estado
+        if solicitud.estado != 'pendiente_jefatura':
+            return Response(
+                {'error': 'Esta solicitud no está en estado pendiente de jefatura'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        serializer = SolicitudAprobacionSerializer(data=request.data)
+        if serializer.is_valid():
+            if serializer.validated_data['aprobar']:
+                solicitud.aprobar_jefatura(
+                    jefe=user,
+                    comentarios=serializer.validated_data.get('comentarios', '')
+                )
+                return Response({
+                    'message': 'Solicitud aprobada por jefatura',
+                    'nuevo_estado': solicitud.estado
+                })
+            else:
+                solicitud.rechazar_jefatura(
+                    jefe=user,
+                    comentarios=serializer.validated_data.get('comentarios', '')
+                )
+                return Response({
+                    'message': 'Solicitud rechazada por jefatura',
+                    'nuevo_estado': solicitud.estado
+                })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=['post'])
+    def aprobar_direccion(self, request, pk=None):
+        """Aprobar solicitud como dirección"""
+        solicitud = self.get_object()
+        user = request.user
+        
+        # Verificar permisos (solo nivel 3 y 4)
+        if user.rol.nivel < 3:
+            return Response(
+                {'error': 'No tienes permisos para aprobar esta solicitud'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Validar estado
+        if solicitud.estado != 'pendiente_direccion':
+            return Response(
+                {'error': 'Esta solicitud no está en estado pendiente de dirección'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        serializer = SolicitudAprobacionSerializer(data=request.data)
+        if serializer.is_valid():
+            if serializer.validated_data['aprobar']:
+                solicitud.aprobar_direccion(
+                    director=user,
+                    comentarios=serializer.validated_data.get('comentarios', '')
+                )
+                return Response({
+                    'message': 'Solicitud aprobada completamente',
+                    'nuevo_estado': solicitud.estado,
+                    'dias_actualizados': True
+                })
+            else:
+                solicitud.rechazar_direccion(
+                    director=user,
+                    comentarios=serializer.validated_data.get('comentarios', '')
+                )
+                return Response({
+                    'message': 'Solicitud rechazada por dirección',
+                    'nuevo_estado': solicitud.estado
+                })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'])
+    def pendientes(self, request):
+        """Listar solicitudes pendientes de aprobación"""
+        user = request.user
+        
+        if user.rol.nivel == 2:  # Jefatura
+            solicitudes = Solicitud.objects.filter(
+                usuario__area=user.area,
+                estado='pendiente_jefatura'
+            )
+        elif user.rol.nivel >= 3:  # Dirección/Subdirección
+            solicitudes = Solicitud.objects.filter(
+                estado__in=['pendiente_jefatura', 'pendiente_direccion']
+            )
+        else:
+            solicitudes = Solicitud.objects.none()
+        
+        serializer = SolicitudListSerializer(solicitudes, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def mis_solicitudes(self, request):
+        """Listar solicitudes del usuario actual"""
+        solicitudes = Solicitud.objects.filter(usuario=request.user)
+        serializer = SolicitudListSerializer(solicitudes, many=True)
         return Response(serializer.data)
 
-    def perform_update(self, serializer):
-        serializer.save(updated_at=timezone.now())
 
-class AdjuntoComunicadoViewSet(viewsets.ModelViewSet):
-    queryset = AdjuntoComunicado.objects.all().order_by('created_at')
-    serializer_class = AdjuntoComunicadoSerializer
+# ======================================================
+# LICENCIA MÉDICA VIEWSET
+# ======================================================
 
 class LicenciaMedicaViewSet(viewsets.ModelViewSet):
-    queryset = LicenciaMedica.objects.all().order_by('-fecha_subida')
+    """ViewSet para gestión de licencias médicas"""
     serializer_class = LicenciaMedicaSerializer
-
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['tipo', 'usuario__area']
+    search_fields = ['numero_licencia', 'usuario__nombre', 'usuario__rut']
+    ordering = ['-fecha_inicio']
+    
+    def get_queryset(self):
+        user = self.request.user
+        
+        # Dirección y subdirección ven todas
+        if user.rol.nivel >= 3:
+            return LicenciaMedica.objects.select_related('usuario', 'subida_por').all()
+        
+        # Jefatura ve las de su área
+        elif user.rol.nivel == 2:
+            return LicenciaMedica.objects.filter(usuario__area=user.area)
+        
+        # Funcionario ve solo las suyas
+        else:
+            return LicenciaMedica.objects.filter(usuario=user)
+    
     def perform_create(self, serializer):
-        # Lógica para calcular dias_licencia y actualizar estado aquí si no se hace en el modelo
-        licencia = serializer.save()
-        if licencia.fecha_inicio and licencia.fecha_termino:
-            delta = licencia.fecha_termino - licencia.fecha_inicio
-            licencia.dias_licencia = delta.days + 1
-        
-        # Actualizar estado basado en fechas
-        if licencia.fecha_termino and licencia.fecha_termino < timezone.now().date():
-            licencia.estado = 'vencida'
-        elif licencia.fecha_inicio and licencia.fecha_termino and \
-             licencia.fecha_inicio <= timezone.now().date() and licencia.fecha_termino >= timezone.now().date():
-            licencia.estado = 'vigente'
-        
-        licencia.save(update_fields=['dias_licencia', 'estado', 'updated_at'])
-
-    def perform_update(self, serializer):
-        # Lógica para recalcular dias_licencia y actualizar estado en la actualización
-        licencia = serializer.save(updated_at=timezone.now())
-        if licencia.fecha_inicio and licencia.fecha_termino:
-            delta = licencia.fecha_termino - licencia.fecha_inicio
-            licencia.dias_licencia = delta.days + 1
-        
-        # Actualizar estado basado en fechas
-        if licencia.fecha_termino and licencia.fecha_termino < timezone.now().date():
-            licencia.estado = 'vencida'
-        elif licencia.fecha_inicio and licencia.fecha_termino and \
-             licencia.fecha_inicio <= timezone.now().date() and licencia.fecha_termino >= timezone.now().date():
-            licencia.estado = 'vigente'
-        
-        licencia.save(update_fields=['dias_licencia', 'estado', 'updated_at'])
-
-
-class HistorialActividadUsuarioViewSet(viewsets.ModelViewSet):
-    queryset = HistorialActividadUsuario.objects.all().order_by('-fecha', '-created_at')
-    serializer_class = HistorialActividadUsuarioSerializer
-
-class DocumentoPersonalViewSet(viewsets.ModelViewSet):
-    queryset = DocumentoPersonal.objects.all().order_by('-fecha_subida')
-    serializer_class = DocumentoPersonalSerializer
-
-class NotificacionViewSet(viewsets.ModelViewSet):
-    queryset = Notificacion.objects.all().order_by('-created_at')
-    serializer_class = NotificacionSerializer
-
-    # Acción personalizada para marcar notificaciones como leídas
-    @action(detail=True, methods=['post'])
-    def mark_as_read(self, request, pk=None):
-        notificacion = self.get_object()
-        if not notificacion.leida:
-            notificacion.leida = True
-            notificacion.fecha_leida = timezone.now()
-            notificacion.save(update_fields=['leida', 'fecha_leida'])
-            return Response({'status': 'Notificación marcada como leída'})
-        return Response({'status': 'Notificación ya estaba leída'}, status=status.HTTP_200_OK)
-
-    # Acción personalizada para obtener notificaciones no leídas de un usuario
+        """Registrar quién subió la licencia"""
+        serializer.save(subida_por=self.request.user)
+    
     @action(detail=False, methods=['get'])
-    def unread_for_user(self, request):
-        user_id = request.query_params.get('user_id')
-        if not user_id:
-            return Response({'error': 'Parámetro user_id es requerido'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        unread_notifications = Notificacion.objects.filter(usuario_id=user_id, leida=False).order_by('-created_at')
-        serializer = self.get_serializer(unread_notifications, many=True)
+    def vigentes(self, request):
+        """Listar licencias vigentes"""
+        hoy = timezone.now().date()
+        licencias = self.get_queryset().filter(
+            fecha_inicio__lte=hoy,
+            fecha_termino__gte=hoy
+        )
+        serializer = self.get_serializer(licencias, many=True)
         return Response(serializer.data)
 
 
-class FeriadoLegalViewSet(viewsets.ModelViewSet):
-    queryset = FeriadoLegal.objects.all().order_by('periodo_year', 'usuario__apellidos')
-    serializer_class = FeriadoLegalSerializer
+# ======================================================
+# ACTIVIDAD VIEWSET
+# ======================================================
 
+class ActividadViewSet(viewsets.ModelViewSet):
+    """ViewSet para gestión de actividades"""
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['tipo', 'activa', 'para_todas_areas']
+    search_fields = ['titulo', 'descripcion']
+    ordering = ['-fecha_inicio']
+    
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Actividad.objects.all()
+        
+        # Filtrar por áreas si no son para todas
+        if not user.rol.nivel >= 3:  # Si no es dirección/subdirección
+            queryset = queryset.filter(
+                Q(para_todas_areas=True) | Q(areas_participantes=user.area)
+            )
+        
+        return queryset.distinct()
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return ActividadListSerializer
+        return ActividadDetailSerializer
+    
     def perform_create(self, serializer):
-        # Calcular dias_pendientes al crear
-        feriado = serializer.save()
-        feriado.dias_pendientes = feriado.dias_totales - feriado.dias_usados
-        feriado.save(update_fields=['dias_pendientes', 'updated_at'])
+        """Registrar quién creó la actividad"""
+        serializer.save(creado_por=self.request.user)
+    
+    @action(detail=True, methods=['post'])
+    def inscribirse(self, request, pk=None):
+        """Inscribirse en una actividad"""
+        actividad = self.get_object()
+        user = request.user
+        
+        # Verificar cupos
+        if not actividad.tiene_cupos_disponibles():
+            return Response(
+                {'error': 'No hay cupos disponibles'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Verificar si ya está inscrito
+        if InscripcionActividad.objects.filter(actividad=actividad, usuario=user).exists():
+            return Response(
+                {'error': 'Ya estás inscrito en esta actividad'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Inscribir
+        inscripcion = InscripcionActividad.objects.create(
+            actividad=actividad,
+            usuario=user
+        )
+        
+        return Response({
+            'message': 'Inscripción exitosa',
+            'inscripcion_id': inscripcion.id
+        }, status=status.HTTP_201_CREATED)
+    
+    @action(detail=True, methods=['delete'])
+    def desinscribirse(self, request, pk=None):
+        """Desinscribirse de una actividad"""
+        actividad = self.get_object()
+        user = request.user
+        
+        try:
+            inscripcion = InscripcionActividad.objects.get(actividad=actividad, usuario=user)
+            inscripcion.delete()
+            return Response({'message': 'Desinscripción exitosa'})
+        except InscripcionActividad.DoesNotExist:
+            return Response(
+                {'error': 'No estás inscrito en esta actividad'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-    def perform_update(self, serializer):
-        # Recalcular dias_pendientes al actualizar
-        feriado = serializer.save(updated_at=timezone.now())
-        feriado.dias_pendientes = feriado.dias_totales - feriado.dias_usados
-        feriado.save(update_fields=['dias_pendientes'])
+
+# ======================================================
+# ANUNCIO VIEWSET
+# ======================================================
+
+class AnuncioViewSet(viewsets.ModelViewSet):
+    """ViewSet para gestión de anuncios"""
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['tipo', 'es_destacado', 'activo']
+    search_fields = ['titulo', 'contenido']
+    ordering_fields = ['fecha_publicacion', 'prioridad']
+    ordering = ['-fecha_publicacion', '-prioridad']
+    
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Anuncio.objects.all()
+        
+        # Filtrar por áreas si no son para todas
+        if not user.rol.nivel >= 3:
+            queryset = queryset.filter(
+                Q(para_todas_areas=True) | Q(areas_destinatarias=user.area)
+            )
+        
+        return queryset.distinct()
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return AnuncioListSerializer
+        return AnuncioDetailSerializer
+    
+    def perform_create(self, serializer):
+        """Registrar quién creó el anuncio"""
+        serializer.save(creado_por=self.request.user)
+    
+    @action(detail=False, methods=['get'])
+    def vigentes(self, request):
+        """Listar anuncios vigentes"""
+        anuncios = self.get_queryset().filter(activo=True)
+        anuncios = [a for a in anuncios if a.esta_vigente()]
+        serializer = self.get_serializer(anuncios, many=True)
+        return Response(serializer.data)
 
 
-class SolicitudFeriadoViewSet(viewsets.ModelViewSet):
-    queryset = SolicitudFeriado.objects.all().order_by('-fecha_inicio', '-created_at')
-    serializer_class = SolicitudFeriadoSerializer
+# ======================================================
+# DOCUMENTO VIEWSET
+# ======================================================
 
-    def perform_update(self, serializer):
-        # Si el estado cambia a 'aprobada', registrar la fecha de aprobación
-        if 'estado' in serializer.validated_data and serializer.validated_data['estado'] == 'aprobada':
-            serializer.save(fecha_aprobacion=timezone.now(), updated_at=timezone.now())
-        else:
-            serializer.save(updated_at=timezone.now())
+class DocumentoViewSet(viewsets.ModelViewSet):
+    """ViewSet para gestión de documentos"""
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['tipo', 'categoria', 'publico', 'activo']
+    search_fields = ['titulo', 'codigo_documento', 'descripcion']
+    ordering_fields = ['subido_en', 'fecha_vigencia']
+    ordering = ['-subido_en']
+    
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Documento.objects.select_related('categoria', 'subido_por').all()
+        
+        # Filtrar por permisos
+        if not user.rol.nivel >= 3:
+            queryset = queryset.filter(
+                Q(publico=True) | Q(areas_con_acceso=user.area)
+            )
+        
+        return queryset.distinct()
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return DocumentoListSerializer
+        return DocumentoDetailSerializer
+    
+    def perform_create(self, serializer):
+        """Registrar quién subió el documento"""
+        serializer.save(subido_por=self.request.user)
+    
+    @action(detail=True, methods=['post'])
+    def descargar(self, request, pk=None):
+        """Registrar descarga de documento"""
+        documento = self.get_object()
+        documento.descargas += 1
+        documento.save()
+        return Response({'message': 'Descarga registrada'})
+    
+    @action(detail=True, methods=['post'])
+    def visualizar(self, request, pk=None):
+        """Registrar visualización de documento"""
+        documento = self.get_object()
+        documento.visualizaciones += 1
+        documento.save()
+        return Response({'message': 'Visualización registrada'})
 
-class SesionViewSet(viewsets.ModelViewSet):
-    queryset = Sesion.objects.all().order_by('-ultima_actividad')
-    serializer_class = SesionSerializer
 
-class LogAuditoriaViewSet(viewsets.ModelViewSet):
-    queryset = LogAuditoria.objects.all().order_by('-created_at')
+# ======================================================
+# CATEGORÍA DOCUMENTO VIEWSET
+# ======================================================
+
+class CategoriaDocumentoViewSet(viewsets.ModelViewSet):
+    """ViewSet para gestión de categorías de documentos"""
+    queryset = CategoriaDocumento.objects.all()
+    serializer_class = CategoriaDocumentoSerializer
+    permission_classes = [IsAuthenticated]
+    ordering = ['orden', 'nombre']
+
+
+# ======================================================
+# NOTIFICACIÓN VIEWSET
+# ======================================================
+
+class NotificacionViewSet(viewsets.ModelViewSet):
+    """ViewSet para gestión de notificaciones"""
+    serializer_class = NotificacionSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['tipo', 'leida']
+    ordering = ['-creada_en']
+    
+    def get_queryset(self):
+        """Cada usuario ve solo sus notificaciones"""
+        return Notificacion.objects.filter(usuario=self.request.user)
+    
+    @action(detail=True, methods=['post'])
+    def marcar_leida(self, request, pk=None):
+        """Marcar notificación como leída"""
+        notificacion = self.get_object()
+        notificacion.marcar_como_leida()
+        return Response({'message': 'Notificación marcada como leída'})
+    
+    @action(detail=False, methods=['post'])
+    def marcar_todas_leidas(self, request):
+        """Marcar todas las notificaciones como leídas"""
+        notificaciones = self.get_queryset().filter(leida=False)
+        for notif in notificaciones:
+            notif.marcar_como_leida()
+        return Response({
+            'message': f'{notificaciones.count()} notificaciones marcadas como leídas'
+        })
+    
+    @action(detail=False, methods=['get'])
+    def no_leidas(self, request):
+        """Listar notificaciones no leídas"""
+        notificaciones = self.get_queryset().filter(leida=False)
+        serializer = self.get_serializer(notificaciones, many=True)
+        return Response(serializer.data)
+
+
+# ======================================================
+# LOG AUDITORÍA VIEWSET
+# ======================================================
+
+class LogAuditoriaViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet solo lectura para logs de auditoría"""
     serializer_class = LogAuditoriaSerializer
-
-class RecursoMultimediaViewSet(viewsets.ModelViewSet):
-    queryset = RecursoMultimedia.objects.all().order_by('-created_at')
-    serializer_class = RecursoMultimediaSerializer
-
-    def perform_update(self, serializer):
-        serializer.save(updated_at=timezone.now())
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['accion', 'modelo', 'usuario']
+    search_fields = ['descripcion', 'objeto_id']
+    ordering = ['-timestamp']
+    
+    def get_queryset(self):
+        user = self.request.user
+        
+        # Solo dirección y subdirección pueden ver todos los logs
+        if user.rol.nivel >= 3:
+            return LogAuditoria.objects.select_related('usuario').all()
+        
+        # Otros usuarios solo ven sus propios logs
+        return LogAuditoria.objects.filter(usuario=user)

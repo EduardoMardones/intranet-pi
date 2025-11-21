@@ -1,209 +1,502 @@
-# api_intranet/admin.py
+# ======================================================
+# ADMIN.PY - Configuración del Admin de Django
+# Ubicación: api_intranet/admin.py
+# ======================================================
+
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
-    Rol, ConfiguracionSistema, Area, Usuario, ContactoEmergencia,
-    CalendarioEvento, ActividadTablero, ActividadInteresado,
-    ComunicadoOficial, AdjuntoComunicado, LicenciaMedica,
-    HistorialActividadUsuario, DocumentoPersonal, Notificacion,
-    FeriadoLegal, SolicitudFeriado, Sesion, LogAuditoria, RecursoMultimedia
+    Usuario, Rol, Area, Solicitud,
+    LicenciaMedica, Actividad, InscripcionActividad,
+    Anuncio, AdjuntoAnuncio, Documento, CategoriaDocumento,
+    Notificacion, LogAuditoria
 )
 
+
 # ======================================================
-# Registro de modelos en el panel de administración
+# USUARIO ADMIN
 # ======================================================
 
-# Admin para Rol
-@admin.register(Rol)
-class RolAdmin(admin.ModelAdmin):
-    list_display = ('id', 'codigo', 'nombre', 'nivel_acceso', 'created_at')
-    search_fields = ('codigo', 'nombre')
-    list_filter = ('nivel_acceso',)
-    ordering = ('nivel_acceso', 'nombre')
-
-# Admin para ConfiguracionSistema
-@admin.register(ConfiguracionSistema)
-class ConfiguracionSistemaAdmin(admin.ModelAdmin):
-    list_display = ('id', 'clave', 'valor', 'tipo_dato', 'es_publica', 'updated_at')
-    search_fields = ('clave', 'descripcion')
-    list_filter = ('tipo_dato', 'es_publica')
-    readonly_fields = ('updated_at',)
-
-# Admin para Area
-@admin.register(Area)
-class AreaAdmin(admin.ModelAdmin):
-    list_display = ('id', 'codigo', 'nombre', 'jefe_area', 'created_at')
-    search_fields = ('codigo', 'nombre', 'jefe_area__nombre', 'jefe_area__apellidos')
-    list_filter = ('created_at',)
-    raw_id_fields = ('jefe_area',) # Permite buscar al jefe de área por ID, útil con muchos usuarios
-    ordering = ('nombre',)
-
-# Admin para Usuario
 @admin.register(Usuario)
-class UsuarioAdmin(admin.ModelAdmin):
-    list_display = ('id', 'rut', 'nombre', 'apellidos', 'email', 'rol', 'area', 'estado', 'fecha_ingreso', 'updated_at')
-    search_fields = ('rut', 'nombre', 'apellidos', 'email', 'cargo')
-    list_filter = ('estado', 'rol', 'area', 'fecha_ingreso')
-    date_hierarchy = 'fecha_ingreso' # Permite navegar por fechas
-    raw_id_fields = ('rol', 'area',) # Permite buscar rol y área por ID
-    readonly_fields = ('id', 'created_at', 'updated_at')
+class UsuarioAdmin(BaseUserAdmin):
+    list_display = [
+        'rut', 'get_nombre_completo', 'email',
+        'area', 'rol', 'is_active', 'is_staff'
+    ]
+    list_filter = ['area', 'rol', 'is_active', 'is_staff', 'es_jefe_de_area']
+    search_fields = ['rut', 'nombre', 'apellido_paterno', 'email']
+    ordering = ['apellido_paterno', 'apellido_materno', 'nombre']
+    
     fieldsets = (
+        ('Información Personal', {
+            'fields': (
+                'rut', 'nombre', 'apellido_paterno', 'apellido_materno',
+                'email', 'password', 'telefono', 'fecha_nacimiento', 'direccion'
+            )
+        }),
+        ('Información Profesional', {
+            'fields': (
+                'cargo', 'area', 'rol', 'fecha_ingreso', 'es_jefe_de_area'
+            )
+        }),
+        ('Contacto de Emergencia', {
+            'fields': (
+                'contacto_emergencia_nombre',
+                'contacto_emergencia_telefono',
+                'contacto_emergencia_relacion'
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Días Disponibles', {
+            'fields': (
+                'dias_vacaciones_anuales',
+                'dias_vacaciones_disponibles',
+                'dias_vacaciones_usados',
+                'dias_administrativos_anuales',
+                'dias_administrativos_disponibles',
+                'dias_administrativos_usados'
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Permisos', {
+            'fields': (
+                'is_active', 'is_staff', 'is_superuser',
+                'groups', 'user_permissions'
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Preferencias', {
+            'fields': ('avatar', 'tema_preferido'),
+            'classes': ('collapse',)
+        }),
+        ('Auditoría', {
+            'fields': ('creado_en', 'actualizado_en', 'ultimo_acceso'),
+            'classes': ('collapse',)
+        })
+    )
+    
+    add_fieldsets = (
         (None, {
-            'fields': ('rut', 'nombre', 'apellidos', 'email', 'password_hash')
-        }),
-        ('Información de Contacto y Personal', {
-            'fields': ('telefono', 'fecha_nacimiento', 'direccion', 'avatar_url'),
-            'classes': ('collapse',), # Oculta esta sección por defecto
-        }),
-        ('Información Laboral', {
-            'fields': ('fecha_ingreso', 'estado', 'rol', 'area', 'cargo')
-        }),
-        ('Fechas', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',),
+            'classes': ('wide',),
+            'fields': (
+                'rut', 'nombre', 'apellido_paterno', 'apellido_materno',
+                'email', 'password1', 'password2', 'cargo', 'area', 'rol',
+                'fecha_ingreso'
+            ),
         }),
     )
+    
+    readonly_fields = ['creado_en', 'actualizado_en', 'ultimo_acceso']
+    
+    def get_nombre_completo(self, obj):
+        return obj.get_nombre_completo()
+    get_nombre_completo.short_description = 'Nombre Completo'
 
-# Admin para ContactoEmergencia
-@admin.register(ContactoEmergencia)
-class ContactoEmergenciaAdmin(admin.ModelAdmin):
-    list_display = ('id', 'usuario', 'nombre', 'telefono', 'relacion', 'es_principal')
-    search_fields = ('usuario__nombre', 'usuario__apellidos', 'nombre', 'telefono')
-    list_filter = ('es_principal', 'relacion')
-    raw_id_fields = ('usuario',)
 
-# Admin para CalendarioEvento
-@admin.register(CalendarioEvento)
-class CalendarioEventoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'titulo', 'fecha', 'hora_inicio', 'organizador', 'tipo', 'es_todo_el_dia', 'updated_at')
-    search_fields = ('titulo', 'descripcion', 'ubicacion', 'organizador__nombre', 'organizador__apellidos')
-    list_filter = ('tipo', 'fecha', 'es_todo_el_dia', 'es_recurrente')
-    date_hierarchy = 'fecha'
-    raw_id_fields = ('organizador',)
-    readonly_fields = ('id', 'created_at', 'updated_at')
+# ======================================================
+# ROL ADMIN
+# ======================================================
 
-# Admin para ActividadTablero
-@admin.register(ActividadTablero)
-class ActividadTableroAdmin(admin.ModelAdmin):
-    list_display = ('id', 'titulo', 'fecha', 'organizador', 'tipo', 'estado', 'cupos_disponibles', 'updated_at')
-    search_fields = ('titulo', 'descripcion', 'ubicacion', 'organizador__nombre', 'organizador__apellidos')
-    list_filter = ('tipo', 'estado', 'fecha')
-    date_hierarchy = 'fecha'
-    raw_id_fields = ('organizador',)
-    readonly_fields = ('id', 'created_at', 'updated_at')
+@admin.register(Rol)
+class RolAdmin(admin.ModelAdmin):
+    list_display = [
+        'nombre', 'nivel', 'puede_crear_usuarios',
+        'puede_eliminar_contenido', 'puede_aprobar_solicitudes'
+    ]
+    list_filter = ['nivel']
+    search_fields = ['nombre']
+    ordering = ['-nivel']
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('nombre', 'descripcion', 'nivel')
+        }),
+        ('Permisos', {
+            'fields': (
+                'puede_crear_usuarios',
+                'puede_eliminar_contenido',
+                'puede_aprobar_solicitudes',
+                'puede_subir_documentos',
+                'puede_crear_actividades',
+                'puede_crear_anuncios',
+                'puede_gestionar_licencias',
+                'puede_ver_reportes',
+                'puede_editar_calendario'
+            )
+        })
+    )
 
-# Admin para ActividadInteresado
-@admin.register(ActividadInteresado)
-class ActividadInteresadoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'actividad', 'usuario', 'fecha_registro')
-    search_fields = ('actividad__titulo', 'usuario__nombre', 'usuario__apellidos')
-    list_filter = ('fecha_registro',)
-    raw_id_fields = ('actividad', 'usuario')
-    readonly_fields = ('fecha_registro',)
 
-# Admin para ComunicadoOficial
-@admin.register(ComunicadoOficial)
-class ComunicadoOficialAdmin(admin.ModelAdmin):
-    list_display = ('id', 'titulo', 'autor', 'categoria', 'fecha_publicacion', 'es_fijado', 'vistas', 'estado', 'updated_at')
-    search_fields = ('titulo', 'descripcion', 'autor__nombre', 'autor__apellidos')
-    list_filter = ('categoria', 'estado', 'es_fijado', 'fecha_publicacion')
-    date_hierarchy = 'fecha_publicacion'
-    raw_id_fields = ('autor',)
-    readonly_fields = ('id', 'vistas', 'created_at', 'updated_at')
+# ======================================================
+# AREA ADMIN
+# ======================================================
 
-# Admin para AdjuntoComunicado
-@admin.register(AdjuntoComunicado)
-class AdjuntoComunicadoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'comunicado', 'nombre_archivo', 'tipo_archivo', 'tamano_bytes', 'created_at')
-    search_fields = ('comunicado__titulo', 'nombre_archivo')
-    list_filter = ('tipo_archivo',)
-    raw_id_fields = ('comunicado',)
-    readonly_fields = ('id', 'created_at')
+@admin.register(Area)
+class AreaAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'codigo', 'jefe', 'activa']
+    list_filter = ['activa']
+    search_fields = ['nombre', 'codigo']
+    ordering = ['nombre']
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('nombre', 'codigo', 'descripcion')
+        }),
+        ('Apariencia', {
+            'fields': ('color', 'icono')
+        }),
+        ('Jefatura', {
+            'fields': ('jefe',)
+        }),
+        ('Estado', {
+            'fields': ('activa',)
+        })
+    )
 
-# Admin para LicenciaMedica
+
+# ======================================================
+# SOLICITUD ADMIN
+# ======================================================
+
+@admin.register(Solicitud)
+class SolicitudAdmin(admin.ModelAdmin):
+    list_display = [
+        'numero_solicitud', 'usuario', 'tipo',
+        'fecha_inicio', 'fecha_termino', 'cantidad_dias',
+        'estado', 'fecha_solicitud'
+    ]
+    list_filter = ['estado', 'tipo', 'fecha_solicitud']
+    search_fields = ['numero_solicitud', 'usuario__nombre', 'usuario__rut']
+    date_hierarchy = 'fecha_solicitud'
+    ordering = ['-fecha_solicitud']
+    
+    readonly_fields = [
+        'numero_solicitud', 'fecha_solicitud',
+        'creada_en', 'actualizada_en'
+    ]
+    
+    fieldsets = (
+        ('Información de la Solicitud', {
+            'fields': (
+                'numero_solicitud', 'usuario', 'tipo',
+                'fecha_inicio', 'fecha_termino', 'cantidad_dias',
+                'motivo', 'telefono_contacto'
+            )
+        }),
+        ('Estado', {
+            'fields': ('estado',)
+        }),
+        ('Aprobación Jefatura', {
+            'fields': (
+                'aprobada_por_jefatura',
+                'jefatura_aprobador',
+                'fecha_aprobacion_jefatura',
+                'comentarios_jefatura'
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Aprobación Dirección', {
+            'fields': (
+                'aprobada_por_direccion',
+                'direccion_aprobador',
+                'fecha_aprobacion_direccion',
+                'comentarios_direccion'
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Documento', {
+            'fields': ('pdf_generado', 'url_pdf'),
+            'classes': ('collapse',)
+        }),
+        ('Auditoría', {
+            'fields': ('fecha_solicitud', 'creada_en', 'actualizada_en'),
+            'classes': ('collapse',)
+        })
+    )
+
+
+# ======================================================
+# LICENCIA MÉDICA ADMIN
+# ======================================================
+
 @admin.register(LicenciaMedica)
 class LicenciaMedicaAdmin(admin.ModelAdmin):
-    list_display = ('id', 'usuario', 'fecha_inicio', 'fecha_termino', 'dias_licencia', 'estado', 'subido_por', 'fecha_subida', 'updated_at')
-    search_fields = ('usuario__nombre', 'usuario__apellidos', 'diagnostico', 'medico_tratante')
-    list_filter = ('estado', 'tipo_archivo', 'fecha_inicio', 'fecha_termino')
-    date_hierarchy = 'fecha_subida'
-    raw_id_fields = ('usuario', 'subido_por')
-    readonly_fields = ('id', 'created_at', 'updated_at', 'dias_licencia') # dias_licencia puede ser calculado
+    list_display = [
+        'numero_licencia', 'usuario', 'tipo',
+        'fecha_inicio', 'fecha_termino', 'dias_totales',
+        'subida_por', 'subida_en'
+    ]
+    list_filter = ['tipo', 'fecha_inicio']
+    search_fields = ['numero_licencia', 'usuario__nombre', 'usuario__rut']
+    date_hierarchy = 'fecha_inicio'
+    ordering = ['-fecha_inicio']
+    
+    readonly_fields = ['subida_en', 'actualizada_en']
+    
+    fieldsets = (
+        ('Información de la Licencia', {
+            'fields': (
+                'numero_licencia', 'usuario', 'tipo',
+                'fecha_inicio', 'fecha_termino', 'dias_totales'
+            )
+        }),
+        ('Detalles Médicos', {
+            'fields': ('diagnostico', 'documento_licencia')
+        }),
+        ('Registro', {
+            'fields': ('subida_por', 'subida_en', 'actualizada_en'),
+            'classes': ('collapse',)
+        })
+    )
 
-# Admin para HistorialActividadUsuario
-@admin.register(HistorialActividadUsuario)
-class HistorialActividadUsuarioAdmin(admin.ModelAdmin):
-    list_display = ('id', 'usuario', 'titulo', 'tipo', 'fecha', 'duracion_horas', 'created_at')
-    search_fields = ('usuario__nombre', 'usuario__apellidos', 'titulo', 'institucion_organizadora')
-    list_filter = ('tipo', 'fecha')
-    date_hierarchy = 'fecha'
-    raw_id_fields = ('usuario',)
-    readonly_fields = ('id', 'created_at')
 
-# Admin para DocumentoPersonal
-@admin.register(DocumentoPersonal)
-class DocumentoPersonalAdmin(admin.ModelAdmin):
-    list_display = ('id', 'usuario', 'nombre', 'tipo', 'fecha_subida', 'subido_por', 'es_confidencial', 'fecha_vigencia')
-    search_fields = ('usuario__nombre', 'usuario__apellidos', 'nombre', 'tipo')
-    list_filter = ('tipo', 'es_confidencial', 'fecha_vigencia')
-    date_hierarchy = 'fecha_subida'
-    raw_id_fields = ('usuario', 'subido_por')
-    readonly_fields = ('id', 'created_at')
+# ======================================================
+# ACTIVIDAD ADMIN
+# ======================================================
 
-# Admin para Notificacion
+@admin.register(Actividad)
+class ActividadAdmin(admin.ModelAdmin):
+    list_display = [
+        'titulo', 'tipo', 'fecha_inicio', 'fecha_termino',
+        'ubicacion', 'cupo_maximo', 'activa'
+    ]
+    list_filter = ['tipo', 'para_todas_areas', 'activa', 'fecha_inicio']
+    search_fields = ['titulo', 'descripcion']
+    date_hierarchy = 'fecha_inicio'
+    ordering = ['-fecha_inicio']
+    filter_horizontal = ['areas_participantes']
+    
+    readonly_fields = ['creado_en', 'actualizado_en']
+    
+    fieldsets = (
+        ('Información de la Actividad', {
+            'fields': (
+                'titulo', 'descripcion', 'tipo',
+                'fecha_inicio', 'fecha_termino', 'todo_el_dia'
+            )
+        }),
+        ('Ubicación y Apariencia', {
+            'fields': ('ubicacion', 'color', 'imagen')
+        }),
+        ('Participantes', {
+            'fields': (
+                'para_todas_areas', 'areas_participantes', 'cupo_maximo'
+            )
+        }),
+        ('Estado', {
+            'fields': ('activa',)
+        }),
+        ('Registro', {
+            'fields': ('creado_por', 'creado_en', 'actualizado_en'),
+            'classes': ('collapse',)
+        })
+    )
+
+
+# ======================================================
+# INSCRIPCIÓN ACTIVIDAD ADMIN
+# ======================================================
+
+@admin.register(InscripcionActividad)
+class InscripcionActividadAdmin(admin.ModelAdmin):
+    list_display = ['actividad', 'usuario', 'fecha_inscripcion', 'asistio']
+    list_filter = ['asistio', 'fecha_inscripcion']
+    search_fields = ['actividad__titulo', 'usuario__nombre']
+    date_hierarchy = 'fecha_inscripcion'
+    ordering = ['-fecha_inscripcion']
+
+
+# ======================================================
+# ANUNCIO ADMIN
+# ======================================================
+
+@admin.register(Anuncio)
+class AnuncioAdmin(admin.ModelAdmin):
+    list_display = [
+        'titulo', 'tipo', 'es_destacado', 'prioridad',
+        'fecha_publicacion', 'fecha_expiracion', 'activo'
+    ]
+    list_filter = ['tipo', 'es_destacado', 'activo', 'fecha_publicacion']
+    search_fields = ['titulo', 'contenido']
+    date_hierarchy = 'fecha_publicacion'
+    ordering = ['-fecha_publicacion', '-prioridad']
+    filter_horizontal = ['areas_destinatarias']
+    
+    readonly_fields = ['creado_en', 'actualizado_en']
+    
+    fieldsets = (
+        ('Información del Anuncio', {
+            'fields': (
+                'titulo', 'contenido', 'tipo',
+                'fecha_publicacion', 'fecha_expiracion'
+            )
+        }),
+        ('Prioridad', {
+            'fields': ('es_destacado', 'prioridad')
+        }),
+        ('Multimedia', {
+            'fields': ('imagen',)
+        }),
+        ('Destinatarios', {
+            'fields': ('para_todas_areas', 'areas_destinatarias')
+        }),
+        ('Estado', {
+            'fields': ('activo',)
+        }),
+        ('Registro', {
+            'fields': ('creado_por', 'creado_en', 'actualizado_en'),
+            'classes': ('collapse',)
+        })
+    )
+
+
+# ======================================================
+# ADJUNTO ANUNCIO ADMIN
+# ======================================================
+
+@admin.register(AdjuntoAnuncio)
+class AdjuntoAnuncioAdmin(admin.ModelAdmin):
+    list_display = ['nombre_archivo', 'anuncio', 'tipo_archivo', 'tamano', 'subido_en']
+    list_filter = ['tipo_archivo', 'subido_en']
+    search_fields = ['nombre_archivo', 'anuncio__titulo']
+    date_hierarchy = 'subido_en'
+    ordering = ['-subido_en']
+
+
+# ======================================================
+# CATEGORÍA DOCUMENTO ADMIN
+# ======================================================
+
+@admin.register(CategoriaDocumento)
+class CategoriaDocumentoAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'icono', 'orden', 'activa']
+    list_filter = ['activa']
+    search_fields = ['nombre']
+    ordering = ['orden', 'nombre']
+
+
+# ======================================================
+# DOCUMENTO ADMIN
+# ======================================================
+
+@admin.register(Documento)
+class DocumentoAdmin(admin.ModelAdmin):
+    list_display = [
+        'codigo_documento', 'titulo', 'tipo', 'categoria',
+        'version', 'fecha_vigencia', 'descargas', 'activo'
+    ]
+    list_filter = ['tipo', 'categoria', 'publico', 'activo', 'fecha_vigencia']
+    search_fields = ['codigo_documento', 'titulo', 'descripcion']
+    date_hierarchy = 'subido_en'
+    ordering = ['-subido_en']
+    filter_horizontal = ['areas_con_acceso']
+    
+    readonly_fields = [
+        'codigo_documento', 'descargas', 'visualizaciones',
+        'subido_en', 'actualizado_en'
+    ]
+    
+    fieldsets = (
+        ('Información del Documento', {
+            'fields': (
+                'codigo_documento', 'titulo', 'descripcion',
+                'tipo', 'categoria'
+            )
+        }),
+        ('Archivo', {
+            'fields': ('archivo', 'tamano', 'extension')
+        }),
+        ('Versión y Vigencia', {
+            'fields': (
+                'version', 'fecha_vigencia', 'fecha_expiracion'
+            )
+        }),
+        ('Acceso', {
+            'fields': ('publico', 'areas_con_acceso')
+        }),
+        ('Estadísticas', {
+            'fields': ('descargas', 'visualizaciones'),
+            'classes': ('collapse',)
+        }),
+        ('Estado', {
+            'fields': ('activo',)
+        }),
+        ('Registro', {
+            'fields': ('subido_por', 'subido_en', 'actualizado_en'),
+            'classes': ('collapse',)
+        })
+    )
+
+
+# ======================================================
+# NOTIFICACIÓN ADMIN
+# ======================================================
+
 @admin.register(Notificacion)
 class NotificacionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'usuario', 'titulo', 'tipo', 'leida', 'fecha_leida', 'created_at')
-    search_fields = ('usuario__nombre', 'usuario__apellidos', 'titulo', 'mensaje')
-    list_filter = ('tipo', 'leida', 'created_at')
-    date_hierarchy = 'created_at'
-    raw_id_fields = ('usuario',)
-    readonly_fields = ('id', 'created_at', 'fecha_leida')
+    list_display = [
+        'titulo', 'usuario', 'tipo', 'leida',
+        'fecha_leida', 'creada_en'
+    ]
+    list_filter = ['tipo', 'leida', 'creada_en']
+    search_fields = ['titulo', 'mensaje', 'usuario__nombre']
+    date_hierarchy = 'creada_en'
+    ordering = ['-creada_en']
+    
+    readonly_fields = ['creada_en']
+    
+    fieldsets = (
+        ('Información de la Notificación', {
+            'fields': ('usuario', 'tipo', 'titulo', 'mensaje')
+        }),
+        ('Enlace', {
+            'fields': ('url', 'icono')
+        }),
+        ('Estado', {
+            'fields': ('leida', 'fecha_leida')
+        }),
+        ('Registro', {
+            'fields': ('creada_en',),
+            'classes': ('collapse',)
+        })
+    )
 
-# Admin para FeriadoLegal
-@admin.register(FeriadoLegal)
-class FeriadoLegalAdmin(admin.ModelAdmin):
-    list_display = ('id', 'usuario', 'periodo_year', 'dias_totales', 'dias_usados', 'dias_pendientes', 'updated_at')
-    search_fields = ('usuario__nombre', 'usuario__apellidos', 'periodo_year')
-    list_filter = ('periodo_year',)
-    raw_id_fields = ('usuario',)
-    readonly_fields = ('id', 'created_at', 'updated_at', 'dias_pendientes') # dias_pendientes es calculado
 
-# Admin para SolicitudFeriado
-@admin.register(SolicitudFeriado)
-class SolicitudFeriadoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'usuario', 'fecha_inicio', 'fecha_termino', 'dias_solicitados', 'estado', 'aprobado_por', 'fecha_aprobacion', 'updated_at')
-    search_fields = ('usuario__nombre', 'usuario__apellidos', 'motivo')
-    list_filter = ('estado', 'fecha_inicio', 'fecha_termino')
-    date_hierarchy = 'fecha_inicio'
-    raw_id_fields = ('usuario', 'aprobado_por')
-    readonly_fields = ('id', 'created_at', 'updated_at')
+# ======================================================
+# LOG AUDITORÍA ADMIN
+# ======================================================
 
-# Admin para Sesion
-@admin.register(Sesion)
-class SesionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'usuario', 'ultima_actividad', 'fecha_expiracion', 'esta_activa')
-    search_fields = ('usuario__nombre', 'usuario__apellidos', 'token', 'ip_address')
-    list_filter = ('esta_activa', 'fecha_expiracion')
-    date_hierarchy = 'ultima_actividad'
-    raw_id_fields = ('usuario',)
-    readonly_fields = ('id', 'token', 'created_at', 'ultima_actividad')
-
-# Admin para LogAuditoria
 @admin.register(LogAuditoria)
 class LogAuditoriaAdmin(admin.ModelAdmin):
-    list_display = ('id', 'usuario', 'accion', 'entidad_tipo', 'entidad_id', 'ip_address', 'created_at')
-    search_fields = ('usuario__nombre', 'usuario__apellidos', 'accion', 'entidad_tipo', 'entidad_id')
-    list_filter = ('accion', 'entidad_tipo', 'created_at')
-    date_hierarchy = 'created_at'
-    raw_id_fields = ('usuario',)
-    readonly_fields = ('id', 'created_at', 'datos_anteriores', 'datos_nuevos') # Datos JSON son solo lectura
+    list_display = [
+        'usuario', 'accion', 'modelo', 'objeto_id',
+        'ip_address', 'timestamp'
+    ]
+    list_filter = ['accion', 'modelo', 'timestamp']
+    search_fields = ['usuario__nombre', 'descripcion', 'objeto_id']
+    date_hierarchy = 'timestamp'
+    ordering = ['-timestamp']
+    
+    readonly_fields = ['timestamp']
+    
+    fieldsets = (
+        ('Acción', {
+            'fields': ('usuario', 'accion', 'modelo', 'objeto_id', 'descripcion')
+        }),
+        ('Detalles Técnicos', {
+            'fields': ('ip_address', 'user_agent'),
+            'classes': ('collapse',)
+        }),
+        ('Timestamp', {
+            'fields': ('timestamp',)
+        })
+    )
 
-# Admin para RecursoMultimedia
-@admin.register(RecursoMultimedia)
-class RecursoMultimediaAdmin(admin.ModelAdmin):
-    list_display = ('id', 'nombre_archivo', 'tipo_categoria', 'subido_por', 'es_publico', 'tamano_bytes', 'created_at', 'updated_at')
-    search_fields = ('nombre_archivo', 'clave_s3', 'url_acceso', 'subido_por__nombre', 'subido_por__apellidos')
-    list_filter = ('tipo_categoria', 'es_publico', 'bucket_s3')
-    date_hierarchy = 'created_at'
-    raw_id_fields = ('subido_por',)
-    readonly_fields = ('id', 'created_at', 'updated_at', 'clave_s3')
+
+# ======================================================
+# CONFIGURACIÓN DEL ADMIN SITE
+# ======================================================
+
+admin.site.site_header = "Administración CESFAM Santa Rosa"
+admin.site.site_title = "CESFAM Admin"
+admin.site.index_title = "Panel de Administración"

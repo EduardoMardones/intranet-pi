@@ -1,503 +1,851 @@
-# api_intranet/models.py
-import uuid
+# ======================================================
+# MODELS.PY - Base de Datos Completa CESFAM Santa Rosa
+# Ubicación: backend/intranet/models.py
+# ======================================================
+
 from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
 from django.utils import timezone
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
+import uuid
+
 
 # ======================================================
-# TABLAS SIN DEPENDENCIAS EXTERNAS DIRECTAS O DEPENDENCIAS CÍCLICAS
+# 1. GESTIÓN DE USUARIOS Y AUTENTICACIÓN
 # ======================================================
+
+class UsuarioManager(BaseUserManager):
+    """Manager personalizado para el modelo Usuario"""
+    
+    def create_user(self, rut, email, password=None, **extra_fields):
+        """Crea y guarda un Usuario normal"""
+        if not rut:
+            raise ValueError('El usuario debe tener un RUT')
+        if not email:
+            raise ValueError('El usuario debe tener un email')
+        
+        email = self.normalize_email(email)
+        user = self.model(rut=rut, email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+    
+    def create_superuser(self, rut, email, password=None, **extra_fields):
+        """Crea y guarda un superusuario (Dirección)"""
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+        
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser debe tener is_staff=True')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser debe tener is_superuser=True')
+        
+        return self.create_user(rut, email, password, **extra_fields)
+
 
 class Rol(models.Model):
-    id = models.AutoField(primary_key=True)
-    codigo = models.CharField(max_length=50, unique=True, null=False, blank=False)
-    nombre = models.CharField(max_length=100, null=False, blank=False)
-    descripcion = models.TextField(null=True, blank=True)
-    nivel_acceso = models.IntegerField(default=1) # 1=básico, 5=admin
-    color_badge = models.CharField(max_length=50, null=True, blank=True) # Para UI: 'bg-blue-100 text-blue-700'
-    created_at = models.DateTimeField(default=timezone.now)
-
+    """
+    Roles del sistema con permisos jerárquicos
+    """
+    NIVEL_CHOICES = [
+        (1, 'Funcionario'),       # Nivel más bajo
+        (2, 'Jefatura'),          # Jefe de área
+        (3, 'Subdirección'),      # Subdirección Administrativa o Clínica
+        (4, 'Dirección'),         # Nivel máximo
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True)
+    nivel = models.IntegerField(choices=NIVEL_CHOICES, default=1)
+    
+    # Permisos específicos
+    puede_crear_usuarios = models.BooleanField(default=False)
+    puede_eliminar_contenido = models.BooleanField(default=False)
+    puede_aprobar_solicitudes = models.BooleanField(default=False)
+    puede_subir_documentos = models.BooleanField(default=False)
+    puede_crear_actividades = models.BooleanField(default=False)
+    puede_crear_anuncios = models.BooleanField(default=False)
+    puede_gestionar_licencias = models.BooleanField(default=False)
+    puede_ver_reportes = models.BooleanField(default=False)
+    puede_editar_calendario = models.BooleanField(default=False)
+    
+    # Auditoría
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    
     class Meta:
-        db_table = 'roles'
         verbose_name = 'Rol'
         verbose_name_plural = 'Roles'
-
+        ordering = ['-nivel']
+    
     def __str__(self):
-        return self.nombre
+        return f"{self.nombre} (Nivel {self.nivel})"
 
-class ConfiguracionSistema(models.Model):
-    id = models.AutoField(primary_key=True)
-    clave = models.CharField(max_length=100, unique=True, null=False, blank=False)
-    valor = models.TextField(null=True, blank=True)
-    descripcion = models.TextField(null=True, blank=True)
-    TIPO_DATO_CHOICES = [
-        ('string', 'String'),
-        ('number', 'Number'),
-        ('boolean', 'Boolean'),
-        ('json', 'JSON'),
-    ]
-    tipo_dato = models.CharField(max_length=20, choices=TIPO_DATO_CHOICES)
-    es_publica = models.BooleanField(default=False)
-    updated_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'configuraciones_sistema'
-        verbose_name = 'Configuración del Sistema'
-        verbose_name_plural = 'Configuraciones del Sistema'
-
-    def __str__(self):
-        return self.clave
-
-# ======================================================
-# TABLAS QUE DEPENDEN DE 'roles' (o otras tablas básicas)
-# ======================================================
 
 class Area(models.Model):
-    id = models.AutoField(primary_key=True)
-    codigo = models.CharField(max_length=50, unique=True, null=False, blank=False)
-    nombre = models.CharField(max_length=100, null=False, blank=False)
-    descripcion = models.TextField(null=True, blank=True)
-    icono = models.CharField(max_length=10, null=True, blank=True) # Emoji para UI
-    color = models.CharField(max_length=50, null=True, blank=True) # Para UI: 'text-blue-600'
-    jefe_area = models.ForeignKey('Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='areas_dirigidas')
-    created_at = models.DateTimeField(default=timezone.now)
-
+    """
+    Áreas o Departamentos del CESFAM
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True)
+    codigo = models.CharField(max_length=20, unique=True)  # Ej: MED-001
+    color = models.CharField(max_length=7, default='#3B82F6')  # Color en hex
+    icono = models.CharField(max_length=50, default='🏥')  # Emoji o nombre de icono
+    
+    # Jefatura del área
+    jefe = models.ForeignKey(
+        'Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='area_a_cargo'
+    )
+    
+    # Metadata
+    activa = models.BooleanField(default=True)
+    creada_en = models.DateTimeField(auto_now_add=True)
+    actualizada_en = models.DateTimeField(auto_now=True)
+    
     class Meta:
-        db_table = 'areas'
         verbose_name = 'Área'
         verbose_name_plural = 'Áreas'
-
+        ordering = ['nombre']
+    
     def __str__(self):
         return self.nombre
 
-class Usuario(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    rut = models.CharField(max_length=12, unique=True, null=False, blank=False)
-    nombre = models.CharField(max_length=100, null=False, blank=False)
-    apellidos = models.CharField(max_length=100, null=False, blank=False)
-    email = models.EmailField(max_length=255, unique=True, null=False, blank=False)
-    password_hash = models.CharField(max_length=255, null=False, blank=False) # Almacenar hashes, no contraseñas planas
-    telefono = models.CharField(max_length=20, null=True, blank=True)
-    fecha_nacimiento = models.DateField(null=True, blank=True)
-    direccion = models.TextField(null=True, blank=True)
-    avatar_url = models.URLField(max_length=200, null=True, blank=True)
-    fecha_ingreso = models.DateField(default=timezone.now)
-    ESTADO_CHOICES = [
-        ('activo', 'Activo'),
-        ('inactivo', 'Inactivo'),
-        ('licencia', 'Licencia'),
-        ('vacaciones', 'Vacaciones'),
-    ]
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='activo')
-    rol = models.ForeignKey(Rol, on_delete=models.SET_NULL, null=True, blank=True, related_name='usuarios')
-    area = models.ForeignKey(Area, on_delete=models.SET_NULL, null=True, blank=True, related_name='usuarios')
-    cargo = models.CharField(max_length=100, null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(default=timezone.now)
 
+class Usuario(AbstractBaseUser, PermissionsMixin):
+    """
+    Modelo de Usuario personalizado para el CESFAM
+    """
+    # Validador de RUT chileno
+    rut_validator = RegexValidator(
+        regex=r'^\d{1,2}\.\d{3}\.\d{3}-[\dkK]$',
+        message='El RUT debe tener formato XX.XXX.XXX-X'
+    )
+    
+    # Identificación
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    rut = models.CharField(
+        max_length=12,
+        unique=True,
+        validators=[rut_validator],
+        help_text='Formato: XX.XXX.XXX-X'
+    )
+    
+    # Datos personales
+    nombre = models.CharField(max_length=100)
+    apellido_paterno = models.CharField(max_length=100)
+    apellido_materno = models.CharField(max_length=100)
+    email = models.EmailField(unique=True)
+    telefono = models.CharField(max_length=20, blank=True)
+    fecha_nacimiento = models.DateField(null=True, blank=True)
+    direccion = models.TextField(blank=True)
+    
+    # Información profesional
+    cargo = models.CharField(max_length=150)
+    area = models.ForeignKey(
+        Area,
+        on_delete=models.PROTECT,
+        related_name='funcionarios'
+    )
+    rol = models.ForeignKey(
+        Rol,
+        on_delete=models.PROTECT,
+        related_name='usuarios'
+    )
+    fecha_ingreso = models.DateField()
+    
+    # Jefatura (para usuarios que son jefes)
+    es_jefe_de_area = models.BooleanField(default=False)
+    
+    # Contacto de emergencia
+    contacto_emergencia_nombre = models.CharField(max_length=200, blank=True)
+    contacto_emergencia_telefono = models.CharField(max_length=20, blank=True)
+    contacto_emergencia_relacion = models.CharField(max_length=100, blank=True)
+    
+    # DÍAS DISPONIBLES (NUEVO)
+    dias_vacaciones_anuales = models.IntegerField(
+        default=15,
+        validators=[MinValueValidator(0), MaxValueValidator(30)],
+        help_text='Días de vacaciones totales por año'
+    )
+    dias_vacaciones_disponibles = models.IntegerField(
+        default=15,
+        validators=[MinValueValidator(0)],
+        help_text='Días de vacaciones disponibles actualmente'
+    )
+    dias_vacaciones_usados = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Días de vacaciones ya utilizados este año'
+    )
+    
+    dias_administrativos_anuales = models.IntegerField(
+        default=6,
+        validators=[MinValueValidator(0), MaxValueValidator(10)],
+        help_text='Días administrativos totales por año'
+    )
+    dias_administrativos_disponibles = models.IntegerField(
+        default=6,
+        validators=[MinValueValidator(0)],
+        help_text='Días administrativos disponibles actualmente'
+    )
+    dias_administrativos_usados = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Días administrativos ya utilizados este año'
+    )
+    
+    # Avatar y preferencias
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    tema_preferido = models.CharField(
+        max_length=10,
+        choices=[('light', 'Claro'), ('dark', 'Oscuro')],
+        default='light'
+    )
+    
+    # Estado y permisos de Django
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    
+    # Auditoría
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    ultimo_acceso = models.DateTimeField(null=True, blank=True)
+    
+    objects = UsuarioManager()
+    
+    USERNAME_FIELD = 'rut'
+    REQUIRED_FIELDS = ['email', 'nombre', 'apellido_paterno']
+    
     class Meta:
-        db_table = 'usuarios'
         verbose_name = 'Usuario'
         verbose_name_plural = 'Usuarios'
-
+        ordering = ['apellido_paterno', 'apellido_materno', 'nombre']
+        indexes = [
+            models.Index(fields=['rut']),
+            models.Index(fields=['email']),
+            models.Index(fields=['area', 'rol']),
+        ]
+    
     def __str__(self):
-        return f"{self.nombre} {self.apellidos} ({self.rut})"
+        return f"{self.get_nombre_completo()} ({self.rut})"
+    
+    def get_nombre_completo(self):
+        """Retorna nombre completo del usuario"""
+        return f"{self.nombre} {self.apellido_paterno} {self.apellido_materno}"
+    
+    def puede_aprobar_solicitud(self, solicitud):
+        """Verifica si el usuario puede aprobar una solicitud"""
+        # Dirección puede aprobar todo
+        if self.rol.nivel == 4:
+            return True
+        
+        # Subdirección puede aprobar todo
+        if self.rol.nivel == 3:
+            return True
+        
+        # Jefatura solo puede aprobar de su área
+        if self.rol.nivel == 2 and solicitud.usuario.area == self.area:
+            return True
+        
+        return False
+    
+    def actualizar_dias_disponibles(self):
+        """Recalcula días disponibles basado en solicitudes aprobadas"""
+        # Calcular días de vacaciones usados
+        vacaciones_usadas = self.solicitudes.filter(
+            tipo='vacaciones',
+            estado='aprobada'
+        ).aggregate(
+            total=models.Sum('cantidad_dias')
+        )['total'] or 0
+        
+        # Calcular días administrativos usados
+        admin_usados = self.solicitudes.filter(
+            tipo='dia_administrativo',
+            estado='aprobada'
+        ).aggregate(
+            total=models.Sum('cantidad_dias')
+        )['total'] or 0
+        
+        # Actualizar
+        self.dias_vacaciones_usados = vacaciones_usadas
+        self.dias_vacaciones_disponibles = self.dias_vacaciones_anuales - vacaciones_usadas
+        
+        self.dias_administrativos_usados = admin_usados
+        self.dias_administrativos_disponibles = self.dias_administrativos_anuales - admin_usados
+        
+        self.save()
+
 
 # ======================================================
-# TABLAS QUE DEPENDEN DE 'usuarios' (directa o indirectamente)
+# 2. GESTIÓN DE ACTIVIDADES Y EVENTOS
 # ======================================================
 
-class ContactoEmergencia(models.Model):
-    id = models.AutoField(primary_key=True)
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='contactos_emergencia')
-    nombre = models.CharField(max_length=100, null=False, blank=False)
-    telefono = models.CharField(max_length=20, null=False, blank=False)
-    relacion = models.CharField(max_length=50, null=True, blank=True)
-    es_principal = models.BooleanField(default=False)
-    created_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'contactos_emergencia'
-        verbose_name = 'Contacto de Emergencia'
-        verbose_name_plural = 'Contactos de Emergencia'
-
-    def __str__(self):
-        return f"{self.nombre} ({self.relacion}) de {self.usuario.nombre}"
-
-class CalendarioEvento(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    titulo = models.CharField(max_length=200, null=False, blank=False)
-    descripcion = models.TextField(null=True, blank=True)
-    fecha = models.DateField(null=False, blank=False)
-    hora_inicio = models.TimeField(null=True, blank=True)
-    hora_fin = models.TimeField(null=True, blank=True)
-    ubicacion = models.CharField(max_length=200, null=True, blank=True)
-    organizador = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='eventos_organizados')
-    TIPO_CHOICES = [
-        ('reunion', 'Reunión'),
-        ('capacitacion', 'Capacitación'),
-        ('feriado', 'Feriado'),
-        ('otro', 'Otro'),
-    ]
-    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES)
-    color_categoria = models.CharField(max_length=50, null=True, blank=True)
-    es_todo_el_dia = models.BooleanField(default=False)
-    es_recurrente = models.BooleanField(default=False)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'calendario_eventos'
-        verbose_name = 'Evento de Calendario'
-        verbose_name_plural = 'Eventos de Calendario'
-
-    def __str__(self):
-        return self.titulo
-
-class ActividadTablero(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    titulo = models.CharField(max_length=200, null=False, blank=False)
-    descripcion = models.TextField(null=False, blank=False)
-    fecha = models.DateField(null=False, blank=False)
-    hora_inicio = models.TimeField(null=True, blank=True)
-    hora_fin = models.TimeField(null=True, blank=True)
-    ubicacion = models.CharField(max_length=200, null=True, blank=True)
-    imagen_url = models.URLField(max_length=200, null=True, blank=True)
+class Actividad(models.Model):
+    """
+    Actividades institucionales (sociales, deportivas, etc.)
+    """
     TIPO_CHOICES = [
         ('gastronomica', 'Gastronómica'),
         ('deportiva', 'Deportiva'),
         ('celebracion', 'Celebración'),
         ('comunitaria', 'Comunitaria'),
+        ('cultural', 'Cultural'),
+        ('capacitacion', 'Capacitación'),
         ('otra', 'Otra'),
     ]
-    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES)
-    organizador = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='actividades_organizadas')
-    cupos_maximos = models.IntegerField(null=True, blank=True)
-    cupos_disponibles = models.IntegerField(null=True, blank=True)
-    ESTADO_CHOICES = [
-        ('borrador', 'Borrador'),
-        ('publicada', 'Publicada'),
-        ('cancelada', 'Cancelada'),
-        ('finalizada', 'Finalizada'),
-    ]
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='publicada')
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'actividades_tablero'
-        verbose_name = 'Actividad de Tablero'
-        verbose_name_plural = 'Actividades de Tablero'
-
-    def __str__(self):
-        return self.titulo
-
-class ActividadInteresado(models.Model):
-    id = models.AutoField(primary_key=True)
-    actividad = models.ForeignKey(ActividadTablero, on_delete=models.CASCADE, related_name='interesados')
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='actividades_interesado')
-    fecha_registro = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'actividades_interesados'
-        verbose_name = 'Interesado en Actividad'
-        verbose_name_plural = 'Interesados en Actividades'
-        unique_together = ('actividad', 'usuario') # Restricción UNIQUE(actividad_id, usuario_id)
-
-    def __str__(self):
-        return f"{self.usuario.nombre} interesado en {self.actividad.titulo}"
-
-class ComunicadoOficial(models.Model):
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    titulo = models.CharField(max_length=300, null=False, blank=False)
-    descripcion = models.TextField(null=False, blank=False)
-    fecha_publicacion = models.DateTimeField(default=timezone.now)
-    autor = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name='comunicados_publicados') # PROTECT para no eliminar el autor si tiene comunicados
-    CATEGORIA_CHOICES = [
-        ('general', 'General'),
-        ('normativa', 'Normativa'),
+    titulo = models.CharField(max_length=200)
+    descripcion = models.TextField()
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='otra')
+    
+    # Fechas y horarios
+    fecha_inicio = models.DateTimeField()
+    fecha_termino = models.DateTimeField()
+    todo_el_dia = models.BooleanField(default=False)
+    
+    # Detalles
+    ubicacion = models.CharField(max_length=200, blank=True)
+    color = models.CharField(max_length=7, default='#3B82F6')
+    imagen = models.ImageField(upload_to='actividades/', blank=True, null=True)
+    
+    # Participantes
+    para_todas_areas = models.BooleanField(default=True)
+    areas_participantes = models.ManyToManyField(Area, blank=True)
+    cupo_maximo = models.IntegerField(null=True, blank=True)
+    inscritos = models.ManyToManyField(Usuario, through='InscripcionActividad', related_name='actividades_inscritas')
+    
+    # Auditoría
+    creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='actividades_creadas')
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    activa = models.BooleanField(default=True)
+    
+    class Meta:
+        verbose_name = 'Actividad'
+        verbose_name_plural = 'Actividades'
+        ordering = ['-fecha_inicio']
+        indexes = [
+            models.Index(fields=['fecha_inicio', 'fecha_termino']),
+            models.Index(fields=['tipo']),
+        ]
+    
+    def __str__(self):
+        return f"{self.titulo} ({self.fecha_inicio.strftime('%d/%m/%Y')})"
+    
+    def tiene_cupos_disponibles(self):
+        """Verifica si hay cupos disponibles"""
+        if not self.cupo_maximo:
+            return True
+        return self.inscritos.count() < self.cupo_maximo
+
+
+class InscripcionActividad(models.Model):
+    """Tabla intermedia para inscripciones a actividades"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    actividad = models.ForeignKey(Actividad, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    fecha_inscripcion = models.DateTimeField(auto_now_add=True)
+    asistio = models.BooleanField(null=True, blank=True)
+    
+    class Meta:
+        unique_together = ['actividad', 'usuario']
+        verbose_name = 'Inscripción a Actividad'
+        verbose_name_plural = 'Inscripciones a Actividades'
+
+
+class Anuncio(models.Model):
+    """
+    Anuncios y comunicados oficiales
+    """
+    TIPO_CHOICES = [
+        ('informativo', 'Informativo'),
         ('urgente', 'Urgente'),
-        ('informativa', 'Informativa'),
+        ('recordatorio', 'Recordatorio'),
+        ('felicitacion', 'Felicitación'),
+        ('normativa', 'Normativa'),
         ('administrativa', 'Administrativa'),
     ]
-    categoria = models.CharField(max_length=50, choices=CATEGORIA_CHOICES)
-    es_fijado = models.BooleanField(default=False)
-    vistas = models.IntegerField(default=0)
-    ESTADO_CHOICES = [
-        ('borrador', 'Borrador'),
-        ('publicado', 'Publicado'),
-        ('archivado', 'Archivado'),
-    ]
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='publicado')
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'comunicados_oficiales'
-        verbose_name = 'Comunicado Oficial'
-        verbose_name_plural = 'Comunicados Oficiales'
-
-    def __str__(self):
-        return self.titulo
-
-class AdjuntoComunicado(models.Model):
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    comunicado = models.ForeignKey(ComunicadoOficial, on_delete=models.CASCADE, related_name='adjuntos')
-    nombre_archivo = models.CharField(max_length=255, null=False, blank=False)
-    url_archivo = models.URLField(max_length=200, null=False, blank=False) # Django usa max_length para URLField
-    TIPO_ARCHIVO_CHOICES = [
-        ('pdf', 'PDF'),
-        ('doc', 'DOC'),
-        ('xls', 'XLS'),
-        ('img', 'Imagen'),
-        ('other', 'Otro'),
-    ]
-    tipo_archivo = models.CharField(max_length=10, choices=TIPO_ARCHIVO_CHOICES)
-    tamano_bytes = models.BigIntegerField(null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-
+    titulo = models.CharField(max_length=200)
+    contenido = models.TextField()
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='informativo')
+    
+    # Fechas
+    fecha_publicacion = models.DateTimeField(default=timezone.now)
+    fecha_expiracion = models.DateTimeField(null=True, blank=True)
+    
+    # Destacado y prioridad
+    es_destacado = models.BooleanField(default=False)
+    prioridad = models.IntegerField(default=1, validators=[MinValueValidator(1), MaxValueValidator(5)])
+    
+    # Archivos adjuntos
+    imagen = models.ImageField(upload_to='anuncios/', blank=True, null=True)
+    
+    # Destinatarios
+    para_todas_areas = models.BooleanField(default=True)
+    areas_destinatarias = models.ManyToManyField(Area, blank=True)
+    
+    # Estado
+    activo = models.BooleanField(default=True)
+    
+    # Auditoría
+    creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='anuncios_creados')
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    
     class Meta:
-        db_table = 'adjuntos_comunicados'
-        verbose_name = 'Adjunto de Comunicado'
-        verbose_name_plural = 'Adjuntos de Comunicados'
+        verbose_name = 'Anuncio'
+        verbose_name_plural = 'Anuncios'
+        ordering = ['-fecha_publicacion', '-prioridad']
+        indexes = [
+            models.Index(fields=['fecha_publicacion']),
+            models.Index(fields=['tipo']),
+            models.Index(fields=['es_destacado']),
+        ]
+    
+    def __str__(self):
+        return f"{self.titulo} ({self.tipo})"
+    
+    def esta_vigente(self):
+        """Verifica si el anuncio está vigente"""
+        now = timezone.now()
+        if self.fecha_expiracion:
+            return self.activo and now <= self.fecha_expiracion
+        return self.activo
 
+
+class AdjuntoAnuncio(models.Model):
+    """Archivos adjuntos de anuncios"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    anuncio = models.ForeignKey(Anuncio, on_delete=models.CASCADE, related_name='adjuntos')
+    nombre_archivo = models.CharField(max_length=255)
+    archivo = models.FileField(upload_to='anuncios/adjuntos/')
+    tipo_archivo = models.CharField(max_length=50)  # pdf, doc, xls, etc.
+    tamano = models.IntegerField()  # en bytes
+    subido_en = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Adjunto de Anuncio'
+        verbose_name_plural = 'Adjuntos de Anuncios'
+    
     def __str__(self):
         return self.nombre_archivo
 
-class LicenciaMedica(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name='licencias_emitidas')
-    nombre_archivo = models.CharField(max_length=255, null=False, blank=False)
-    url_archivo = models.URLField(max_length=200, null=False, blank=False)
-    TIPO_ARCHIVO_CHOICES = [
-        ('pdf', 'PDF'),
-        ('jpeg', 'JPEG'),
-        ('jpg', 'JPG'),
-        ('png', 'PNG'),
+
+# ======================================================
+# 3. GESTIÓN DE SOLICITUDES (Vacaciones y Días Admin)
+# ======================================================
+
+class Solicitud(models.Model):
+    """
+    Solicitudes de vacaciones y días administrativos
+    """
+    TIPO_CHOICES = [
+        ('vacaciones', 'Vacaciones'),
+        ('dia_administrativo', 'Día Administrativo'),
     ]
-    tipo_archivo = models.CharField(max_length=10, choices=TIPO_ARCHIVO_CHOICES)
-    tamano_bytes = models.BigIntegerField(null=True, blank=True)
-    fecha_subida = models.DateTimeField(default=timezone.now)
-    subido_por = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name='licencias_subidas')
-    fecha_inicio = models.DateField(null=True, blank=True)
-    fecha_termino = models.DateField(null=True, blank=True)
-    dias_licencia = models.IntegerField(null=True, blank=True)
-    diagnostico = models.TextField(null=True, blank=True)
-    medico_tratante = models.CharField(max_length=100, null=True, blank=True)
+    
     ESTADO_CHOICES = [
-        ('pendiente', 'Pendiente'),
-        ('aprobada', 'Aprobada'),
-        ('rechazada', 'Rechazada'),
-        ('vigente', 'Vigente'),
-        ('vencida', 'Vencida'),
-    ]
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
-    observaciones = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'licencias_medicas'
-        verbose_name = 'Licencia Médica'
-        verbose_name_plural = 'Licencias Médicas'
-
-    def __str__(self):
-        return f"Licencia de {self.usuario.nombre} ({self.fecha_inicio} - {self.fecha_termino})"
-
-class HistorialActividadUsuario(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='historial_actividades')
-    TIPO_CHOICES = [
-        ('capacitacion', 'Capacitación'),
-        ('evento', 'Evento'),
-        ('reconocimiento', 'Reconocimiento'),
-        ('evaluacion', 'Evaluación'),
-        ('otro', 'Otro'),
-    ]
-    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES)
-    titulo = models.CharField(max_length=200, null=False, blank=False)
-    descripcion = models.TextField(null=True, blank=True)
-    fecha = models.DateField(null=False, blank=False)
-    duracion_horas = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    institucion_organizadora = models.CharField(max_length=200, null=True, blank=True)
-    certificado_url = models.URLField(max_length=200, null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'historial_actividades_usuario'
-        verbose_name = 'Historial de Actividad del Usuario'
-        verbose_name_plural = 'Historial de Actividades del Usuario'
-
-    def __str__(self):
-        return f"{self.titulo} para {self.usuario.nombre} ({self.fecha})"
-
-class DocumentoPersonal(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='documentos_personales')
-    TIPO_CHOICES = [
-        ('licencia', 'Licencia'),
-        ('certificado', 'Certificado'),
-        ('evaluacion', 'Evaluación'),
-        ('contrato', 'Contrato'),
-        ('otro', 'Otro'),
-    ]
-    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES)
-    nombre = models.CharField(max_length=255, null=False, blank=False)
-    url_archivo = models.URLField(max_length=200, null=False, blank=False)
-    tamano_bytes = models.BigIntegerField(null=True, blank=True)
-    fecha_subida = models.DateTimeField(default=timezone.now)
-    subido_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='documentos_subidos')
-    fecha_vigencia = models.DateField(null=True, blank=True)
-    es_confidencial = models.BooleanField(default=False)
-    created_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'documentos_personales'
-        verbose_name = 'Documento Personal'
-        verbose_name_plural = 'Documentos Personales'
-
-    def __str__(self):
-        return f"{self.nombre} ({self.tipo}) de {self.usuario.nombre}"
-
-class Notificacion(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='notificaciones')
-    titulo = models.CharField(max_length=200, null=False, blank=False)
-    mensaje = models.TextField(null=False, blank=False)
-    TIPO_CHOICES = [
-        ('info', 'Información'),
-        ('warning', 'Advertencia'),
-        ('success', 'Éxito'),
-        ('error', 'Error'),
-    ]
-    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
-    leida = models.BooleanField(default=False)
-    fecha_leida = models.DateTimeField(null=True, blank=True)
-    url_accion = models.URLField(max_length=200, null=True, blank=True)
-    entidad_tipo = models.CharField(max_length=50, null=True, blank=True)
-    entidad_id = models.UUIDField(null=True, blank=True) # UUID de la entidad relacionada
-    created_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'notificaciones'
-        verbose_name = 'Notificación'
-        verbose_name_plural = 'Notificaciones'
-
-    def __str__(self):
-        return self.titulo
-
-class FeriadoLegal(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='feriados_legales')
-    periodo_year = models.IntegerField(null=False, blank=False, validators=[MinValueValidator(1900), MaxValueValidator(2100)])
-    dias_totales = models.IntegerField(default=15, null=False, blank=False)
-    dias_usados = models.IntegerField(default=0)
-    dias_pendientes = models.IntegerField(default=0)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'feriados_legales'
-        verbose_name = 'Feriado Legal'
-        verbose_name_plural = 'Feriados Legales'
-        unique_together = ('usuario', 'periodo_year')
-
-    def __str__(self):
-        return f"Feriados de {self.usuario.nombre} para {self.periodo_year}"
-
-class SolicitudFeriado(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='solicitudes_feriados')
-    fecha_inicio = models.DateField(null=False, blank=False)
-    fecha_termino = models.DateField(null=False, blank=False)
-    dias_solicitados = models.IntegerField(null=False, blank=False)
-    motivo = models.TextField(null=True, blank=True)
-    ESTADO_CHOICES = [
-        ('pendiente', 'Pendiente'),
-        ('aprobada', 'Aprobada'),
-        ('rechazada', 'Rechazada'),
+        ('pendiente_jefatura', 'Pendiente Jefatura'),
+        ('aprobada_jefatura', 'Aprobada por Jefatura'),
+        ('rechazada_jefatura', 'Rechazada por Jefatura'),
+        ('pendiente_direccion', 'Pendiente Dirección'),
+        ('aprobada', 'Aprobada Completamente'),
+        ('rechazada_direccion', 'Rechazada por Dirección'),
         ('cancelada', 'Cancelada'),
     ]
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
-    aprobado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='solicitudes_aprobadas')
-    fecha_aprobacion = models.DateTimeField(null=True, blank=True)
-    comentarios_aprobacion = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'solicitudes_feriados'
-        verbose_name = 'Solicitud de Feriado'
-        verbose_name_plural = 'Solicitudes de Feriados'
-
-    def __str__(self):
-        return f"Solicitud de {self.usuario.nombre} del {self.fecha_inicio} al {self.fecha_termino}"
-
-class Sesion(models.Model):
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='sesiones')
-    token = models.TextField(unique=True, null=False, blank=False)
-    ip_address = models.GenericIPAddressField(protocol='IPv4', null=True, blank=True) # Para INET
-    user_agent = models.TextField(null=True, blank=True)
-    ultima_actividad = models.DateTimeField(default=timezone.now)
-    fecha_expiracion = models.DateTimeField(null=False, blank=False)
-    esta_activa = models.BooleanField(default=True)
-    created_at = models.DateTimeField(default=timezone.now)
-
+    numero_solicitud = models.CharField(max_length=20, unique=True, editable=False)
+    
+    # Solicitante
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='solicitudes')
+    
+    # Tipo y fechas
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    fecha_inicio = models.DateField()
+    fecha_termino = models.DateField()
+    cantidad_dias = models.IntegerField(validators=[MinValueValidator(1)])
+    
+    # Detalles
+    motivo = models.TextField()
+    telefono_contacto = models.CharField(max_length=20)
+    
+    # Estado
+    estado = models.CharField(max_length=30, choices=ESTADO_CHOICES, default='pendiente_jefatura')
+    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    
+    # Aprobación Jefatura
+    aprobada_por_jefatura = models.BooleanField(null=True, blank=True)
+    jefatura_aprobador = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='solicitudes_aprobadas_jefatura'
+    )
+    fecha_aprobacion_jefatura = models.DateTimeField(null=True, blank=True)
+    comentarios_jefatura = models.TextField(blank=True)
+    
+    # Aprobación Dirección/Subdirección
+    aprobada_por_direccion = models.BooleanField(null=True, blank=True)
+    direccion_aprobador = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='solicitudes_aprobadas_direccion'
+    )
+    fecha_aprobacion_direccion = models.DateTimeField(null=True, blank=True)
+    comentarios_direccion = models.TextField(blank=True)
+    
+    # Documento generado
+    pdf_generado = models.BooleanField(default=False)
+    url_pdf = models.CharField(max_length=500, blank=True)
+    
+    # Auditoría
+    creada_en = models.DateTimeField(auto_now_add=True)
+    actualizada_en = models.DateTimeField(auto_now=True)
+    
     class Meta:
-        db_table = 'sesiones'
-        verbose_name = 'Sesión'
-        verbose_name_plural = 'Sesiones'
-
+        verbose_name = 'Solicitud'
+        verbose_name_plural = 'Solicitudes'
+        ordering = ['-fecha_solicitud']
+        indexes = [
+            models.Index(fields=['usuario', 'estado']),
+            models.Index(fields=['fecha_inicio', 'fecha_termino']),
+            models.Index(fields=['estado']),
+        ]
+    
     def __str__(self):
-        return f"Sesión de {self.usuario.nombre} ({self.id})"
+        return f"{self.numero_solicitud} - {self.usuario.get_nombre_completo()} ({self.get_tipo_display()})"
+    
+    def save(self, *args, **kwargs):
+        # Generar número de solicitud automáticamente
+        if not self.numero_solicitud:
+            year = timezone.now().year
+            count = Solicitud.objects.filter(
+                fecha_solicitud__year=year
+            ).count() + 1
+            self.numero_solicitud = f"SOL-{year}-{count:04d}"
+        
+        super().save(*args, **kwargs)
+    
+    def aprobar_jefatura(self, jefe, comentarios=''):
+        """Aprueba la solicitud por parte de la jefatura"""
+        self.aprobada_por_jefatura = True
+        self.jefatura_aprobador = jefe
+        self.fecha_aprobacion_jefatura = timezone.now()
+        self.comentarios_jefatura = comentarios
+        self.estado = 'pendiente_direccion'
+        self.save()
+    
+    def rechazar_jefatura(self, jefe, comentarios=''):
+        """Rechaza la solicitud por parte de la jefatura"""
+        self.aprobada_por_jefatura = False
+        self.jefatura_aprobador = jefe
+        self.fecha_aprobacion_jefatura = timezone.now()
+        self.comentarios_jefatura = comentarios
+        self.estado = 'rechazada_jefatura'
+        self.save()
+    
+    def aprobar_direccion(self, director, comentarios=''):
+        """Aprueba la solicitud por parte de dirección"""
+        self.aprobada_por_direccion = True
+        self.direccion_aprobador = director
+        self.fecha_aprobacion_direccion = timezone.now()
+        self.comentarios_direccion = comentarios
+        self.estado = 'aprobada'
+        
+        # Actualizar días disponibles del usuario
+        self.usuario.actualizar_dias_disponibles()
+        self.save()
+    
+    def rechazar_direccion(self, director, comentarios=''):
+        """Rechaza la solicitud por parte de dirección"""
+        self.aprobada_por_direccion = False
+        self.direccion_aprobador = director
+        self.fecha_aprobacion_direccion = timezone.now()
+        self.comentarios_direccion = comentarios
+        self.estado = 'rechazada_direccion'
+        self.save()
 
-class LogAuditoria(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    usuario = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='logs_auditoria')
-    accion = models.CharField(max_length=100, null=False, blank=False)
-    entidad_tipo = models.CharField(max_length=50, null=True, blank=True)
-    entidad_id = models.UUIDField(null=True, blank=True)
-    datos_anteriores = models.JSONField(null=True, blank=True)
-    datos_nuevos = models.JSONField(null=True, blank=True)
-    ip_address = models.GenericIPAddressField(protocol='IPv4', null=True, blank=True)
-    user_agent = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
 
-    class Meta:
-        db_table = 'logs_auditoria'
-        verbose_name = 'Log de Auditoría'
-        verbose_name_plural = 'Logs de Auditoría'
+# ======================================================
+# 4. GESTIÓN DE LICENCIAS MÉDICAS
+# ======================================================
 
-    def __str__(self):
-        return f"[{self.created_at.isoformat()}] {self.accion} en {self.entidad_tipo if self.entidad_tipo else 'N/A'}"
-
-class RecursoMultimedia(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    nombre_archivo = models.CharField(max_length=255, null=False, blank=False)
-    clave_s3 = models.CharField(max_length=512, unique=True, null=False, blank=False)
-    bucket_s3 = models.CharField(max_length=100, null=False, blank=False)
-    url_acceso = models.URLField(max_length=200, null=False, blank=False)
-    tipo_mime = models.CharField(max_length=100, null=False, blank=False)
-    TIPO_CATEGORIA_CHOICES = [
-        ('documento', 'Documento'),
-        ('imagen', 'Imagen'),
-        ('video', 'Video'),
-        ('audio', 'Audio'),
+class LicenciaMedica(models.Model):
+    """
+    Registro de licencias médicas de funcionarios
+    """
+    TIPO_CHOICES = [
+        ('enfermedad', 'Enfermedad'),
+        ('maternidad', 'Maternidad'),
+        ('accidente_laboral', 'Accidente Laboral'),
+        ('accidente_comun', 'Accidente Común'),
         ('otro', 'Otro'),
     ]
-    tipo_categoria = models.CharField(max_length=50, choices=TIPO_CATEGORIA_CHOICES, null=False, blank=False)
-    tamano_bytes = models.BigIntegerField(null=False, blank=False)
-    subido_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='recursos_subidos')
-    es_publico = models.BooleanField(default=False)
-    metadata = models.JSONField(null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(default=timezone.now)
-
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    numero_licencia = models.CharField(max_length=50, unique=True)
+    
+    # Funcionario
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='licencias')
+    
+    # Detalles de la licencia
+    tipo = models.CharField(max_length=30, choices=TIPO_CHOICES, default='enfermedad')
+    fecha_inicio = models.DateField()
+    fecha_termino = models.DateField()
+    dias_totales = models.IntegerField()
+    
+    # Documentos
+    documento_licencia = models.ImageField(upload_to='licencias/', help_text='Foto/escaneo de la licencia médica')
+    diagnostico = models.TextField(blank=True)
+    
+    # Auditoría
+    subida_por = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='licencias_subidas'
+    )
+    subida_en = models.DateTimeField(auto_now_add=True)
+    actualizada_en = models.DateTimeField(auto_now=True)
+    
     class Meta:
-        db_table = 'recursos_multimedia'
-        verbose_name = 'Recurso Multimedia'
-        verbose_name_plural = 'Recursos Multimedia'
-
+        verbose_name = 'Licencia Médica'
+        verbose_name_plural = 'Licencias Médicas'
+        ordering = ['-fecha_inicio']
+        indexes = [
+            models.Index(fields=['usuario', 'fecha_inicio']),
+            models.Index(fields=['fecha_inicio', 'fecha_termino']),
+        ]
+    
     def __str__(self):
-        return self.nombre_archivo
+        return f"{self.numero_licencia} - {self.usuario.get_nombre_completo()}"
+    
+    def esta_vigente(self):
+        """Verifica si la licencia está vigente"""
+        hoy = timezone.now().date()
+        return self.fecha_inicio <= hoy <= self.fecha_termino
+
+
+# ======================================================
+# 5. GESTIÓN DE DOCUMENTOS Y ARCHIVOS
+# ======================================================
+
+class CategoriaDocumento(models.Model):
+    """Categorías para organizar documentos"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True)
+    icono = models.CharField(max_length=50, default='📄')
+    color = models.CharField(max_length=7, default='#3B82F6')
+    orden = models.IntegerField(default=0)
+    activa = models.BooleanField(default=True)
+    
+    class Meta:
+        verbose_name = 'Categoría de Documento'
+        verbose_name_plural = 'Categorías de Documentos'
+        ordering = ['orden', 'nombre']
+    
+    def __str__(self):
+        return self.nombre
+
+
+class Documento(models.Model):
+    """
+    Documentos institucionales (circulares, protocolos, etc.)
+    """
+    TIPO_CHOICES = [
+        ('circular', 'Circular'),
+        ('protocolo', 'Protocolo'),
+        ('formulario', 'Formulario'),
+        ('guia', 'Guía'),
+        ('reglamento', 'Reglamento'),
+        ('manual', 'Manual'),
+        ('informe', 'Informe'),
+        ('otro', 'Otro'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    codigo_documento = models.CharField(max_length=50, unique=True, blank=True)
+    
+    # Información básica
+    titulo = models.CharField(max_length=255)
+    descripcion = models.TextField()
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    categoria = models.ForeignKey(CategoriaDocumento, on_delete=models.PROTECT)
+    
+    # Archivo
+    archivo = models.FileField(upload_to='documentos/')
+    tamano = models.IntegerField()  # en bytes
+    extension = models.CharField(max_length=10)
+    
+    # Versión y vigencia
+    version = models.CharField(max_length=20, default='1.0')
+    fecha_vigencia = models.DateField()
+    fecha_expiracion = models.DateField(null=True, blank=True)
+    
+    # Permisos de acceso
+    publico = models.BooleanField(default=True, help_text='Visible para todos los usuarios')
+    areas_con_acceso = models.ManyToManyField(Area, blank=True)
+    
+    # Estadísticas
+    descargas = models.IntegerField(default=0)
+    visualizaciones = models.IntegerField(default=0)
+    
+    # Auditoría
+    subido_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='documentos_subidos')
+    subido_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    activo = models.BooleanField(default=True)
+    
+    class Meta:
+        verbose_name = 'Documento'
+        verbose_name_plural = 'Documentos'
+        ordering = ['-subido_en']
+        indexes = [
+            models.Index(fields=['tipo', 'categoria']),
+            models.Index(fields=['fecha_vigencia']),
+        ]
+    
+    def __str__(self):
+        return f"{self.titulo} (v{self.version})"
+    
+    def save(self, *args, **kwargs):
+        # Generar código automáticamente
+        if not self.codigo_documento:
+            year = timezone.now().year
+            count = Documento.objects.filter(subido_en__year=year).count() + 1
+            self.codigo_documento = f"DOC-{year}-{count:04d}"
+        
+        super().save(*args, **kwargs)
+    
+    def esta_vigente(self):
+        """Verifica si el documento está vigente"""
+        hoy = timezone.now().date()
+        if self.fecha_expiracion:
+            return self.fecha_vigencia <= hoy <= self.fecha_expiracion
+        return hoy >= self.fecha_vigencia
+
+
+# ======================================================
+# 6. SISTEMA DE NOTIFICACIONES
+# ======================================================
+
+class Notificacion(models.Model):
+    """
+    Notificaciones para usuarios
+    """
+    TIPO_CHOICES = [
+        ('solicitud_creada', 'Solicitud Creada'),
+        ('solicitud_aprobada', 'Solicitud Aprobada'),
+        ('solicitud_rechazada', 'Solicitud Rechazada'),
+        ('nuevo_anuncio', 'Nuevo Anuncio'),
+        ('nueva_actividad', 'Nueva Actividad'),
+        ('documento_nuevo', 'Documento Nuevo'),
+        ('licencia_registrada', 'Licencia Registrada'),
+        ('recordatorio', 'Recordatorio'),
+        ('sistema', 'Sistema'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='notificaciones')
+    
+    # Contenido
+    tipo = models.CharField(max_length=30, choices=TIPO_CHOICES)
+    titulo = models.CharField(max_length=200)
+    mensaje = models.TextField()
+    
+    # Enlaces opcionales
+    url = models.CharField(max_length=500, blank=True)
+    icono = models.CharField(max_length=50, default='🔔')
+    
+    # Estado
+    leida = models.BooleanField(default=False)
+    fecha_leida = models.DateTimeField(null=True, blank=True)
+    
+    # Auditoría
+    creada_en = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Notificación'
+        verbose_name_plural = 'Notificaciones'
+        ordering = ['-creada_en']
+        indexes = [
+            models.Index(fields=['usuario', 'leida']),
+            models.Index(fields=['creada_en']),
+        ]
+    
+    def __str__(self):
+        return f"{self.titulo} - {self.usuario.get_nombre_completo()}"
+    
+    def marcar_como_leida(self):
+        """Marca la notificación como leída"""
+        self.leida = True
+        self.fecha_leida = timezone.now()
+        self.save()
+
+
+# ======================================================
+# 7. LOGS Y AUDITORÍA
+# ======================================================
+
+class LogAuditoria(models.Model):
+    """
+    Registro de acciones importantes en el sistema
+    """
+    ACCION_CHOICES = [
+        ('crear', 'Crear'),
+        ('editar', 'Editar'),
+        ('eliminar', 'Eliminar'),
+        ('aprobar', 'Aprobar'),
+        ('rechazar', 'Rechazar'),
+        ('login', 'Inicio de Sesión'),
+        ('logout', 'Cierre de Sesión'),
+        ('descarga', 'Descarga'),
+        ('visualizacion', 'Visualización'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Usuario que realiza la acción
+    usuario = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True)
+    
+    # Detalles de la acción
+    accion = models.CharField(max_length=20, choices=ACCION_CHOICES)
+    modelo = models.CharField(max_length=100)  # Nombre del modelo afectado
+    objeto_id = models.CharField(max_length=100)  # ID del objeto afectado
+    descripcion = models.TextField()
+    
+    # Metadata
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    
+    # Timestamp
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Log de Auditoría'
+        verbose_name_plural = 'Logs de Auditoría'
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['usuario', 'timestamp']),
+            models.Index(fields=['accion', 'modelo']),
+        ]
+    
+    def __str__(self):
+        return f"{self.usuario} - {self.accion} - {self.modelo} - {self.timestamp}"

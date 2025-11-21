@@ -1,666 +1,452 @@
-# api_intranet/serializers.py
+# ======================================================
+# SERIALIZERS.PY - Django REST Framework Serializers
+# Ubicación: api_intranet/serializers.py
+# ======================================================
+
 from rest_framework import serializers
 from .models import (
-    Rol, ConfiguracionSistema, Area, Usuario, ContactoEmergencia,
-    CalendarioEvento, ActividadTablero, ActividadInteresado,
-    ComunicadoOficial, AdjuntoComunicado, LicenciaMedica,
-    HistorialActividadUsuario, DocumentoPersonal, Notificacion,
-    FeriadoLegal, SolicitudFeriado, Sesion, LogAuditoria, RecursoMultimedia
+    Usuario, Rol, Area, Solicitud,
+    LicenciaMedica, Actividad, InscripcionActividad,
+    Anuncio, AdjuntoAnuncio, Documento, CategoriaDocumento,
+    Notificacion, LogAuditoria
 )
 
+
 # ======================================================
-# Serializers para Tablas sin dependencias directas o cíclicas
+# SERIALIZERS SIMPLES (Sin relaciones complejas)
 # ======================================================
 
 class RolSerializer(serializers.ModelSerializer):
+    """Serializer para Rol"""
     class Meta:
         model = Rol
-        fields = '__all__' # Incluye todos los campos del modelo Rol
-        read_only_fields = ('id', 'created_at') # Campos que no se pueden modificar en la creación/actualización
-
-class ConfiguracionSistemaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ConfiguracionSistema
         fields = '__all__'
-        read_only_fields = ('id', 'updated_at')
+        read_only_fields = ('id', 'creado_en', 'actualizado_en')
 
-# ======================================================
-# Serializers para Tablas que dependen de otras
-# (Ordenados para referenciar serializadores ya definidos cuando sea necesario)
-# ======================================================
-
-# Serializer de Usuario para ser usado en referencias (antes del full UsuarioSerializer)
-# Esto es útil para evitar dependencias circulares si Usuario fuera a referenciar Area y Area a Usuario.
-class UsuarioMinSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Usuario
-        fields = ('id', 'nombre', 'apellidos', 'rut', 'email')
-        read_only_fields = ('id',)
 
 class AreaSerializer(serializers.ModelSerializer):
-    # Usamos UsuarioMinSerializer para jefe_area para evitar recursión infinita
-    # si el UsuarioSerializer completo ya incluyera AreaSerializer.
-    # En este caso particular, jefe_area es una FK simple, pero es buena práctica.
-    jefe_area = UsuarioMinSerializer(read_only=True) # Muestra los detalles del jefe de área
-    jefe_area_id = serializers.UUIDField(write_only=True, required=False, allow_null=True) # Campo para escribir el UUID del jefe de área
-
+    """Serializer para Área con jefe"""
+    jefe_nombre = serializers.SerializerMethodField()
+    total_funcionarios = serializers.SerializerMethodField()
+    
     class Meta:
         model = Area
+        fields = [
+            'id', 'nombre', 'codigo', 'descripcion', 'color', 'icono',
+            'jefe', 'jefe_nombre', 'total_funcionarios', 'activa',
+            'creada_en', 'actualizada_en'
+        ]
+        read_only_fields = ('id', 'creada_en', 'actualizada_en')
+    
+    def get_jefe_nombre(self, obj):
+        return obj.jefe.get_nombre_completo() if obj.jefe else None
+    
+    def get_total_funcionarios(self, obj):
+        return obj.funcionarios.count()
+
+
+class CategoriaDocumentoSerializer(serializers.ModelSerializer):
+    """Serializer para Categoría de Documento"""
+    class Meta:
+        model = CategoriaDocumento
         fields = '__all__'
-        read_only_fields = ('id', 'created_at')
-
-    def create(self, validated_data):
-        jefe_area_id = validated_data.pop('jefe_area_id', None)
-        area = Area.objects.create(**validated_data)
-        if jefe_area_id:
-            try:
-                area.jefe_area = Usuario.objects.get(id=jefe_area_id)
-                area.save()
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"jefe_area_id": "El usuario especificado como jefe de área no existe."})
-        return area
-
-    def update(self, instance, validated_data):
-        jefe_area_id = validated_data.pop('jefe_area_id', None)
-        instance = super().update(instance, validated_data)
-        if jefe_area_id is not None:
-            try:
-                instance.jefe_area = Usuario.objects.get(id=jefe_area_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"jefe_area_id": "El usuario especificado como jefe de área no existe."})
-        elif 'jefe_area_id' in self.initial_data and self.initial_data['jefe_area_id'] is None:
-            instance.jefe_area = None # Permite setear el jefe_area a NULL
-        instance.save()
-        return instance
 
 
-class UsuarioSerializer(serializers.ModelSerializer):
-    # Aquí podríamos anidar RolSerializer y AreaSerializer si quisiéramos
-    # que la respuesta incluyera todos los detalles de rol y área.
-    # Por ahora, usamos una representación de solo lectura para Rol y Area
-    # y permitimos escribir el ID directamente.
-    rol = RolSerializer(read_only=True)
-    rol_id = serializers.IntegerField(write_only=True, required=False, allow_null=True) # Campo para escribir el ID del rol
+# ======================================================
+# USUARIO SERIALIZERS
+# ======================================================
 
-    area = AreaSerializer(read_only=True)
-    area_id = serializers.IntegerField(write_only=True, required=False, allow_null=True) # Campo para escribir el ID del área
-
+class UsuarioListSerializer(serializers.ModelSerializer):
+    """Serializer reducido para listados"""
+    rol_nombre = serializers.CharField(source='rol.nombre', read_only=True)
+    area_nombre = serializers.CharField(source='area.nombre', read_only=True)
+    nombre_completo = serializers.SerializerMethodField()
+    
     class Meta:
         model = Usuario
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        fields = [
+            'id', 'rut', 'nombre_completo', 'email', 'telefono',
+            'cargo', 'area', 'area_nombre', 'rol', 'rol_nombre',
+            'avatar', 'is_active'
+        ]
+        read_only_fields = ('id',)
+    
+    def get_nombre_completo(self, obj):
+        return obj.get_nombre_completo()
+
+
+class UsuarioDetailSerializer(serializers.ModelSerializer):
+    """Serializer completo para detalle de usuario"""
+    rol_nombre = serializers.CharField(source='rol.nombre', read_only=True)
+    area_nombre = serializers.CharField(source='area.nombre', read_only=True)
+    nombre_completo = serializers.SerializerMethodField()
+    
+    # Días disponibles
+    dias_info = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Usuario
+        fields = [
+            'id', 'rut', 'nombre', 'apellido_paterno', 'apellido_materno',
+            'nombre_completo', 'email', 'telefono', 'fecha_nacimiento', 'direccion',
+            'cargo', 'area', 'area_nombre', 'rol', 'rol_nombre', 'fecha_ingreso',
+            'es_jefe_de_area',
+            'contacto_emergencia_nombre', 'contacto_emergencia_telefono',
+            'contacto_emergencia_relacion',
+            'dias_vacaciones_anuales', 'dias_vacaciones_disponibles', 'dias_vacaciones_usados',
+            'dias_administrativos_anuales', 'dias_administrativos_disponibles', 'dias_administrativos_usados',
+            'dias_info',
+            'avatar', 'tema_preferido', 'is_active',
+            'creado_en', 'actualizado_en', 'ultimo_acceso'
+        ]
+        read_only_fields = (
+            'id', 'dias_vacaciones_usados', 'dias_administrativos_usados',
+            'creado_en', 'actualizado_en', 'ultimo_acceso'
+        )
         extra_kwargs = {
-            'password_hash': {'write_only': True} # Para que password_hash no se muestre en la respuesta, pero se pueda enviar
+            'password': {'write_only': True}
+        }
+    
+    def get_nombre_completo(self, obj):
+        return obj.get_nombre_completo()
+    
+    def get_dias_info(self, obj):
+        return {
+            'vacaciones': {
+                'total_anuales': obj.dias_vacaciones_anuales,
+                'disponibles': obj.dias_vacaciones_disponibles,
+                'usados': obj.dias_vacaciones_usados,
+                'porcentaje_usado': (obj.dias_vacaciones_usados / obj.dias_vacaciones_anuales * 100) if obj.dias_vacaciones_anuales > 0 else 0
+            },
+            'administrativos': {
+                'total_anuales': obj.dias_administrativos_anuales,
+                'disponibles': obj.dias_administrativos_disponibles,
+                'usados': obj.dias_administrativos_usados,
+                'porcentaje_usado': (obj.dias_administrativos_usados / obj.dias_administrativos_anuales * 100) if obj.dias_administrativos_anuales > 0 else 0
+            }
         }
 
-    # Custom create y update para manejar el rol_id y area_id
+
+class UsuarioCreateSerializer(serializers.ModelSerializer):
+    """Serializer para crear usuario"""
+    password = serializers.CharField(write_only=True, required=True)
+    password_confirm = serializers.CharField(write_only=True, required=True)
+    
+    class Meta:
+        model = Usuario
+        fields = [
+            'rut', 'nombre', 'apellido_paterno', 'apellido_materno',
+            'email', 'password', 'password_confirm', 'telefono',
+            'fecha_nacimiento', 'direccion', 'cargo', 'area', 'rol',
+            'fecha_ingreso', 'es_jefe_de_area',
+            'dias_vacaciones_anuales', 'dias_administrativos_anuales'
+        ]
+    
+    def validate(self, data):
+        if data['password'] != data['password_confirm']:
+            raise serializers.ValidationError("Las contraseñas no coinciden")
+        return data
+    
     def create(self, validated_data):
-        rol_id = validated_data.pop('rol_id', None)
-        area_id = validated_data.pop('area_id', None)
-
-        user = Usuario.objects.create(**validated_data)
-
-        if rol_id:
-            try:
-                user.rol = Rol.objects.get(id=rol_id)
-            except Rol.DoesNotExist:
-                raise serializers.ValidationError({"rol_id": "El rol especificado no existe."})
-        if area_id:
-            try:
-                user.area = Area.objects.get(id=area_id)
-            except Area.DoesNotExist:
-                raise serializers.ValidationError({"area_id": "El área especificada no existe."})
+        validated_data.pop('password_confirm')
+        password = validated_data.pop('password')
+        user = Usuario.objects.create_user(**validated_data)
+        user.set_password(password)
         user.save()
         return user
 
-    def update(self, instance, validated_data):
-        rol_id = validated_data.pop('rol_id', None)
-        area_id = validated_data.pop('area_id', None)
 
-        instance = super().update(instance, validated_data)
+# ======================================================
+# SOLICITUD SERIALIZERS
+# ======================================================
 
-        if rol_id is not None:
-            try:
-                instance.rol = Rol.objects.get(id=rol_id)
-            except Rol.DoesNotExist:
-                raise serializers.ValidationError({"rol_id": "El rol especificado no existe."})
-        elif 'rol_id' in self.initial_data and self.initial_data['rol_id'] is None:
-            instance.rol = None # Permite setear el rol a NULL
-
-        if area_id is not None:
-            try:
-                instance.area = Area.objects.get(id=area_id)
-            except Area.DoesNotExist:
-                raise serializers.ValidationError({"area_id": "El área especificada no existe."})
-        elif 'area_id' in self.initial_data and self.initial_data['area_id'] is None:
-            instance.area = None # Permite setear el área a NULL
-
-        instance.save()
-        return instance
-
-
-class ContactoEmergenciaSerializer(serializers.ModelSerializer):
-    usuario = UsuarioMinSerializer(read_only=True)
-    usuario_id = serializers.UUIDField(write_only=True)
-
+class SolicitudListSerializer(serializers.ModelSerializer):
+    """Serializer para listado de solicitudes"""
+    usuario_nombre = serializers.CharField(source='usuario.get_nombre_completo', read_only=True)
+    area_nombre = serializers.CharField(source='usuario.area.nombre', read_only=True)
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+    
     class Meta:
-        model = ContactoEmergencia
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at')
-
-    def create(self, validated_data):
-        usuario_id = validated_data.pop('usuario_id')
-        try:
-            usuario = Usuario.objects.get(id=usuario_id)
-        except Usuario.DoesNotExist:
-            raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-        return ContactoEmergencia.objects.create(usuario=usuario, **validated_data)
-
-    def update(self, instance, validated_data):
-        usuario_id = validated_data.pop('usuario_id', None)
-        if usuario_id:
-            try:
-                instance.usuario = Usuario.objects.get(id=usuario_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-        return super().update(instance, validated_data)
+        model = Solicitud
+        fields = [
+            'id', 'numero_solicitud', 'usuario', 'usuario_nombre',
+            'area_nombre', 'tipo', 'tipo_display', 'fecha_inicio',
+            'fecha_termino', 'cantidad_dias', 'estado', 'estado_display',
+            'fecha_solicitud'
+        ]
+        read_only_fields = ('id', 'numero_solicitud', 'fecha_solicitud')
 
 
-class CalendarioEventoSerializer(serializers.ModelSerializer):
-    organizador = UsuarioMinSerializer(read_only=True)
-    organizador_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
-
+class SolicitudDetailSerializer(serializers.ModelSerializer):
+    """Serializer completo para detalle de solicitud"""
+    usuario_nombre = serializers.CharField(source='usuario.get_nombre_completo', read_only=True)
+    area_nombre = serializers.CharField(source='usuario.area.nombre', read_only=True)
+    jefatura_nombre = serializers.CharField(source='jefatura_aprobador.get_nombre_completo', read_only=True)
+    direccion_nombre = serializers.CharField(source='direccion_aprobador.get_nombre_completo', read_only=True)
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+    
     class Meta:
-        model = CalendarioEvento
+        model = Solicitud
         fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at')
-
-    def create(self, validated_data):
-        organizador_id = validated_data.pop('organizador_id', None)
-        evento = CalendarioEvento.objects.create(**validated_data)
-        if organizador_id:
-            try:
-                evento.organizador = Usuario.objects.get(id=organizador_id)
-                evento.save()
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"organizador_id": "El usuario organizador no existe."})
-        return evento
-
-    def update(self, instance, validated_data):
-        organizador_id = validated_data.pop('organizador_id', None)
-        instance = super().update(instance, validated_data)
-        if organizador_id is not None:
-            try:
-                instance.organizador = Usuario.objects.get(id=organizador_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"organizador_id": "El usuario organizador no existe."})
-        elif 'organizador_id' in self.initial_data and self.initial_data['organizador_id'] is None:
-            instance.organizador = None
-        instance.save()
-        return instance
+        read_only_fields = (
+            'id', 'numero_solicitud', 'estado', 'fecha_solicitud',
+            'aprobada_por_jefatura', 'jefatura_aprobador', 'fecha_aprobacion_jefatura',
+            'aprobada_por_direccion', 'direccion_aprobador', 'fecha_aprobacion_direccion',
+            'pdf_generado', 'url_pdf', 'creada_en', 'actualizada_en'
+        )
 
 
-class ActividadTableroSerializer(serializers.ModelSerializer):
-    organizador = UsuarioMinSerializer(read_only=True)
-    organizador_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
-
+class SolicitudCreateSerializer(serializers.ModelSerializer):
+    """Serializer para crear solicitud"""
     class Meta:
-        model = ActividadTablero
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at')
-
-    def create(self, validated_data):
-        organizador_id = validated_data.pop('organizador_id', None)
-        actividad = ActividadTablero.objects.create(**validated_data)
-        if organizador_id:
-            try:
-                actividad.organizador = Usuario.objects.get(id=organizador_id)
-                actividad.save()
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"organizador_id": "El usuario organizador no existe."})
-        return actividad
-
-    def update(self, instance, validated_data):
-        organizador_id = validated_data.pop('organizador_id', None)
-        instance = super().update(instance, validated_data)
-        if organizador_id is not None:
-            try:
-                instance.organizador = Usuario.objects.get(id=organizador_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"organizador_id": "El usuario organizador no existe."})
-        elif 'organizador_id' in self.initial_data and self.initial_data['organizador_id'] is None:
-            instance.organizador = None
-        instance.save()
-        return instance
-
-
-class ActividadInteresadoSerializer(serializers.ModelSerializer):
-    actividad = serializers.PrimaryKeyRelatedField(read_only=True) # Muestra el ID de la actividad
-    actividad_id = serializers.UUIDField(write_only=True)
-    usuario = UsuarioMinSerializer(read_only=True)
-    usuario_id = serializers.UUIDField(write_only=True)
-
-    class Meta:
-        model = ActividadInteresado
-        fields = '__all__'
-        read_only_fields = ('id', 'fecha_registro')
-
+        model = Solicitud
+        fields = [
+            'tipo', 'fecha_inicio', 'fecha_termino',
+            'cantidad_dias', 'motivo', 'telefono_contacto'
+        ]
+    
     def validate(self, data):
-        # Validar la unicidad de actividad_id y usuario_id
-        if self.instance is None: # Solo para creación
-            actividad_id = data.get('actividad_id')
-            usuario_id = data.get('usuario_id')
-            if ActividadInteresado.objects.filter(actividad_id=actividad_id, usuario_id=usuario_id).exists():
-                raise serializers.ValidationError("Este usuario ya está interesado en esta actividad.")
+        # Validar fechas
+        if data['fecha_inicio'] > data['fecha_termino']:
+            raise serializers.ValidationError("La fecha de inicio debe ser anterior a la fecha de término")
+        
+        # Validar días disponibles
+        usuario = self.context['request'].user
+        if data['tipo'] == 'vacaciones':
+            if data['cantidad_dias'] > usuario.dias_vacaciones_disponibles:
+                raise serializers.ValidationError(
+                    f"Solo tienes {usuario.dias_vacaciones_disponibles} días de vacaciones disponibles"
+                )
+        elif data['tipo'] == 'dia_administrativo':
+            if data['cantidad_dias'] > usuario.dias_administrativos_disponibles:
+                raise serializers.ValidationError(
+                    f"Solo tienes {usuario.dias_administrativos_disponibles} días administrativos disponibles"
+                )
+            if data['cantidad_dias'] > 6:
+                raise serializers.ValidationError("Los días administrativos tienen un máximo de 6 días por año")
+        
         return data
 
-    def create(self, validated_data):
-        actividad_id = validated_data.pop('actividad_id')
-        usuario_id = validated_data.pop('usuario_id')
-        try:
-            actividad = ActividadTablero.objects.get(id=actividad_id)
-            usuario = Usuario.objects.get(id=usuario_id)
-        except (ActividadTablero.DoesNotExist, Usuario.DoesNotExist) as e:
-            raise serializers.ValidationError({"detail": f"Actividad o Usuario no encontrado: {e}"})
-        return ActividadInteresado.objects.create(actividad=actividad, usuario=usuario, **validated_data)
 
-    def update(self, instance, validated_data):
-        # Para evitar cambiar el PK, normalmente no permitimos cambiar las FKs que forman unique_together
-        # en un update, o se maneja con cuidado. Para este ejemplo, solo actualizaremos si se envía.
-        actividad_id = validated_data.pop('actividad_id', None)
-        usuario_id = validated_data.pop('usuario_id', None)
-
-        if actividad_id:
-            try:
-                instance.actividad = ActividadTablero.objects.get(id=actividad_id)
-            except ActividadTablero.DoesNotExist:
-                raise serializers.ValidationError({"actividad_id": "La actividad especificada no existe."})
-        if usuario_id:
-            try:
-                instance.usuario = Usuario.objects.get(id=usuario_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-
-        return super().update(instance, validated_data)
+class SolicitudAprobacionSerializer(serializers.Serializer):
+    """Serializer para aprobar/rechazar solicitud"""
+    comentarios = serializers.CharField(required=False, allow_blank=True)
+    aprobar = serializers.BooleanField(required=True)
 
 
-class ComunicadoOficialSerializer(serializers.ModelSerializer):
-    autor = UsuarioMinSerializer(read_only=True)
-    autor_id = serializers.UUIDField(write_only=True)
-
-    class Meta:
-        model = ComunicadoOficial
-        fields = '__all__'
-        read_only_fields = ('id', 'fecha_publicacion', 'vistas', 'created_at', 'updated_at')
-
-    def create(self, validated_data):
-        autor_id = validated_data.pop('autor_id')
-        try:
-            autor = Usuario.objects.get(id=autor_id)
-        except Usuario.DoesNotExist:
-            raise serializers.ValidationError({"autor_id": "El autor especificado no existe."})
-        return ComunicadoOficial.objects.create(autor=autor, **validated_data)
-
-    def update(self, instance, validated_data):
-        autor_id = validated_data.pop('autor_id', None)
-        if autor_id:
-            try:
-                instance.autor = Usuario.objects.get(id=autor_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"autor_id": "El autor especificado no existe."})
-        return super().update(instance, validated_data)
-
-
-class AdjuntoComunicadoSerializer(serializers.ModelSerializer):
-    comunicado = serializers.PrimaryKeyRelatedField(read_only=True)
-    comunicado_id = serializers.UUIDField(write_only=True)
-
-    class Meta:
-        model = AdjuntoComunicado
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at')
-
-    def create(self, validated_data):
-        comunicado_id = validated_data.pop('comunicado_id')
-        try:
-            comunicado = ComunicadoOficial.objects.get(id=comunicado_id)
-        except ComunicadoOficial.DoesNotExist:
-            raise serializers.ValidationError({"comunicado_id": "El comunicado especificado no existe."})
-        return AdjuntoComunicado.objects.create(comunicado=comunicado, **validated_data)
-
-    def update(self, instance, validated_data):
-        comunicado_id = validated_data.pop('comunicado_id', None)
-        if comunicado_id:
-            try:
-                instance.comunicado = ComunicadoOficial.objects.get(id=comunicado_id)
-            except ComunicadoOficial.DoesNotExist:
-                raise serializers.ValidationError({"comunicado_id": "El comunicado especificado no existe."})
-        return super().update(instance, validated_data)
-
+# ======================================================
+# LICENCIA MÉDICA SERIALIZERS
+# ======================================================
 
 class LicenciaMedicaSerializer(serializers.ModelSerializer):
-    usuario = UsuarioMinSerializer(read_only=True)
-    usuario_id = serializers.UUIDField(write_only=True)
-    subido_por = UsuarioMinSerializer(read_only=True)
-    subido_por_id = serializers.UUIDField(write_only=True)
-
+    """Serializer para Licencia Médica"""
+    usuario_nombre = serializers.CharField(source='usuario.get_nombre_completo', read_only=True)
+    area_nombre = serializers.CharField(source='usuario.area.nombre', read_only=True)
+    subida_por_nombre = serializers.CharField(source='subida_por.get_nombre_completo', read_only=True)
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    esta_vigente = serializers.SerializerMethodField()
+    
     class Meta:
         model = LicenciaMedica
         fields = '__all__'
-        read_only_fields = ('id', 'fecha_subida', 'dias_licencia', 'created_at', 'updated_at') # dias_licencia se calculará en el modelo o un método save
-
-    def create(self, validated_data):
-        usuario_id = validated_data.pop('usuario_id')
-        subido_por_id = validated_data.pop('subido_por_id')
-        try:
-            usuario = Usuario.objects.get(id=usuario_id)
-            subido_por = Usuario.objects.get(id=subido_por_id)
-        except Usuario.DoesNotExist as e:
-            raise serializers.ValidationError({"detail": f"Usuario no encontrado: {e}"})
-        
-        # Calcular dias_licencia si fechas están presentes
-        if 'fecha_inicio' in validated_data and 'fecha_termino' in validated_data and validated_data['fecha_inicio'] and validated_data['fecha_termino']:
-            delta = validated_data['fecha_termino'] - validated_data['fecha_inicio']
-            validated_data['dias_licencia'] = delta.days + 1
-        
-        return LicenciaMedica.objects.create(usuario=usuario, subido_por=subido_por, **validated_data)
-
-    def update(self, instance, validated_data):
-        usuario_id = validated_data.pop('usuario_id', None)
-        subido_por_id = validated_data.pop('subido_por_id', None)
-
-        if usuario_id:
-            try:
-                instance.usuario = Usuario.objects.get(id=usuario_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-        if subido_por_id:
-            try:
-                instance.subido_por = Usuario.objects.get(id=subido_por_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"subido_por_id": "El usuario que subió la licencia no existe."})
-        
-        # Recalcular dias_licencia si las fechas se actualizan
-        if ('fecha_inicio' in validated_data or 'fecha_termino' in validated_data) and (instance.fecha_inicio and instance.fecha_termino):
-            fecha_inicio = validated_data.get('fecha_inicio', instance.fecha_inicio)
-            fecha_termino = validated_data.get('fecha_termino', instance.fecha_termino)
-            if fecha_inicio and fecha_termino:
-                delta = fecha_termino - fecha_inicio
-                validated_data['dias_licencia'] = delta.days + 1
-
-        return super().update(instance, validated_data)
+        read_only_fields = ('id', 'subida_en', 'actualizada_en')
+    
+    def get_esta_vigente(self, obj):
+        return obj.esta_vigente()
 
 
-class HistorialActividadUsuarioSerializer(serializers.ModelSerializer):
-    usuario = UsuarioMinSerializer(read_only=True)
-    usuario_id = serializers.UUIDField(write_only=True)
+# ======================================================
+# ACTIVIDAD SERIALIZERS
+# ======================================================
 
+class InscripcionActividadSerializer(serializers.ModelSerializer):
+    """Serializer para inscripción a actividad"""
+    usuario_nombre = serializers.CharField(source='usuario.get_nombre_completo', read_only=True)
+    
     class Meta:
-        model = HistorialActividadUsuario
+        model = InscripcionActividad
         fields = '__all__'
-        read_only_fields = ('id', 'created_at')
-
-    def create(self, validated_data):
-        usuario_id = validated_data.pop('usuario_id')
-        try:
-            usuario = Usuario.objects.get(id=usuario_id)
-        except Usuario.DoesNotExist:
-            raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-        return HistorialActividadUsuario.objects.create(usuario=usuario, **validated_data)
-
-    def update(self, instance, validated_data):
-        usuario_id = validated_data.pop('usuario_id', None)
-        if usuario_id:
-            try:
-                instance.usuario = Usuario.objects.get(id=usuario_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-        return super().update(instance, validated_data)
+        read_only_fields = ('id', 'fecha_inscripcion')
 
 
-class DocumentoPersonalSerializer(serializers.ModelSerializer):
-    usuario = UsuarioMinSerializer(read_only=True)
-    usuario_id = serializers.UUIDField(write_only=True)
-    subido_por = UsuarioMinSerializer(read_only=True)
-    subido_por_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
-
+class ActividadListSerializer(serializers.ModelSerializer):
+    """Serializer para listado de actividades"""
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    creado_por_nombre = serializers.CharField(source='creado_por.get_nombre_completo', read_only=True)
+    total_inscritos = serializers.SerializerMethodField()
+    tiene_cupos = serializers.SerializerMethodField()
+    
     class Meta:
-        model = DocumentoPersonal
+        model = Actividad
+        fields = [
+            'id', 'titulo', 'descripcion', 'tipo', 'tipo_display',
+            'fecha_inicio', 'fecha_termino', 'ubicacion', 'color',
+            'imagen', 'cupo_maximo', 'total_inscritos', 'tiene_cupos',
+            'activa', 'creado_por_nombre', 'creado_en'
+        ]
+        read_only_fields = ('id', 'creado_en')
+    
+    def get_total_inscritos(self, obj):
+        return obj.inscritos.count()
+    
+    def get_tiene_cupos(self, obj):
+        return obj.tiene_cupos_disponibles()
+
+
+class ActividadDetailSerializer(serializers.ModelSerializer):
+    """Serializer completo para detalle de actividad"""
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    creado_por_nombre = serializers.CharField(source='creado_por.get_nombre_completo', read_only=True)
+    areas_participantes_nombres = serializers.SerializerMethodField()
+    inscritos_list = InscripcionActividadSerializer(source='inscripcionactividad_set', many=True, read_only=True)
+    total_inscritos = serializers.SerializerMethodField()
+    tiene_cupos = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Actividad
         fields = '__all__'
-        read_only_fields = ('id', 'fecha_subida', 'created_at')
+        read_only_fields = ('id', 'creado_en', 'actualizado_en')
+    
+    def get_areas_participantes_nombres(self, obj):
+        return [area.nombre for area in obj.areas_participantes.all()]
+    
+    def get_total_inscritos(self, obj):
+        return obj.inscritos.count()
+    
+    def get_tiene_cupos(self, obj):
+        return obj.tiene_cupos_disponibles()
 
-    def create(self, validated_data):
-        usuario_id = validated_data.pop('usuario_id')
-        subido_por_id = validated_data.pop('subido_por_id', None)
-        try:
-            usuario = Usuario.objects.get(id=usuario_id)
-        except Usuario.DoesNotExist:
-            raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-        
-        subido_por = None
-        if subido_por_id:
-            try:
-                subido_por = Usuario.objects.get(id=subido_por_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"subido_por_id": "El usuario que subió el documento no existe."})
-        
-        return DocumentoPersonal.objects.create(usuario=usuario, subido_por=subido_por, **validated_data)
 
-    def update(self, instance, validated_data):
-        usuario_id = validated_data.pop('usuario_id', None)
-        subido_por_id = validated_data.pop('subido_por_id', None)
+# ======================================================
+# ANUNCIO SERIALIZERS
+# ======================================================
 
-        if usuario_id:
-            try:
-                instance.usuario = Usuario.objects.get(id=usuario_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-        if subido_por_id is not None:
-            try:
-                instance.subido_por = Usuario.objects.get(id=subido_por_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"subido_por_id": "El usuario que subió el documento no existe."})
-        elif 'subido_por_id' in self.initial_data and self.initial_data['subido_por_id'] is None:
-            instance.subido_por = None
-        
-        return super().update(instance, validated_data)
+class AdjuntoAnuncioSerializer(serializers.ModelSerializer):
+    """Serializer para adjuntos de anuncio"""
+    class Meta:
+        model = AdjuntoAnuncio
+        fields = '__all__'
+        read_only_fields = ('id', 'subido_en')
 
+
+class AnuncioListSerializer(serializers.ModelSerializer):
+    """Serializer para listado de anuncios"""
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    creado_por_nombre = serializers.CharField(source='creado_por.get_nombre_completo', read_only=True)
+    esta_vigente = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Anuncio
+        fields = [
+            'id', 'titulo', 'tipo', 'tipo_display', 'es_destacado',
+            'prioridad', 'fecha_publicacion', 'fecha_expiracion',
+            'imagen', 'activo', 'esta_vigente', 'creado_por_nombre',
+            'creado_en'
+        ]
+        read_only_fields = ('id', 'creado_en')
+    
+    def get_esta_vigente(self, obj):
+        return obj.esta_vigente()
+
+
+class AnuncioDetailSerializer(serializers.ModelSerializer):
+    """Serializer completo para detalle de anuncio"""
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    creado_por_nombre = serializers.CharField(source='creado_por.get_nombre_completo', read_only=True)
+    areas_destinatarias_nombres = serializers.SerializerMethodField()
+    adjuntos = AdjuntoAnuncioSerializer(many=True, read_only=True)
+    esta_vigente = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Anuncio
+        fields = '__all__'
+        read_only_fields = ('id', 'creado_en', 'actualizado_en')
+    
+    def get_areas_destinatarias_nombres(self, obj):
+        return [area.nombre for area in obj.areas_destinatarias.all()]
+    
+    def get_esta_vigente(self, obj):
+        return obj.esta_vigente()
+
+
+# ======================================================
+# DOCUMENTO SERIALIZERS
+# ======================================================
+
+class DocumentoListSerializer(serializers.ModelSerializer):
+    """Serializer para listado de documentos"""
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    categoria_nombre = serializers.CharField(source='categoria.nombre', read_only=True)
+    subido_por_nombre = serializers.CharField(source='subido_por.get_nombre_completo', read_only=True)
+    esta_vigente = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Documento
+        fields = [
+            'id', 'codigo_documento', 'titulo', 'tipo', 'tipo_display',
+            'categoria', 'categoria_nombre', 'extension', 'tamano',
+            'version', 'fecha_vigencia', 'fecha_expiracion',
+            'publico', 'descargas', 'visualizaciones', 'activo',
+            'esta_vigente', 'subido_por_nombre', 'subido_en'
+        ]
+        read_only_fields = (
+            'id', 'codigo_documento', 'descargas', 'visualizaciones',
+            'subido_en'
+        )
+    
+    def get_esta_vigente(self, obj):
+        return obj.esta_vigente()
+
+
+class DocumentoDetailSerializer(serializers.ModelSerializer):
+    """Serializer completo para detalle de documento"""
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    categoria_nombre = serializers.CharField(source='categoria.nombre', read_only=True)
+    subido_por_nombre = serializers.CharField(source='subido_por.get_nombre_completo', read_only=True)
+    areas_con_acceso_nombres = serializers.SerializerMethodField()
+    esta_vigente = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Documento
+        fields = '__all__'
+        read_only_fields = (
+            'id', 'codigo_documento', 'descargas', 'visualizaciones',
+            'subido_en', 'actualizado_en'
+        )
+    
+    def get_areas_con_acceso_nombres(self, obj):
+        return [area.nombre for area in obj.areas_con_acceso.all()]
+    
+    def get_esta_vigente(self, obj):
+        return obj.esta_vigente()
+
+
+# ======================================================
+# NOTIFICACIÓN SERIALIZER
+# ======================================================
 
 class NotificacionSerializer(serializers.ModelSerializer):
-    usuario = UsuarioMinSerializer(read_only=True)
-    usuario_id = serializers.UUIDField(write_only=True)
-
+    """Serializer para notificaciones"""
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    
     class Meta:
         model = Notificacion
         fields = '__all__'
-        read_only_fields = ('id', 'created_at')
-
-    def create(self, validated_data):
-        usuario_id = validated_data.pop('usuario_id')
-        try:
-            usuario = Usuario.objects.get(id=usuario_id)
-        except Usuario.DoesNotExist:
-            raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-        return Notificacion.objects.create(usuario=usuario, **validated_data)
-
-    def update(self, instance, validated_data):
-        usuario_id = validated_data.pop('usuario_id', None)
-        if usuario_id:
-            try:
-                instance.usuario = Usuario.objects.get(id=usuario_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-        return super().update(instance, validated_data)
+        read_only_fields = ('id', 'creada_en')
 
 
-class FeriadoLegalSerializer(serializers.ModelSerializer):
-    usuario = UsuarioMinSerializer(read_only=True)
-    usuario_id = serializers.UUIDField(write_only=True)
-
-    class Meta:
-        model = FeriadoLegal
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at')
-
-    def validate(self, data):
-        # Validar la unicidad de usuario_id y periodo_year
-        if self.instance is None: # Solo para creación
-            usuario_id = data.get('usuario_id')
-            periodo_year = data.get('periodo_year')
-            if FeriadoLegal.objects.filter(usuario_id=usuario_id, periodo_year=periodo_year).exists():
-                raise serializers.ValidationError("Ya existe un registro de feriados para este usuario y año.")
-        return data
-
-    def create(self, validated_data):
-        usuario_id = validated_data.pop('usuario_id')
-        try:
-            usuario = Usuario.objects.get(id=usuario_id)
-        except Usuario.DoesNotExist:
-            raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-        return FeriadoLegal.objects.create(usuario=usuario, **validated_data)
-
-    def update(self, instance, validated_data):
-        usuario_id = validated_data.pop('usuario_id', None)
-        if usuario_id:
-            try:
-                instance.usuario = Usuario.objects.get(id=usuario_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-        return super().update(instance, validated_data)
-
-
-class SolicitudFeriadoSerializer(serializers.ModelSerializer):
-    usuario = UsuarioMinSerializer(read_only=True)
-    usuario_id = serializers.UUIDField(write_only=True)
-    aprobado_por = UsuarioMinSerializer(read_only=True)
-    aprobado_por_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
-
-    class Meta:
-        model = SolicitudFeriado
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at')
-
-    def create(self, validated_data):
-        usuario_id = validated_data.pop('usuario_id')
-        aprobado_por_id = validated_data.pop('aprobado_por_id', None)
-        try:
-            usuario = Usuario.objects.get(id=usuario_id)
-        except Usuario.DoesNotExist:
-            raise serializers.ValidationError({"usuario_id": "El usuario solicitante no existe."})
-        
-        aprobado_por = None
-        if aprobado_por_id:
-            try:
-                aprobado_por = Usuario.objects.get(id=aprobado_por_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"aprobado_por_id": "El usuario aprobador no existe."})
-        
-        return SolicitudFeriado.objects.create(usuario=usuario, aprobado_por=aprobado_por, **validated_data)
-
-    def update(self, instance, validated_data):
-        usuario_id = validated_data.pop('usuario_id', None)
-        aprobado_por_id = validated_data.pop('aprobado_por_id', None)
-
-        if usuario_id:
-            try:
-                instance.usuario = Usuario.objects.get(id=usuario_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"usuario_id": "El usuario solicitante no existe."})
-        if aprobado_por_id is not None:
-            try:
-                instance.aprobado_por = Usuario.objects.get(id=aprobado_por_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"aprobado_por_id": "El usuario aprobador no existe."})
-        elif 'aprobado_por_id' in self.initial_data and self.initial_data['aprobado_por_id'] is None:
-            instance.aprobado_por = None
-        
-        return super().update(instance, validated_data)
-
-
-class SesionSerializer(serializers.ModelSerializer):
-    usuario = UsuarioMinSerializer(read_only=True)
-    usuario_id = serializers.UUIDField(write_only=True)
-
-    class Meta:
-        model = Sesion
-        fields = '__all__'
-        read_only_fields = ('id', 'ultima_actividad', 'created_at')
-
-    def create(self, validated_data):
-        usuario_id = validated_data.pop('usuario_id')
-        try:
-            usuario = Usuario.objects.get(id=usuario_id)
-        except Usuario.DoesNotExist:
-            raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-        return Sesion.objects.create(usuario=usuario, **validated_data)
-
-    def update(self, instance, validated_data):
-        usuario_id = validated_data.pop('usuario_id', None)
-        if usuario_id:
-            try:
-                instance.usuario = Usuario.objects.get(id=usuario_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-        return super().update(instance, validated_data)
-
+# ======================================================
+# LOG AUDITORÍA SERIALIZER
+# ======================================================
 
 class LogAuditoriaSerializer(serializers.ModelSerializer):
-    usuario = UsuarioMinSerializer(read_only=True)
-    usuario_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
-
+    """Serializer para logs de auditoría"""
+    usuario_nombre = serializers.CharField(source='usuario.get_nombre_completo', read_only=True)
+    accion_display = serializers.CharField(source='get_accion_display', read_only=True)
+    
     class Meta:
         model = LogAuditoria
         fields = '__all__'
-        read_only_fields = ('id', 'created_at')
-
-    def create(self, validated_data):
-        usuario_id = validated_data.pop('usuario_id', None)
-        usuario_instance = None
-        if usuario_id:
-            try:
-                usuario_instance = Usuario.objects.get(id=usuario_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-        return LogAuditoria.objects.create(usuario=usuario_instance, **validated_data)
-
-    def update(self, instance, validated_data):
-        usuario_id = validated_data.pop('usuario_id', None)
-        if usuario_id is not None:
-            try:
-                instance.usuario = Usuario.objects.get(id=usuario_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"usuario_id": "El usuario especificado no existe."})
-        elif 'usuario_id' in self.initial_data and self.initial_data['usuario_id'] is None:
-            instance.usuario = None
-        return super().update(instance, validated_data)
-
-
-class RecursoMultimediaSerializer(serializers.ModelSerializer):
-    subido_por = UsuarioMinSerializer(read_only=True)
-    subido_por_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
-
-    class Meta:
-        model = RecursoMultimedia
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at')
-
-    def create(self, validated_data):
-        subido_por_id = validated_data.pop('subido_por_id', None)
-        subido_por_instance = None
-        if subido_por_id:
-            try:
-                subido_por_instance = Usuario.objects.get(id=subido_por_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"subido_por_id": "El usuario que subió el recurso no existe."})
-        return RecursoMultimedia.objects.create(subido_por=subido_por_instance, **validated_data)
-
-    def update(self, instance, validated_data):
-        subido_por_id = validated_data.pop('subido_por_id', None)
-        if subido_por_id is not None:
-            try:
-                instance.subido_por = Usuario.objects.get(id=subido_por_id)
-            except Usuario.DoesNotExist:
-                raise serializers.ValidationError({"subido_por_id": "El usuario que subió el recurso no existe."})
-        elif 'subido_por_id' in self.initial_data and self.initial_data['subido_por_id'] is None:
-            instance.subido_por = None
-        return super().update(instance, validated_data)
+        read_only_fields = ('id', 'timestamp')
