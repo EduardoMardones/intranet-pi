@@ -10,13 +10,16 @@ import React, { useState, useMemo } from 'react';
 import { CalendarHeader } from '@/components/common/calendario/CalendarHeader';
 import { CalendarGrid } from '@/components/common/calendario/CalendarGrid';
 import { EventModal } from '@/components/common/calendario/EventModal';
-import { EventFormModal } from '@/components/common/calendario/EventFormModal';
+import { SelectTypeModal } from '@/components/common/calendario/SelectTypeModal';
+import { ActividadFormWrapper } from '@/components/common/calendario/ActividadFormWrapper';
+import { AnuncioFormWrapper } from '@/components/common/calendario/AnuncioFormWrapper';
 import { DeleteConfirmModal } from '@/components/common/calendario/DeleteConfirmModal';
 import type { CalendarEvent } from '@/types/calendar';
-import type { EventFormData } from '@/types/calendarAdmin';
+import type { Activity } from '@/types/activity';
+import type { Announcement } from '@/types/announcement';
 import { mockEvents } from '@/data/mockEvents';
 import { getPreviousMonth, getNextMonth } from '@/utils/dateUtils';
-import { Plus, Shield } from 'lucide-react';
+import { Shield, Plus } from 'lucide-react';
 
 // Importaciones de Layout (Igual que la página pública)
 import { NavbarAdmin } from '@/components/common/layout/NavbarAdmin';
@@ -41,9 +44,10 @@ export const CalendarioAdminPage: React.FC = () => {
   
   // Modales
   const [isViewModalOpen, setIsViewModalOpen] = useState<boolean>(false);
-  const [isFormModalOpen, setIsFormModalOpen] = useState<boolean>(false);
+  const [isSelectTypeModalOpen, setIsSelectTypeModalOpen] = useState<boolean>(false);
+  const [isActividadFormOpen, setIsActividadFormOpen] = useState<boolean>(false);
+  const [isAnuncioFormOpen, setIsAnuncioFormOpen] = useState<boolean>(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
-  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
   // ======================================================
   // MANEJADORES DE NAVEGACIÓN
@@ -70,6 +74,7 @@ export const CalendarioAdminPage: React.FC = () => {
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
+    setIsSelectTypeModalOpen(true); // Abrir modal de selección de tipo
   };
 
   const handleEventClick = (event: CalendarEvent) => {
@@ -86,51 +91,89 @@ export const CalendarioAdminPage: React.FC = () => {
   // MANEJADORES CRUD
   // ======================================================
 
+  // Crear nuevo - Abre modal de selección
   const handleCreateEvent = () => {
+    setSelectedDate(new Date());
     setSelectedEvent(null);
-    setFormMode('create');
-    setIsFormModalOpen(true);
+    setIsSelectTypeModalOpen(true);
   };
 
+  // Selección de tipo desde modal
+  const handleSelectActividad = () => {
+    setIsSelectTypeModalOpen(false);
+    setIsActividadFormOpen(true);
+  };
+
+  const handleSelectAnuncio = () => {
+    setIsSelectTypeModalOpen(false);
+    setIsAnuncioFormOpen(true);
+  };
+
+  // Guardar actividad
+  const handleSaveActividad = (actividadData: Omit<Activity, 'id'>) => {
+    // Generar ID temporal
+    const newId = (events.length + 1).toString();
+    
+    // Convertir Activity a CalendarEvent
+    const newEvent: CalendarEvent = {
+      id: parseInt(newId),
+      fecha: actividadData.date.toISOString().split('T')[0],
+      titulo: actividadData.title,
+      descripcion: actividadData.description,
+      tipo: 'otro', // Mapear tipos si es necesario
+      horaInicio: actividadData.date.toTimeString().slice(0, 5),
+      horaFin: '',
+      ubicacion: actividadData.location,
+      organizador: 'Sistema'
+    };
+
+    setEvents([...events, newEvent]);
+    setIsActividadFormOpen(false);
+    setSelectedDate(null);
+    
+    console.log('✅ Actividad creada:', actividadData);
+    console.log('📅 Aparecerá en ActividadesPage y CalendarioPage');
+  };
+
+  // Guardar anuncio
+  const handleSaveAnuncio = (anuncioData: Omit<Announcement, 'id' | 'publicationDate'>) => {
+    // Generar ID temporal
+    const newId = (events.length + 1).toString();
+    
+    // Convertir Announcement a CalendarEvent
+    const newEvent: CalendarEvent = {
+      id: parseInt(newId),
+      fecha: selectedDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+      titulo: anuncioData.title,
+      descripcion: anuncioData.description,
+      tipo: 'otro',
+      horaInicio: '00:00',
+      horaFin: '23:59',
+      organizador: 'Dirección'
+    };
+
+    setEvents([...events, newEvent]);
+    setIsAnuncioFormOpen(false);
+    setSelectedDate(null);
+    
+    console.log('✅ Anuncio creado:', anuncioData);
+    console.log('📢 Aparecerá en AnunciosPage y CalendarioPage');
+  };
+
+  // Editar evento (determinar tipo y abrir modal correspondiente)
   const handleEditEvent = (event: CalendarEvent) => {
     setSelectedEvent(event);
-    setFormMode('edit');
     setIsViewModalOpen(false);
-    setIsFormModalOpen(true);
+    
+    // TODO: Determinar si es Actividad o Anuncio basándose en el source
+    // Por ahora, abrir modal de actividad por defecto
+    setIsActividadFormOpen(true);
   };
 
   const handleDeleteClick = (event: CalendarEvent) => {
     setEventToDelete(event);
     setIsViewModalOpen(false);
     setIsDeleteModalOpen(true);
-  };
-
-  const handleSaveEvent = (formData: EventFormData) => {
-    if (formMode === 'create') {
-      const newEvent: CalendarEvent = {
-        id: Date.now(),
-        titulo: formData.titulo,
-        fecha: formData.fecha,
-        horaInicio: formData.horaInicio,
-        horaFin: formData.horaFin,
-        descripcion: formData.descripcion,
-        ubicacion: formData.ubicacion,
-        tipo: formData.tipo,
-        organizador: formData.organizador
-      };
-      setEvents([...events, newEvent]);
-    } else {
-      if (selectedEvent) {
-        const updatedEvents = events.map(event =>
-          event.id === selectedEvent.id
-            ? { ...event, ...formData } // Spread simplificado para actualizar
-            : event
-        );
-        setEvents(updatedEvents);
-      }
-    }
-    setIsFormModalOpen(false);
-    setSelectedEvent(null);
   };
 
   const handleConfirmDelete = () => {
@@ -257,16 +300,38 @@ export const CalendarioAdminPage: React.FC = () => {
             onDelete={handleDeleteClick}
           />
 
-          {/* Modal de Formulario (Crear/Editar) */}
-          <EventFormModal
-            isOpen={isFormModalOpen}
+          {/* Modal de Selección de Tipo (Actividad o Anuncio) */}
+          <SelectTypeModal
+            isOpen={isSelectTypeModalOpen}
             onClose={() => {
-              setIsFormModalOpen(false);
-              setSelectedEvent(null);
+              setIsSelectTypeModalOpen(false);
+              setSelectedDate(null);
             }}
-            onSave={handleSaveEvent}
-            initialData={selectedEvent}
-            mode={formMode}
+            onSelectActividad={handleSelectActividad}
+            onSelectAnuncio={handleSelectAnuncio}
+            selectedDate={selectedDate}
+          />
+
+          {/* Modal de Formulario de Actividad */}
+          <ActividadFormWrapper
+            isOpen={isActividadFormOpen}
+            onClose={() => {
+              setIsActividadFormOpen(false);
+              setSelectedDate(null);
+            }}
+            onSave={handleSaveActividad}
+            initialDate={selectedDate}
+          />
+
+          {/* Modal de Formulario de Anuncio */}
+          <AnuncioFormWrapper
+            isOpen={isAnuncioFormOpen}
+            onClose={() => {
+              setIsAnuncioFormOpen(false);
+              setSelectedDate(null);
+            }}
+            onSave={handleSaveAnuncio}
+            initialDate={selectedDate}
           />
 
           {/* Modal de Confirmar Eliminación */}
