@@ -45,7 +45,7 @@ const VacacionesPage: React.FC = () => {
 
                 {/* BOTÓN NUEVA SOLICITUD */}
                 <button
-                  onClick={() => navigate('/solicitardias')}
+                  onClick={() => navigate('/solicitar-dias')}
                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#009DDC] to-[#4DFFF3] text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
                 >
                   <Plus className="w-5 h-5" />

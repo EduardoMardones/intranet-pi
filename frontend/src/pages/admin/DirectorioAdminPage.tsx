@@ -1,3 +1,9 @@
+// ======================================================
+// PÁGINA: Directorio CESFAM - CON PERMISOS
+// Ubicación: src/pages/admin/DirectorioAdminPage.tsx
+// Descripción: Vista unificada con control de permisos por rol
+// ======================================================
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -8,16 +14,41 @@ import { FormularioFuncionario } from '@/components/common/directorio/Formulario
 import type { Employee, AreaType, RoleType } from '@/types/employee';
 import { ROLE_CONFIG, AREA_CONFIG } from '@/types/employee';
 import { mockEmployees, searchEmployees } from '@/data/mockEmployees';
-import { Users, Mail, Phone, Download, UserPlus, CheckCircle2, Edit, Trash2 } from 'lucide-react';
+import { Users, Mail, Phone, Download, UserPlus, CheckCircle2, Edit, Trash2, Eye } from 'lucide-react';
 
-// Importaciones de Layout (Asegúrate que las rutas sean correctas)
+// Layout
 import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Banner from '@/components/common/layout/Banner';
-import bannerHome from "@/components/images/banner_images/BannerDirectorio.png"; // Usa la misma imagen
+import bannerHome from "@/components/images/banner_images/BannerDirectorio.png";
 import Footer from '@/components/common/layout/Footer';
 
+// ✅ SISTEMA DE PERMISOS
+import { useAuth } from '@/api/contexts/AuthContext';
+import { PermissionGate } from '@/components/common/PermissionGate';
+
 // ======================================================
-// FUNCIÓN PARA GENERAR INICIALES
+// HELPER: Calcular permisos
+// ======================================================
+function useDirectorioPermisos() {
+  const { user } = useAuth();
+  
+  const rolNombre = user?.rol_nombre?.toLowerCase() || '';
+  const nivel = rolNombre.includes('direcci') && !rolNombre.includes('sub') ? 4
+    : rolNombre.includes('subdirecci') ? 3
+    : rolNombre.includes('jefe') || rolNombre.includes('jefa') ? 2
+    : 1;
+  
+  return {
+    nivel,
+    puedeCrear: nivel >= 3,
+    puedeEditar: nivel >= 3,
+    puedeEliminar: nivel >= 4,
+    esAdmin: nivel >= 3,
+  };
+}
+
+// ======================================================
+// FUNCIONES AUXILIARES
 // ======================================================
 
 const getInitials = (nombre: string, apellidos: string): string => {
@@ -40,9 +71,7 @@ const getAvatarColor = (nombre: string): string => {
 // ======================================================
 
 export const DirectorioAdminPage: React.FC = () => {
-  // ======================================================
-  // ESTADOS
-  // ======================================================
+  const permisos = useDirectorioPermisos();
 
   const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -53,24 +82,11 @@ export const DirectorioAdminPage: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState({ title: '', description: '' });
   const [empleadoEditar, setEmpleadoEditar] = useState<Employee | undefined>();
 
-  // ======================================================
-  // DATOS PROCESADOS
-  // ======================================================
-
   const filteredEmployees = useMemo(() => {
     let filtered = searchEmployees(employees, searchQuery);
-    
-    if (selectedArea !== 'all') {
-      filtered = filtered.filter(e => e.area === selectedArea);
-    }
-    
-    if (selectedRole !== 'all') {
-      filtered = filtered.filter(e => e.role === selectedRole);
-    }
-    
-    return filtered.sort((a, b) => 
-      `${a.apellidos} ${a.nombre}`.localeCompare(`${b.apellidos} ${b.nombre}`)
-    );
+    if (selectedArea !== 'all') filtered = filtered.filter(e => e.area === selectedArea);
+    if (selectedRole !== 'all') filtered = filtered.filter(e => e.role === selectedRole);
+    return filtered.sort((a, b) => `${a.apellidos} ${a.nombre}`.localeCompare(`${b.apellidos} ${b.nombre}`));
   }, [employees, searchQuery, selectedArea, selectedRole]);
 
   const stats = useMemo(() => {
@@ -78,18 +94,8 @@ export const DirectorioAdminPage: React.FC = () => {
     const clinicalStaff = employees.filter(e => 
       ['medico', 'enfermero', 'matrona', 'odontologo', 'kinesiologo', 'nutricionista', 'psicologo'].includes(e.role)
     ).length;
-    
-    return {
-      total: employees.length,
-      areas: uniqueAreas,
-      clinical: clinicalStaff,
-      filtered: filteredEmployees.length
-    };
+    return { total: employees.length, areas: uniqueAreas, clinical: clinicalStaff, filtered: filteredEmployees.length };
   }, [employees, filteredEmployees]);
-
-  // ======================================================
-  // MANEJADORES
-  // ======================================================
 
   const mostrarMensajeExito = (title: string, description: string) => {
     setSuccessMessage({ title, description });
@@ -99,8 +105,7 @@ export const DirectorioAdminPage: React.FC = () => {
 
   const handleAgregarFuncionario = (nuevoFuncionario: Omit<Employee, 'id'>) => {
     const nuevoId = `EMP${(employees.length + 1).toString().padStart(3, '0')}`;
-    const funcionarioCompleto: Employee = { id: nuevoId, ...nuevoFuncionario };
-    setEmployees((prev) => [...prev, funcionarioCompleto]);
+    setEmployees((prev) => [...prev, { id: nuevoId, ...nuevoFuncionario }]);
     mostrarMensajeExito('¡Funcionario agregado!', 'El funcionario ha sido registrado exitosamente');
   };
 
@@ -111,58 +116,33 @@ export const DirectorioAdminPage: React.FC = () => {
 
   const handleGuardarEdicion = (funcionarioEditado: Omit<Employee, 'id'>) => {
     if (!empleadoEditar) return;
-    setEmployees((prev) =>
-      prev.map((emp) =>
-        emp.id === empleadoEditar.id
-          ? { ...funcionarioEditado, id: empleadoEditar.id }
-          : emp
-      )
-    );
-    mostrarMensajeExito('¡Datos editados exitosamente!', 'Los cambios han sido guardados correctamente');
+    setEmployees((prev) => prev.map((emp) => emp.id === empleadoEditar.id ? { ...funcionarioEditado, id: empleadoEditar.id } : emp));
+    mostrarMensajeExito('¡Datos editados!', 'Los cambios han sido guardados');
     setEmpleadoEditar(undefined);
   };
 
   const handleEliminar = (employee: Employee) => {
-    const confirmar = window.confirm(
-      `¿Está seguro que desea eliminar a ${employee.nombre} ${employee.apellidos}?`
-    );
-    if (confirmar) {
+    if (window.confirm(`¿Eliminar a ${employee.nombre} ${employee.apellidos}?`)) {
       setEmployees((prev) => prev.filter((emp) => emp.id !== employee.id));
-      mostrarMensajeExito('¡Funcionario eliminado!', 'El funcionario ha sido eliminado del sistema');
+      mostrarMensajeExito('¡Funcionario eliminado!', 'El funcionario ha sido eliminado');
     }
   };
 
   const handleDialogClose = (open: boolean) => {
     setDialogOpen(open);
-    if (!open) {
-      setEmpleadoEditar(undefined);
-    }
+    if (!open) setEmpleadoEditar(undefined);
   };
-
-  // ======================================================
-  // RENDERIZADO
-  // ======================================================
 
   return (
     <>
-      {/* 1. NAVBAR Y BANNER (Igual que la página pública) */}
       <UnifiedNavbar />
-      <div className="h-15" /> {/* Espaciador para el Navbar */}
+      <div className="h-15" />
+      <Banner imageSrc={bannerHome} title="" subtitle="" height="250px" />
 
-      <Banner
-        imageSrc={bannerHome}
-        title="" // Opcional: cambiar título si deseas
-        subtitle=""
-        height="250px"
-      />
-
-      {/* Mensaje de Éxito (Flotante) */}
       {showSuccessMessage && (
         <div className="fixed top-24 right-4 z-50 animate-in slide-in-from-top-2">
           <div className="bg-white border-2 border-[#52FFB8] rounded-xl shadow-lg p-4 flex items-center gap-3">
-            <div className="p-2 bg-[#52FFB8]/20 rounded-lg">
-              <CheckCircle2 className="w-5 h-5 text-[#52FFB8]" />
-            </div>
+            <div className="p-2 bg-[#52FFB8]/20 rounded-lg"><CheckCircle2 className="w-5 h-5 text-[#52FFB8]" /></div>
             <div>
               <p className="font-semibold text-gray-900">{successMessage.title}</p>
               <p className="text-sm text-gray-600">{successMessage.description}</p>
@@ -171,272 +151,134 @@ export const DirectorioAdminPage: React.FC = () => {
         </div>
       )}
 
-      {/* 2. CONTENEDOR PRINCIPAL (Con padding y max-width igual a la pública) */}
       <div className="flex-1 min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 p-4 md:p-8">
         <div className="max-w-[1600px] mx-auto">
-          
-          {/* ======================================================
-              HEADER COMPACTO ESTILO TARJETA
-              ====================================================== */}
           <header className="bg-white shadow-lg rounded-xl overflow-hidden mb-6">
             <div className="max-w-[1800px] mx-auto px-6 py-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] rounded-xl shadow-lg">
-                    <Users className="w-7 h-7 text-white" />
+                  <div className={`p-3 rounded-xl shadow-lg ${permisos.esAdmin ? 'bg-gradient-to-br from-[#009DDC] to-[#4DFFF3]' : 'bg-gradient-to-br from-gray-400 to-gray-500'}`}>
+                    {permisos.esAdmin ? <Users className="w-7 h-7 text-white" /> : <Eye className="w-7 h-7 text-white" />}
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">
-                      Directorio de Funcionarios
-                    </h1>
-                    <p className="text-sm text-gray-600">
-                      {stats.total} funcionarios · {stats.areas} áreas · Panel Admin
-                    </p>
+                    <h1 className="text-2xl font-bold text-gray-900">Directorio de Funcionarios</h1>
+                    <p className="text-sm text-gray-600">{stats.total} funcionarios · {stats.areas} áreas{permisos.esAdmin ? ' · Panel Admin' : ' · Consulta'}</p>
                   </div>
                 </div>
                 
-                {/* Botones de Acción Admin */}
-                <div className="flex gap-3">
-                  <Button
-                    onClick={() => {
-                      setEmpleadoEditar(undefined);
-                      setDialogOpen(true);
-                    }}
-                    className="bg-gradient-to-r from-[#009DDC] to-[#4DFFF3] hover:opacity-90 shadow-md"
-                  >
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Agregar Funcionario
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="border-2 border-gray-200 hover:border-[#009DDC]"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Exportar
-                  </Button>
-                </div>
+                <PermissionGate customCheck={(p) => p.nivel >= 3}>
+                  <div className="flex gap-3">
+                    <Button onClick={() => { setEmpleadoEditar(undefined); setDialogOpen(true); }} className="bg-gradient-to-r from-[#009DDC] to-[#4DFFF3] hover:opacity-90 shadow-md">
+                      <UserPlus className="w-4 h-4 mr-2" />Agregar Funcionario
+                    </Button>
+                    <Button variant="outline" className="border-2 border-gray-200 hover:border-[#009DDC]">
+                      <Download className="w-4 h-4 mr-2" />Exportar
+                    </Button>
+                  </div>
+                </PermissionGate>
               </div>
 
-              {/* Barra de búsqueda y filtros */}
               <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1">
-                  <SearchBar
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    placeholder="Buscar por nombre o email..."
-                  />
+                  <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Buscar por nombre o email..." />
                 </div>
-                
                 <div className="flex gap-3">
-                  <select
-                    value={selectedArea}
-                    onChange={(e) => setSelectedArea(e.target.value as AreaType | 'all')}
-                    className="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#009DDC] transition-colors text-sm font-medium"
-                  >
+                  <select value={selectedArea} onChange={(e) => setSelectedArea(e.target.value as AreaType | 'all')} className="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#009DDC] transition-colors text-sm font-medium">
                     <option value="all">Todas las áreas</option>
                     {Object.entries(AREA_CONFIG).map(([key, config]) => (
-                      <option key={key} value={key}>
-                        {config.icon} {config.label}
-                      </option>
+                      <option key={key} value={key}>{config.label}</option>
                     ))}
                   </select>
-
-                  <select
-                    value={selectedRole}
-                    onChange={(e) => setSelectedRole(e.target.value as RoleType | 'all')}
-                    className="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#009DDC] transition-colors text-sm font-medium"
-                  >
+                  <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value as RoleType | 'all')} className="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#009DDC] transition-colors text-sm font-medium">
                     <option value="all">Todos los roles</option>
                     {Object.entries(ROLE_CONFIG).map(([key, config]) => (
-                      <option key={key} value={key}>
-                        {config.label}
-                      </option>
+                      <option key={key} value={key}>{config.label}</option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              {(searchQuery || selectedArea !== 'all' || selectedRole !== 'all') && (
-                <div className="mt-4 text-sm text-gray-600">
-                  Mostrando <span className="font-bold text-[#009DDC]">{stats.filtered}</span> de {stats.total} funcionarios
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border-l-4 border-blue-400">
+                  <div className="flex items-center justify-between">
+                    <div><p className="text-sm text-gray-600 font-medium">Total Funcionarios</p><p className="text-2xl font-bold text-gray-900">{stats.total}</p></div>
+                    <Users className="w-8 h-8 text-blue-600 opacity-50" />
+                  </div>
                 </div>
-              )}
+                <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-xl p-4 border-l-4 border-cyan-400">
+                  <div className="flex items-center justify-between">
+                    <div><p className="text-sm text-gray-600 font-medium">Personal Clínico</p><p className="text-2xl font-bold text-gray-900">{stats.clinical}</p></div>
+                    <Users className="w-8 h-8 text-cyan-600 opacity-50" />
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border-l-4 border-green-400">
+                  <div className="flex items-center justify-between">
+                    <div><p className="text-sm text-gray-600 font-medium">Resultados Filtrados</p><p className="text-2xl font-bold text-gray-900">{stats.filtered}</p></div>
+                    <Users className="w-8 h-8 text-green-600 opacity-50" />
+                  </div>
+                </div>
+              </div>
             </div>
           </header>
 
-          {/* ======================================================
-              TABLA DE FUNCIONARIOS
-              ====================================================== */}
-          <main className="py-6">
-            <Card className="overflow-hidden shadow-xl border-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gradient-to-r from-gray-50 to-blue-50 border-b-2 border-gray-200">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Funcionario
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Rol
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Área / Departamento
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Contacto
-                      </th>
-                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Acciones
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-100">
-                    {filteredEmployees.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center">
-                          <div className="flex flex-col items-center">
-                            <Users className="w-16 h-16 text-gray-300 mb-4" />
-                            <p className="text-gray-500 font-medium">No se encontraron funcionarios</p>
-                            <p className="text-sm text-gray-400 mt-1">Intenta con otros términos de búsqueda</p>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredEmployees.map((employee, index) => {
-                        const roleConfig = ROLE_CONFIG[employee.role];
-                        const areaConfig = AREA_CONFIG[employee.area];
-                        const initials = getInitials(employee.nombre, employee.apellidos);
-                        const avatarColor = getAvatarColor(employee.nombre);
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredEmployees.map((employee) => (
+              <Card key={employee.id} className="bg-white hover:shadow-lg transition-all duration-300 border-2 border-gray-100 overflow-hidden">
+                <div className="p-6">
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className={`w-16 h-16 rounded-full ${getAvatarColor(employee.nombre)} flex items-center justify-center text-white text-xl font-bold shadow-md`}>
+                      {getInitials(employee.nombre, employee.apellidos)}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg text-gray-900 mb-1">{employee.nombre} {employee.apellidos}</h3>
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700`}>
+                        {ROLE_CONFIG[employee.role]?.label} {ROLE_CONFIG[employee.role]?.label}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-600"><Mail className="w-4 h-4 text-blue-500" /><span className="truncate">{employee.email}</span></div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600"><Phone className="w-4 h-4 text-green-500" /><span>{employee.telefono}</span></div>
+                  </div>
+                  <div className="mb-4">
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold bg-cyan-100 text-cyan-700`}>
+                      {AREA_CONFIG[employee.area]?.label}
+                    </span>
+                  </div>
+                  <PermissionGate customCheck={(p) => p.nivel >= 3}>
+                    <div className="flex gap-2 pt-4 border-t-2 border-gray-100">
+                      <Button size="sm" variant="outline" onClick={() => handleEditarClick(employee)} className="flex-1 border-blue-200 hover:border-blue-400 hover:bg-blue-50">
+                        <Edit className="w-4 h-4 mr-1" />Editar
+                      </Button>
+                      <PermissionGate customCheck={(p) => p.nivel >= 4}>
+                        <Button size="sm" variant="outline" onClick={() => handleEliminar(employee)} className="border-red-200 hover:border-red-400 hover:bg-red-50 text-red-600">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </PermissionGate>
+                    </div>
+                  </PermissionGate>
+                </div>
+              </Card>
+            ))}
+          </div>
 
-                        return (
-                          <tr 
-                            key={employee.id}
-                            className="hover:bg-blue-50 transition-colors duration-150 animate-fadeIn"
-                            style={{ animationDelay: `${index * 30}ms` }}
-                          >
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-4">
-                                <div className="relative flex-shrink-0">
-                                  {employee.avatar ? (
-                                    <img
-                                      src={employee.avatar}
-                                      alt={`${employee.nombre} ${employee.apellidos}`}
-                                      className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
-                                    />
-                                  ) : (
-                                    <div className={`
-                                      w-12 h-12 rounded-full ${avatarColor}
-                                      flex items-center justify-center
-                                      border-2 border-white shadow-md
-                                    `}>
-                                      <span className="text-sm font-bold text-white">
-                                        {initials}
-                                      </span>
-                                    </div>
-                                  )}
-                                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                                </div>
-                                <div>
-                                  <p className="text-sm font-bold text-gray-900">
-                                    {employee.nombre} {employee.apellidos}
-                                  </p>
-                                  <p className="text-xs text-gray-500">
-                                    ID: {employee.id}
-                                  </p>
-                                </div>
-                              </div>
-                            </td>
-
-                            <td className="px-6 py-4">
-                              <span className={`
-                                inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold
-                                border ${roleConfig.badge}
-                              `}>
-                                {roleConfig.label}
-                              </span>
-                            </td>
-
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">{areaConfig.icon}</span>
-                                <div>
-                                  <p className={`text-sm font-semibold ${areaConfig.color}`}>
-                                    {areaConfig.label}
-                                  </p>
-                                </div>
-                              </div>
-                            </td>
-
-                            <td className="px-6 py-4">
-                              <div className="space-y-1">
-                                <a
-                                  href={`mailto:${employee.email}`}
-                                  className="flex items-center gap-2 text-xs text-gray-600 hover:text-[#009DDC] transition-colors group"
-                                >
-                                  <Mail className="w-3.5 h-3.5 text-[#009DDC]" />
-                                  <span className="group-hover:underline">{employee.email}</span>
-                                </a>
-
-                                {(employee.telefono || employee.extension) && (
-                                  <div className="flex items-center gap-2 text-xs text-gray-600">
-                                    <Phone className="w-3.5 h-3.5 text-[#52FFB8]" />
-                                    {employee.telefono && <span>{employee.telefono}</span>}
-                                    {employee.extension && (
-                                      <span className="text-gray-400">Ext. {employee.extension}</span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-
-                            {/* COLUMNA ACCIONES (Específica de Admin) */}
-                            <td className="px-6 py-4">
-                              <div className="flex items-center justify-center gap-2">
-                                <button
-                                  onClick={() => handleEditarClick(employee)}
-                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors group"
-                                  title="Editar funcionario"
-                                >
-                                  <Edit className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                </button>
-
-                                <button
-                                  onClick={() => handleEliminar(employee)}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors group"
-                                  title="Eliminar funcionario"
-                                >
-                                  <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-
-            {filteredEmployees.length > 0 && (
-              <div className="mt-4 text-center text-sm text-gray-500">
-                Mostrando todos los resultados ({filteredEmployees.length} funcionarios)
-              </div>
-            )}
-          </main>
+          {filteredEmployees.length === 0 && (
+            <div className="text-center py-12">
+              <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600 text-lg">No se encontraron funcionarios</p>
+              <p className="text-gray-400 text-sm">Intenta ajustar los filtros de búsqueda</p>
+            </div>
+          )}
         </div>
       </div>
-      
+
       <Footer />
 
-      {/* MODAL DE FORMULARIO */}
-      <FormularioFuncionario
-        open={dialogOpen}
-        onOpenChange={handleDialogClose}
-        onSubmit={empleadoEditar ? handleGuardarEdicion : handleAgregarFuncionario}
-        empleadoEditar={empleadoEditar}
-      />
+      <PermissionGate customCheck={(p) => p.nivel >= 3}>
+        <FormularioFuncionario open={dialogOpen} onOpenChange={handleDialogClose} onSubmit={empleadoEditar ? handleGuardarEdicion : handleAgregarFuncionario} empleadoEditar={empleadoEditar} />
+      </PermissionGate>
     </>
   );
 };
+
+export default DirectorioAdminPage;

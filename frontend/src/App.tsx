@@ -9,7 +9,7 @@ import { ArchivosPage } from "@/pages/general/ArchivosPage"
 import VacacionesPage  from "@/pages/general/VacacionesPage"
 import { ActividadesAdminPage } from "./pages/admin/ActividadesAdminPage"
 import { AnunciosAdminPage } from "./pages/admin/AnunciosAdminPage"
-import { DirectorioPage } from "@/pages/general/DirectorioPage"
+import DirectorioAdminPage from "./pages/admin/DirectorioAdminPage"
 import { PerfilUsuarioPage } from "@/pages/general/PerfilUsuarioPage"
 import LoginPage from "@/pages/general/LoginPage"
 import LandingPage from "./pages/general/LandingPage"
@@ -80,7 +80,7 @@ function AppRoutes() {
       <Route path="/vacaciones" element={<ProtectedRoute><VacacionesPage /></ProtectedRoute>} />
       <Route path="/actividades" element={<ProtectedRoute><ActividadesAdminPage /></ProtectedRoute>} />      
       <Route path="/anuncios" element={<ProtectedRoute><AnunciosAdminPage /></ProtectedRoute>} />
-      <Route path="/directorio" element={<ProtectedRoute><DirectorioPage /></ProtectedRoute>} />
+      <Route path="/directorio" element={<ProtectedRoute><DirectorioAdminPage /></ProtectedRoute>} />
       <Route path="/perfil" element={<ProtectedRoute><PerfilUsuarioPage /></ProtectedRoute>} />
       <Route path="/soporte" element={<ProtectedRoute><SoporteTecnicoPage /></ProtectedRoute>} />
       <Route path="/solicitar-dias" element={<ProtectedRoute><SolicitarDiasPage /></ProtectedRoute>} />
