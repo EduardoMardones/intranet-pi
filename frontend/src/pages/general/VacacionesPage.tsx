@@ -1,7 +1,7 @@
 import React from "react"
 import { VacacionesTable } from "@/components/common/vacaciones/VacacionesTable"
 import { CardSection } from "@/components/common/vacaciones/VacacionesCardSection"
-import { Navbar } from "@/components/common/layout/Navbar"
+import { UnifiedNavbar } from "@/components/common/layout/UnifiedNavbar"
 import Footer from "@/components/common/layout/Footer"
 import Banner from '@/components/common/layout/Banner';
 import bannerHome from "@/components/images/banner_images/BannerSolicitudes.png"
@@ -13,7 +13,7 @@ const VacacionesPage: React.FC = () => {
 
   return (
     <>
-      <Navbar />
+      <UnifiedNavbar />
       <div className="h-16" />
       <Banner
         imageSrc={bannerHome}

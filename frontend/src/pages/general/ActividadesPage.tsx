@@ -11,7 +11,7 @@ import { ActivitiesGrid } from '@/components/common/actividades/ActivitiesGrid';
 import type { Activity } from '@/types/activity';
 import { mockActivities, sortActivitiesByDate } from '@/data/mockActivities';
 import { Sparkles, Users, Calendar } from 'lucide-react';
-import { Navbar } from '@/components/common/layout/Navbar';
+import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
 import bannerHome from "@/components/images/banner_images/BannerActividades.png"
@@ -59,7 +59,7 @@ export const ActividadesPage: React.FC = () => {
 
   return (
     <>
-      <Navbar />
+      <UnifiedNavbar />
       <div className="h-16" /> {/* Este espacio ocupa la altura del Navbar. Ajusté h-15 a h-16 para consistencia. */}
 
       <Banner

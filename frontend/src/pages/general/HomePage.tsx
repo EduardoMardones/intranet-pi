@@ -25,9 +25,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/cardgenerica/cardsn';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Navbar } from '@/components/common/layout/Navbar';
+import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
-import { useAuth } from '@/api/contexts/AuthContext'; // ← AGREGAR IMPORT
+import { useAuth } from '@/api/contexts/AuthContext';
 
 const Homepage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -114,7 +114,7 @@ const Homepage = () => {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <UnifiedNavbar />
       
       <main className="container mx-auto px-4 py-24">
         {/* Banner de Bienvenida - ACTUALIZADO */}

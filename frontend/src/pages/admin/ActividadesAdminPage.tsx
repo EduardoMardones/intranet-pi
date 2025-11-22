@@ -1,29 +1,60 @@
 // ======================================================
-// PÁGINA ADMINISTRATIVA: Tablero de Actividades CESFAM
-// Ubicación: src/pages/TableroActividadesAdmin.tsx
+// PÁGINA: Actividades CESFAM - CON PERMISOS
+// Ubicación: src/pages/admin/ActividadesAdminPage.tsx
+// Descripción: Vista unificada con control de permisos por rol
 // ======================================================
 
 'use client';
 
 import React, { useState, useMemo } from 'react';
-// Importamos los componentes de layout que faltaban
-import { NavbarAdmin } from '@/components/common/layout/NavbarAdmin';
+import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
 import bannerHome from "@/components/images/banner_images/BannerActividades.png";
 
-// Componentes lógicos
 import { ActivitiesGridAdmin } from '@/components/common/actividades/ActivitiesGridAdmin';
 import { ActivityFormDialog } from '@/components/common/actividades/ActivityFormDialog';
 import type { Activity } from '@/types/activity';
 import { mockActivities, sortActivitiesByDate } from '@/data/mockActivities';
-import { Sparkles, Users, Calendar, Plus, Shield } from 'lucide-react';
+import { Sparkles, Users, Calendar, Plus, Shield, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/actividades/Toast';
 
+// ✅ SISTEMA DE PERMISOS
+import { useAuth } from '@/api/contexts/AuthContext';
+import { PermissionGate } from '@/components/common/PermissionGate';
+
+// ======================================================
+// HELPER: Calcular permisos
+// ======================================================
+function useActividadesPermisos() {
+  const { user } = useAuth();
+  
+  const rolNombre = user?.rol_nombre?.toLowerCase() || '';
+  const nivel = rolNombre.includes('direcci') && !rolNombre.includes('sub') ? 4
+    : rolNombre.includes('subdirecci') ? 3
+    : rolNombre.includes('jefe') || rolNombre.includes('jefa') ? 2
+    : 1;
+  
+  return {
+    nivel,
+    puedeCrear: nivel >= 3,       // Subdirección y Dirección
+    puedeEditar: nivel >= 3,      // Subdirección y Dirección
+    puedeEliminar: nivel >= 4,    // Solo Dirección
+    esAdmin: nivel >= 3,
+  };
+}
+
+// ======================================================
+// COMPONENTE PRINCIPAL
+// ======================================================
+
 export const ActividadesAdminPage: React.FC = () => {
+  // ✅ Permisos
+  const permisos = useActividadesPermisos();
+  
   // ======================================================
-  // HOOKS & ESTADOS (Lógica original intacta)
+  // HOOKS & ESTADOS
   // ======================================================
   const toast = useToast();
   const [activities, setActivities] = useState<Activity[]>(mockActivities);
@@ -53,7 +84,7 @@ export const ActividadesAdminPage: React.FC = () => {
   }, [activities]);
 
   // ======================================================
-  // HANDLERS (Lógica original intacta)
+  // HANDLERS
   // ======================================================
   const handleCreateNew = () => {
     setEditingActivity(null);
@@ -97,16 +128,14 @@ export const ActividadesAdminPage: React.FC = () => {
   };
 
   // ======================================================
-  // RENDERIZADO (ESTÉTICA UNIFICADA)
+  // RENDERIZADO
   // ======================================================
 
   return (
     <>
-      {/* 1. Navbar igual que la página pública */}
-      <NavbarAdmin />
+      <UnifiedNavbar />
       <div className="h-16" /> 
 
-      {/* 2. Banner igual que la página pública */}
       <Banner
         imageSrc={bannerHome}
         title=""
@@ -114,44 +143,58 @@ export const ActividadesAdminPage: React.FC = () => {
         height="250px"
       />
 
-      {/* 3. Contenedor Principal con el mismo degradado y padding */}
       <div className="flex-1 min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50 p-4 md:p-8">
         <div className="max-w-[1600px] mx-auto">
           
-          {/* Header estilo Card (Copiado de ActividadesPage pero con botones Admin) */}
+          {/* ======================================================
+              HEADER - Condicional según permisos
+              ====================================================== */}
           <header className="bg-white shadow-lg rounded-xl overflow-hidden mb-6">
             <div className="py-8 px-6">
               
-              {/* Título y Botón de Crear */}
+              {/* Título y Botón */}
               <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
                 <div className="flex items-center gap-4">
-                  {/* Icono Admin (Mantenido para diferenciar contexto) */}
-                  <div className="p-3 bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] rounded-xl">
-                    <Shield className="w-6 h-6 text-white" />
+                  {/* Icono condicional */}
+                  <div className={`p-3 rounded-xl ${
+                    permisos.esAdmin 
+                      ? 'bg-gradient-to-br from-[#009DDC] to-[#4DFFF3]' 
+                      : 'bg-gradient-to-br from-gray-400 to-gray-500'
+                  }`}>
+                    {permisos.esAdmin ? (
+                      <Shield className="w-6 h-6 text-white" />
+                    ) : (
+                      <Eye className="w-6 h-6 text-white" />
+                    )}
                   </div>
                   
                   <div>
                     <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                      Panel Administrativo - Tablón CESFAM
+                      {permisos.esAdmin ? 'Panel Administrativo' : 'Tablón'} - Actividades CESFAM
                     </h1>
                     <p className="text-sm text-gray-500">
-                      Gestión de actividades, celebraciones y novedades
+                      {permisos.esAdmin 
+                        ? 'Gestión de actividades, celebraciones y novedades'
+                        : 'Actividades, celebraciones y novedades del equipo'
+                      }
                     </p>
                   </div>
                 </div>
 
-                {/* Botón de Acción Principal (Admin) */}
-                <Button
-                  onClick={handleCreateNew}
-                  size="lg"
-                  className="bg-gradient-to-r from-[#009DDC] to-[#4DFFF3] hover:from-[#0088c4] hover:to-[#3de8d9] text-white font-semibold shadow-lg hover:shadow-xl transition-all"
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Nueva Actividad
-                </Button>
+                {/* ✅ Botón Crear (Solo con permisos) */}
+                <PermissionGate customCheck={(p) => p.nivel >= 3}>
+                  <Button
+                    onClick={handleCreateNew}
+                    size="lg"
+                    className="bg-gradient-to-r from-[#009DDC] to-[#4DFFF3] hover:from-[#0088c4] hover:to-[#3de8d9] text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Nueva Actividad
+                  </Button>
+                </PermissionGate>
               </div>
 
-              {/* Estadísticas (Misma estética que la pública) */}
+              {/* Estadísticas */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border-l-4 border-blue-400">
                   <div className="flex items-center gap-3">
@@ -190,31 +233,61 @@ export const ActividadesAdminPage: React.FC = () => {
                 </div>
               </div>
               
-              {/* Badge informativo de Admin */}
-              <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-                <Shield className="w-4 h-4 text-amber-600" />
-                <span className="text-sm font-semibold text-amber-700">
-                  Modo Edición Activado
-                </span>
-              </div>
+              {/* Badge condicional */}
+              <PermissionGate 
+                customCheck={(p) => p.nivel >= 3}
+                fallback={
+                  <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <Eye className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-semibold text-blue-700">
+                      Modo Solo Lectura
+                    </span>
+                  </div>
+                }
+              >
+                <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                  <Shield className="w-4 h-4 text-amber-600" />
+                  <span className="text-sm font-semibold text-amber-700">
+                    Modo Edición Activado
+                  </span>
+                </div>
+              </PermissionGate>
 
             </div>
           </header>
 
-          {/* Contenido Principal */}
+          {/* ======================================================
+              CONTENIDO PRINCIPAL
+              ====================================================== */}
           <main className="py-8 px-6">
-            {/* Mensaje informativo Admin */}
-            <div className="mb-8 bg-white rounded-xl shadow-sm border-l-4 border-[#009DDC] p-6">
-              <h2 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#009DDC]" />
-                Gestión de Actividades
-              </h2>
-              <p className="text-gray-600">
-                Utiliza los controles en cada tarjeta para editar o eliminar contenido. Los cambios se reflejarán inmediatamente en la vista pública.
-              </p>
-            </div>
+            
+            {/* Mensaje informativo */}
+            <PermissionGate 
+              customCheck={(p) => p.nivel >= 3}
+              fallback={
+                <div className="mb-8 bg-white rounded-xl shadow-sm border-l-4 border-blue-500 p-6">
+                  <h2 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-blue-600" />
+                    Actividades del Equipo
+                  </h2>
+                  <p className="text-gray-600">
+                    Aquí puedes ver todas las actividades, celebraciones y eventos del CESFAM.
+                  </p>
+                </div>
+              }
+            >
+              <div className="mb-8 bg-white rounded-xl shadow-sm border-l-4 border-[#009DDC] p-6">
+                <h2 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-[#009DDC]" />
+                  Gestión de Actividades
+                </h2>
+                <p className="text-gray-600">
+                  Utiliza los controles en cada tarjeta para editar o eliminar contenido. Los cambios se reflejarán inmediatamente.
+                </p>
+              </div>
+            </PermissionGate>
 
-            {/* Usamos ActivitiesGridAdmin para mantener los botones de editar/borrar */}
+            {/* ✅ Grid con permisos condicionales */}
             <ActivitiesGridAdmin
               activities={sortedActivities}
               isLoading={isLoading}
@@ -225,16 +298,19 @@ export const ActividadesAdminPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. Footer igual que la página pública */}
       <Footer />
 
-      {/* Diálogo de Edición/Creación (Invisible hasta que se activa) */}
-      <ActivityFormDialog
-        isOpen={isDialogOpen}
-        onClose={handleCancel}
-        onSave={handleSave}
-        activity={editingActivity}
-      />
+      {/* ✅ Diálogo solo para usuarios con permisos */}
+      <PermissionGate customCheck={(p) => p.nivel >= 3}>
+        <ActivityFormDialog
+          isOpen={isDialogOpen}
+          onClose={handleCancel}
+          onSave={handleSave}
+          activity={editingActivity}
+        />
+      </PermissionGate>
     </>
   );
 };
+
+export default ActividadesAdminPage;

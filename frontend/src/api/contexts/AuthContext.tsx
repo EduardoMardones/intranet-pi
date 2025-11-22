@@ -1,34 +1,16 @@
 // ======================================================
-// AUTH CONTEXT - CORREGIDO CON LOGOUT FUNCIONAL
-// Ubicación: frontend/src/contexts/AuthContext.tsx
+// AUTH CONTEXT - VERSIÓN CORREGIDA Y COMPLETA
+// Ubicación: frontend/src/api/contexts/AuthContext.tsx
 // ======================================================
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../../api';
+import type { Usuario } from '../services/authService';
+
 
 // ======================================================
-// TIPOS
+// TIPOS - INTERFAZ DE CONTEXTO
 // ======================================================
-
-export interface Usuario {
-  id: string;
-  rut: string;
-  nombre: string;
-  apellido_paterno: string;
-  apellido_materno: string;
-  nombre_completo: string;
-  email: string;
-  telefono?: string;
-  cargo: string;
-  area: string;
-  area_nombre: string;
-  rol: string;
-  rol_nombre: string;
-  dias_vacaciones_disponibles: number;
-  dias_administrativos_disponibles: number;
-  avatar?: string;
-  is_active: boolean;
-}
 
 interface AuthContextType {
   user: Usuario | null;
@@ -62,8 +44,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (authService.isAuthenticated()) {
           console.log('✅ Token encontrado, obteniendo usuario...');
           const currentUser = await authService.getCurrentUser();
-          setUser(currentUser as Usuario);
-          console.log('✅ Usuario cargado:', currentUser.nombre_completo);
+          
+          // Debug: mostrar todos los campos del usuario
+          console.log('✅ Usuario cargado completo:', currentUser);
+          console.log('📊 Campos verificados:', {
+            nombre_completo: currentUser.nombre_completo,
+            es_jefe_de_area: currentUser.es_jefe_de_area,
+            fecha_ingreso: currentUser.fecha_ingreso,
+            fecha_nacimiento: currentUser.fecha_nacimiento,
+            direccion: currentUser.direccion,
+            contacto_emergencia: currentUser.contacto_emergencia_nombre,
+            dias_vacaciones_anuales: currentUser.dias_vacaciones_anuales,
+            dias_administrativos_anuales: currentUser.dias_administrativos_anuales
+          });
+          
+          setUser(currentUser);
         } else {
           console.log('ℹ️ No hay token, usuario no autenticado');
         }
@@ -87,8 +82,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('🔐 Intentando login...');
       const response = await authService.login({ rut, password });
-      setUser(response.user as Usuario);
+      
       console.log('✅ Login exitoso:', response.user.nombre_completo);
+      console.log('📊 Datos del usuario recibidos:', response.user);
+      
+      // Importante: obtener el usuario completo después del login
+      const fullUser = await authService.getCurrentUser();
+      setUser(fullUser);
     } catch (error) {
       console.error('❌ Error en login:', error);
       throw error;
@@ -109,9 +109,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log('✅ Sesión cerrada exitosamente');
       
-      // 3. Opcional: recargar la página para asegurar que todo se limpie
-      // window.location.href = '/login';
-      
     } catch (error) {
       console.error('❌ Error al cerrar sesión:', error);
       // Incluso si hay error, limpiar todo
@@ -124,8 +121,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('🔄 Refrescando datos del usuario...');
       const currentUser = await authService.getCurrentUser();
-      setUser(currentUser as Usuario);
-      console.log('✅ Usuario actualizado');
+      
+      console.log('✅ Usuario actualizado:', currentUser);
+      setUser(currentUser);
     } catch (error) {
       console.error('❌ Error al refrescar usuario:', error);
       throw error;
@@ -159,3 +157,9 @@ export function useAuth() {
   }
   return context;
 }
+
+// ======================================================
+// RE-EXPORTAR TIPO Usuario PARA USO EN OTROS COMPONENTES
+// ======================================================
+
+export type { Usuario };

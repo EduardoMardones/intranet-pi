@@ -11,7 +11,7 @@ import { mockEmployees, searchEmployees } from '@/data/mockEmployees';
 import { Users, Mail, Phone, Download, UserPlus, CheckCircle2, Edit, Trash2 } from 'lucide-react';
 
 // Importaciones de Layout (Asegúrate que las rutas sean correctas)
-import { NavbarAdmin } from '@/components/common/layout/NavbarAdmin';
+import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Banner from '@/components/common/layout/Banner';
 import bannerHome from "@/components/images/banner_images/BannerDirectorio.png"; // Usa la misma imagen
 import Footer from '@/components/common/layout/Footer';
@@ -146,7 +146,7 @@ export const DirectorioAdminPage: React.FC = () => {
   return (
     <>
       {/* 1. NAVBAR Y BANNER (Igual que la página pública) */}
-      <NavbarAdmin />
+      <UnifiedNavbar />
       <div className="h-15" /> {/* Espaciador para el Navbar */}
 
       <Banner

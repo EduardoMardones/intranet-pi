@@ -25,22 +25,62 @@ export interface AuthResponse {
 }
 
 export interface Usuario {
+  // ==================== IDENTIFICACIÓN ====================
   id: string;
   rut: string;
+  
+  // ==================== DATOS PERSONALES ====================
   nombre: string;
   apellido_paterno: string;
   apellido_materno: string;
   nombre_completo: string;
   email: string;
-  telefono: string;
+  telefono?: string;
+  fecha_nacimiento?: string;
+  direccion?: string;
+  
+  // ==================== INFORMACIÓN PROFESIONAL ====================
   cargo: string;
   area: string;
   area_nombre: string;
   rol: string;
   rol_nombre: string;
+  fecha_ingreso?: string;
+  es_jefe_de_area: boolean;
+  
+  // ==================== CONTACTO DE EMERGENCIA ====================
+  contacto_emergencia_nombre?: string;
+  contacto_emergencia_telefono?: string;
+  contacto_emergencia_relacion?: string;
+  
+  // ==================== DÍAS DISPONIBLES ====================
+  dias_vacaciones_anuales: number;
   dias_vacaciones_disponibles: number;
+  dias_vacaciones_usados: number;
+  dias_administrativos_anuales: number;
   dias_administrativos_disponibles: number;
+  dias_administrativos_usados: number;
+  
+  // ==================== AVATAR Y ESTADO ====================
   avatar?: string;
+  is_active: boolean;
+  
+  // ==================== PERMISOS DEL ROL ====================
+  rol_nivel?: number;
+  rol_puede_crear_usuarios?: boolean;
+  rol_puede_eliminar_contenido?: boolean;
+  rol_puede_aprobar_solicitudes?: boolean;
+  rol_puede_subir_documentos?: boolean;
+  rol_puede_crear_actividades?: boolean;
+  rol_puede_crear_anuncios?: boolean;
+  rol_puede_gestionar_licencias?: boolean;
+  rol_puede_ver_reportes?: boolean;
+  rol_puede_editar_calendario?: boolean;
+  
+  // ==================== AUDITORÍA (OPCIONAL) ====================
+  creado_en?: string;
+  actualizado_en?: string;
+  ultimo_acceso?: string;
 }
 
 export const authService = {

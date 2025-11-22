@@ -6,43 +6,13 @@
 
 import React from 'react';
 import LoginForm from '@/components/common/login/LoginForm';
-import { useNavigate } from 'react-router-dom'; // Importa useNavigate
 import medicinaGeneralImg from '@/components/images/medicina-general.jpg'; 
-
-
-// Si el alias @ no funciona, usa:
-// import { LoginForm } from '../components/ui/LoginForm';
-
-// ==========================
-// Interfaces y Tipos
-// ==========================
-
-interface LoginFormData {
-  email: string;
-  password: string;
-}
 
 // ==========================
 // Componente Principal
 // ==========================
 
 const LoginPage: React.FC = () => {
-  // ==========================
-  // Manejadores de Eventos
-  // ==========================
-const navigate = useNavigate(); // Inicializa useNavigate
-
-  /**
-   * Maneja el envío exitoso del formulario
-   */
-  const handleLoginSubmit = (data: LoginFormData) => {
-    console.log('Datos de login recibidos:', data);
-    // Aquí puedes agregar la lógica de autenticación
-    // Por ejemplo: dispatch(loginUser(data))
-    
-    // Redirige a la HomePage después del login exitoso
-    navigate('/home'); 
-  };
 
   // ==========================
   // Renderizado del Componente
@@ -81,8 +51,8 @@ const navigate = useNavigate(); // Inicializa useNavigate
             </p>
           </div>
 
-          {/* Componente de Formulario */}
-          <LoginForm onSubmit={handleLoginSubmit} />
+          {/* Componente de Formulario - SIN onSubmit */}
+          <LoginForm />
 
           {/* Footer */}
           <div className="mt-8 text-center text-sm text-gray-500">

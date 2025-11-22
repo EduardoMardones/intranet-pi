@@ -9,7 +9,7 @@
 import React, { useState, type FormEvent } from 'react';
 import { Card } from '@/components/ui/card';
 import { Users, Save, XCircle } from 'lucide-react';
-import { NavbarAdmin } from '@/components/common/layout/NavbarAdmin';
+import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Banner from '@/components/common/layout/Banner';
 import bannerHome from "@/components/images/banner_images/BannerDirectorio.png"; // Reutilizamos el banner
 import Footer from '@/components/common/layout/Footer';
@@ -130,7 +130,7 @@ export const CrearUsuarioPage: React.FC = () => {
 
   return (
     <>
-      <NavbarAdmin />
+      <UnifiedNavbar />
       <div className="h-15" /> {/* Este espacio ocupa la altura del Navbar */}
 
       <Banner

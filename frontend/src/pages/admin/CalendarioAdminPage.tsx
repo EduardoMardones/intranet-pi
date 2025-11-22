@@ -1,7 +1,7 @@
 // ======================================================
-// PÁGINA: Calendario Administrativo CESFAM
-// Ubicación: src/pages/CalendarioAdmin.tsx
-// Descripción: Vista administrativa con estética unificada
+// PÁGINA: Calendario Administrativo CESFAM - CON PERMISOS
+// Ubicación: src/pages/admin/CalendarioAdminPage.tsx
+// Descripción: Vista administrativa con control de permisos por rol
 // ======================================================
 
 'use client';
@@ -21,17 +21,44 @@ import { mockEvents } from '@/data/mockEvents';
 import { getPreviousMonth, getNextMonth } from '@/utils/dateUtils';
 import { Shield, Plus } from 'lucide-react';
 
-// Importaciones de Layout (Igual que la página pública)
-import { NavbarAdmin } from '@/components/common/layout/NavbarAdmin';
+// Layout
+import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
 import bannerHome from "@/components/images/banner_images/BannerCalendario.png";
+
+// ✅ SISTEMA DE PERMISOS
+import { useAuth } from '@/api/contexts/AuthContext';
+import { PermissionGate } from '@/components/common/PermissionGate';
+
+// ======================================================
+// HELPER: Calcular permisos
+// ======================================================
+function useCalendarioPermisos() {
+  const { user } = useAuth();
+  
+  const rolNombre = user?.rol_nombre?.toLowerCase() || '';
+  const nivel = rolNombre.includes('direcci') && !rolNombre.includes('sub') ? 4
+    : rolNombre.includes('subdirecci') ? 3
+    : rolNombre.includes('jefe') || rolNombre.includes('jefa') ? 2
+    : 1;
+  
+  return {
+    nivel,
+    puedeEditar: nivel >= 3,      // Subdirección y Dirección
+    puedeEliminar: nivel >= 4,    // Solo Dirección
+    esAdmin: nivel >= 3,          // Para mostrar panel admin
+  };
+}
 
 // ======================================================
 // COMPONENTE PRINCIPAL
 // ======================================================
 
 export const CalendarioAdminPage: React.FC = () => {
+  // ✅ Permisos
+  const permisos = useCalendarioPermisos();
+
   // ======================================================
   // ESTADOS
   // ======================================================
@@ -73,8 +100,14 @@ export const CalendarioAdminPage: React.FC = () => {
   // ======================================================
 
   const handleDateClick = (date: Date) => {
-    setSelectedDate(date);
-    setIsSelectTypeModalOpen(true); // Abrir modal de selección de tipo
+    // ✅ Solo abrir modal si tiene permisos para crear
+    if (permisos.puedeEditar) {
+      setSelectedDate(date);
+      setIsSelectTypeModalOpen(true);
+    } else {
+      // Usuario sin permisos solo selecciona la fecha
+      setSelectedDate(date);
+    }
   };
 
   const handleEventClick = (event: CalendarEvent) => {
@@ -88,17 +121,15 @@ export const CalendarioAdminPage: React.FC = () => {
   };
 
   // ======================================================
-  // MANEJADORES CRUD
+  // MANEJADORES CRUD (Solo para usuarios con permisos)
   // ======================================================
 
-  // Crear nuevo - Abre modal de selección
   const handleCreateEvent = () => {
     setSelectedDate(new Date());
     setSelectedEvent(null);
     setIsSelectTypeModalOpen(true);
   };
 
-  // Selección de tipo desde modal
   const handleSelectActividad = () => {
     setIsSelectTypeModalOpen(false);
     setIsActividadFormOpen(true);
@@ -109,18 +140,15 @@ export const CalendarioAdminPage: React.FC = () => {
     setIsAnuncioFormOpen(true);
   };
 
-  // Guardar actividad
   const handleSaveActividad = (actividadData: Omit<Activity, 'id'>) => {
-    // Generar ID temporal
     const newId = (events.length + 1).toString();
     
-    // Convertir Activity a CalendarEvent
     const newEvent: CalendarEvent = {
       id: parseInt(newId),
       fecha: actividadData.date.toISOString().split('T')[0],
       titulo: actividadData.title,
       descripcion: actividadData.description,
-      tipo: 'otro', // Mapear tipos si es necesario
+      tipo: 'otro',
       horaInicio: actividadData.date.toTimeString().slice(0, 5),
       horaFin: '',
       ubicacion: actividadData.location,
@@ -132,15 +160,11 @@ export const CalendarioAdminPage: React.FC = () => {
     setSelectedDate(null);
     
     console.log('✅ Actividad creada:', actividadData);
-    console.log('📅 Aparecerá en ActividadesPage y CalendarioPage');
   };
 
-  // Guardar anuncio
   const handleSaveAnuncio = (anuncioData: Omit<Announcement, 'id' | 'publicationDate'>) => {
-    // Generar ID temporal
     const newId = (events.length + 1).toString();
     
-    // Convertir Announcement a CalendarEvent
     const newEvent: CalendarEvent = {
       id: parseInt(newId),
       fecha: selectedDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
@@ -157,16 +181,11 @@ export const CalendarioAdminPage: React.FC = () => {
     setSelectedDate(null);
     
     console.log('✅ Anuncio creado:', anuncioData);
-    console.log('📢 Aparecerá en AnunciosPage y CalendarioPage');
   };
 
-  // Editar evento (determinar tipo y abrir modal correspondiente)
   const handleEditEvent = (event: CalendarEvent) => {
     setSelectedEvent(event);
     setIsViewModalOpen(false);
-    
-    // TODO: Determinar si es Actividad o Anuncio basándose en el source
-    // Por ahora, abrir modal de actividad por defecto
     setIsActividadFormOpen(true);
   };
 
@@ -184,7 +203,7 @@ export const CalendarioAdminPage: React.FC = () => {
   };
 
   // ======================================================
-  // DATOS PROCESADOS (Estadísticas)
+  // ESTADÍSTICAS
   // ======================================================
   const stats = useMemo(() => {
     const now = new Date();
@@ -206,8 +225,7 @@ export const CalendarioAdminPage: React.FC = () => {
 
   return (
     <>
-      {/* 1. Navbar y Banner igual que la página pública */}
-      <NavbarAdmin />
+      <UnifiedNavbar />
       <div className="h-16" /> 
       
       <Banner
@@ -220,52 +238,65 @@ export const CalendarioAdminPage: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50 p-4 md:p-8">
         <div className="max-w-[1600px] mx-auto">
           
-          {/* BARRA DE HERRAMIENTAS DE ADMIN */}
-          {/* Aquí colocamos el botón funcional y las estadísticas de forma estética */}
-          <div className="mb-8 space-y-6">
-            
-            {/* Fila superior: Indicador Admin y Botón Crear */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-blue-100">
-              <div className="flex items-center gap-3 text-blue-800">
-                <div className="p-2 bg-blue-100 rounded-full">
-                  <Shield className="w-6 h-6 text-blue-600" />
+          {/* ======================================================
+              PANEL ADMINISTRATIVO (Solo con permisos)
+              ====================================================== */}
+          <PermissionGate 
+            customCheck={(p) => p.nivel >= 3}
+            fallback={
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-900">
+                  📅 <strong>Modo Vista:</strong> Puedes ver eventos pero no crear o modificar.
+                </p>
+              </div>
+            }
+          >
+            <div className="mb-8 space-y-6">
+              
+              {/* Barra de herramientas admin */}
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-blue-100">
+                <div className="flex items-center gap-3 text-blue-800">
+                  <div className="p-2 bg-blue-100 rounded-full">
+                    <Shield className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-lg">Panel de Gestión</h2>
+                    <p className="text-sm text-gray-500">
+                      {permisos.nivel === 4 ? 'Dirección' : 'Subdirección'} - Modo Administrador
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="font-bold text-lg">Panel de Gestión</h2>
-                  <p className="text-sm text-gray-500">Modo Administrador Activo</p>
-                </div>
+
+                {/* ✅ Botón Crear (Solo con permisos de edición) */}
+                <button
+                  onClick={handleCreateEvent}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#009DDC] to-[#4DFFF3] text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
+                >
+                  <Plus className="w-5 h-5" />
+                  Crear Nuevo Evento
+                </button>
               </div>
 
-              {/* ESTE ES EL BOTÓN QUE FUNCIONA */}
-              <button
-                onClick={handleCreateEvent}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#009DDC] to-[#4DFFF3] text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-              >
-                <Plus className="w-5 h-5" />
-                Crear Nuevo Evento
-              </button>
-            </div>
-
-            {/* Fila de estadísticas (Mantenemos esto porque es útil para admin, pero con estilo limpio) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-blue-500 flex justify-between items-center">
-                <span className="text-gray-600 font-medium">Total Eventos</span>
-                <span className="text-2xl font-bold text-gray-900">{stats.total}</span>
-              </div>
-              <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-green-500 flex justify-between items-center">
-                <span className="text-gray-600 font-medium">Próximos</span>
-                <span className="text-2xl font-bold text-gray-900">{stats.upcoming}</span>
-              </div>
-              <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-purple-500 flex justify-between items-center">
-                <span className="text-gray-600 font-medium">Este Mes</span>
-                <span className="text-2xl font-bold text-gray-900">{stats.thisMonth}</span>
+              {/* Estadísticas */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-blue-500 flex justify-between items-center">
+                  <span className="text-gray-600 font-medium">Total Eventos</span>
+                  <span className="text-2xl font-bold text-gray-900">{stats.total}</span>
+                </div>
+                <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-green-500 flex justify-between items-center">
+                  <span className="text-gray-600 font-medium">Próximos</span>
+                  <span className="text-2xl font-bold text-gray-900">{stats.upcoming}</span>
+                </div>
+                <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-purple-500 flex justify-between items-center">
+                  <span className="text-gray-600 font-medium">Este Mes</span>
+                  <span className="text-2xl font-bold text-gray-900">{stats.thisMonth}</span>
+                </div>
               </div>
             </div>
-          </div>
+          </PermissionGate>
 
           {/* ======================================================
-              HEADER DEL CALENDARIO 
-              IMPORTANTE: showAddButton={false} para eliminar el botón roto interno
+              CALENDARIO
               ====================================================== */}
           <CalendarHeader
             currentDate={currentDate}
@@ -275,9 +306,6 @@ export const CalendarioAdminPage: React.FC = () => {
             showAddButton={false} 
           />
 
-          {/* ======================================================
-              CUADRÍCULA DEL CALENDARIO
-              ====================================================== */}
           <CalendarGrid
             currentDate={currentDate}
             selectedDate={selectedDate}
@@ -287,68 +315,71 @@ export const CalendarioAdminPage: React.FC = () => {
           />
 
           {/* ======================================================
-              MODALES (CRUD)
+              MODAL DE VISTA DE EVENTO
+              Con botones condicionales según permisos
               ====================================================== */}
-          
-          {/* Modal de Ver (con opciones admin activadas) */}
           <EventModal
             event={selectedEvent}
             isOpen={isViewModalOpen}
             onClose={handleCloseViewModal}
-            isAdminView={true}
-            onEdit={handleEditEvent}
-            onDelete={handleDeleteClick}
+            isAdminView={permisos.puedeEditar} // ✅ Solo mostrar botones si puede editar
+            onEdit={permisos.puedeEditar ? handleEditEvent : undefined}
+            onDelete={permisos.puedeEliminar ? handleDeleteClick : undefined}
           />
 
-          {/* Modal de Selección de Tipo (Actividad o Anuncio) */}
-          <SelectTypeModal
-            isOpen={isSelectTypeModalOpen}
-            onClose={() => {
-              setIsSelectTypeModalOpen(false);
-              setSelectedDate(null);
-            }}
-            onSelectActividad={handleSelectActividad}
-            onSelectAnuncio={handleSelectAnuncio}
-            selectedDate={selectedDate}
-          />
+          {/* ======================================================
+              MODALES DE CREACIÓN/EDICIÓN
+              Solo se renderizan si tiene permisos
+              ====================================================== */}
+          <PermissionGate customCheck={(p) => p.nivel >= 3}>
+            <SelectTypeModal
+              isOpen={isSelectTypeModalOpen}
+              onClose={() => {
+                setIsSelectTypeModalOpen(false);
+                setSelectedDate(null);
+              }}
+              onSelectActividad={handleSelectActividad}
+              onSelectAnuncio={handleSelectAnuncio}
+              selectedDate={selectedDate}
+            />
 
-          {/* Modal de Formulario de Actividad */}
-          <ActividadFormWrapper
-            isOpen={isActividadFormOpen}
-            onClose={() => {
-              setIsActividadFormOpen(false);
-              setSelectedDate(null);
-            }}
-            onSave={handleSaveActividad}
-            initialDate={selectedDate}
-          />
+            <ActividadFormWrapper
+              isOpen={isActividadFormOpen}
+              onClose={() => {
+                setIsActividadFormOpen(false);
+                setSelectedDate(null);
+              }}
+              onSave={handleSaveActividad}
+              initialDate={selectedDate}
+            />
 
-          {/* Modal de Formulario de Anuncio */}
-          <AnuncioFormWrapper
-            isOpen={isAnuncioFormOpen}
-            onClose={() => {
-              setIsAnuncioFormOpen(false);
-              setSelectedDate(null);
-            }}
-            onSave={handleSaveAnuncio}
-            initialDate={selectedDate}
-          />
+            <AnuncioFormWrapper
+              isOpen={isAnuncioFormOpen}
+              onClose={() => {
+                setIsAnuncioFormOpen(false);
+                setSelectedDate(null);
+              }}
+              onSave={handleSaveAnuncio}
+              initialDate={selectedDate}
+            />
+          </PermissionGate>
 
-          {/* Modal de Confirmar Eliminación */}
-          <DeleteConfirmModal
-            isOpen={isDeleteModalOpen}
-            onClose={() => {
-              setIsDeleteModalOpen(false);
-              setEventToDelete(null);
-            }}
-            onConfirm={handleConfirmDelete}
-            eventTitle={eventToDelete?.titulo || ''}
-          />
+          {/* ✅ Modal de eliminación solo para Dirección */}
+          <PermissionGate customCheck={(p) => p.nivel >= 4}>
+            <DeleteConfirmModal
+              isOpen={isDeleteModalOpen}
+              onClose={() => {
+                setIsDeleteModalOpen(false);
+                setEventToDelete(null);
+              }}
+              onConfirm={handleConfirmDelete}
+              eventTitle={eventToDelete?.titulo || ''}
+            />
+          </PermissionGate>
 
         </div>
       </div>
       
-      {/* Footer igual que la página pública */}
       <Footer />
     </>
   );

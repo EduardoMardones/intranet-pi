@@ -1,6 +1,7 @@
 # ======================================================
 # SERIALIZERS.PY - Django REST Framework Serializers
 # Ubicación: api_intranet/serializers.py
+# ACTUALIZADO: Con campos de permisos del rol
 # ======================================================
 
 from rest_framework import serializers
@@ -83,6 +84,18 @@ class UsuarioDetailSerializer(serializers.ModelSerializer):
     area_nombre = serializers.CharField(source='area.nombre', read_only=True)
     nombre_completo = serializers.CharField(source='get_nombre_completo', read_only=True)
     
+    # ✅ CAMPOS DEL ROL PARA PERMISOS
+    rol_nivel = serializers.IntegerField(source='rol.nivel', read_only=True)
+    rol_puede_crear_usuarios = serializers.BooleanField(source='rol.puede_crear_usuarios', read_only=True)
+    rol_puede_eliminar_contenido = serializers.BooleanField(source='rol.puede_eliminar_contenido', read_only=True)
+    rol_puede_aprobar_solicitudes = serializers.BooleanField(source='rol.puede_aprobar_solicitudes', read_only=True)
+    rol_puede_subir_documentos = serializers.BooleanField(source='rol.puede_subir_documentos', read_only=True)
+    rol_puede_crear_actividades = serializers.BooleanField(source='rol.puede_crear_actividades', read_only=True)
+    rol_puede_crear_anuncios = serializers.BooleanField(source='rol.puede_crear_anuncios', read_only=True)
+    rol_puede_gestionar_licencias = serializers.BooleanField(source='rol.puede_gestionar_licencias', read_only=True)
+    rol_puede_ver_reportes = serializers.BooleanField(source='rol.puede_ver_reportes', read_only=True)
+    rol_puede_editar_calendario = serializers.BooleanField(source='rol.puede_editar_calendario', read_only=True)
+    
     class Meta:
         model = Usuario
         fields = [
@@ -118,6 +131,18 @@ class UsuarioDetailSerializer(serializers.ModelSerializer):
             
             # Auditoría
             'creado_en', 'actualizado_en', 'ultimo_acceso',
+            
+            # ✅ PERMISOS DEL ROL
+            'rol_nivel',
+            'rol_puede_crear_usuarios',
+            'rol_puede_eliminar_contenido',
+            'rol_puede_aprobar_solicitudes',
+            'rol_puede_subir_documentos',
+            'rol_puede_crear_actividades',
+            'rol_puede_crear_anuncios',
+            'rol_puede_gestionar_licencias',
+            'rol_puede_ver_reportes',
+            'rol_puede_editar_calendario',
         ]
         read_only_fields = ['id', 'creado_en', 'actualizado_en']
 
@@ -207,37 +232,21 @@ class SolicitudCreateSerializer(serializers.ModelSerializer):
         # Validar fechas
         if data['fecha_inicio'] > data['fecha_termino']:
             raise serializers.ValidationError("La fecha de inicio debe ser anterior a la fecha de término")
-        
-        # Validar días disponibles
-        usuario = self.context['request'].user
-        if data['tipo'] == 'vacaciones':
-            if data['cantidad_dias'] > usuario.dias_vacaciones_disponibles:
-                raise serializers.ValidationError(
-                    f"Solo tienes {usuario.dias_vacaciones_disponibles} días de vacaciones disponibles"
-                )
-        elif data['tipo'] == 'dia_administrativo':
-            if data['cantidad_dias'] > usuario.dias_administrativos_disponibles:
-                raise serializers.ValidationError(
-                    f"Solo tienes {usuario.dias_administrativos_disponibles} días administrativos disponibles"
-                )
-            if data['cantidad_dias'] > 6:
-                raise serializers.ValidationError("Los días administrativos tienen un máximo de 6 días por año")
-        
         return data
 
 
 class SolicitudAprobacionSerializer(serializers.Serializer):
-    """Serializer para aprobar/rechazar solicitud"""
-    comentarios = serializers.CharField(required=False, allow_blank=True)
+    """Serializer para aprobar/rechazar solicitudes"""
     aprobar = serializers.BooleanField(required=True)
+    comentarios = serializers.CharField(required=False, allow_blank=True)
 
 
 # ======================================================
-# LICENCIA MÉDICA SERIALIZERS
+# LICENCIA MÉDICA SERIALIZER
 # ======================================================
 
 class LicenciaMedicaSerializer(serializers.ModelSerializer):
-    """Serializer para Licencia Médica"""
+    """Serializer para licencias médicas"""
     usuario_nombre = serializers.CharField(source='usuario.get_nombre_completo', read_only=True)
     area_nombre = serializers.CharField(source='usuario.area.nombre', read_only=True)
     subida_por_nombre = serializers.CharField(source='subida_por.get_nombre_completo', read_only=True)

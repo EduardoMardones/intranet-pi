@@ -13,7 +13,7 @@ import type { Employee, AreaType, RoleType } from '@/types/employee';
 import { ROLE_CONFIG, AREA_CONFIG } from '@/types/employee';
 import { mockEmployees, searchEmployees } from '@/data/mockEmployees';
 import { Users, Mail, Phone, Download } from 'lucide-react';
-import { Navbar } from '@/components/common/layout/Navbar';
+import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Banner from '@/components/common/layout/Banner';
 import bannerHome from "@/components/images/banner_images/BannerDirectorio.png"
 import Footer from '@/components/common/layout/Footer';
@@ -92,7 +92,7 @@ export const DirectorioPage: React.FC = () => {
 
   return (
     <>
-      <Navbar />
+      <UnifiedNavbar />
       <div className="h-15" /> {/* Este espacio ocupa la altura del Navbar */}
 
       <Banner

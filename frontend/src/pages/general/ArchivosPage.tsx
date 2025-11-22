@@ -1,6 +1,6 @@
 import { RepositorioTable } from "@/components/common/repositorio/RepositorioTable"
 import React from "react"
-import { Navbar } from "@/components/common/layout/Navbar"
+import UnifiedNavbar from "@/components/common/layout/UnifiedNavbar"
 import RepositorioHeader from "@/components/common/repositorio/RepositorioHeader"
 import Footer from "@/components/common/layout/Footer"
 import Banner from '@/components/common/layout/Banner';
@@ -12,7 +12,7 @@ export const ArchivosPage: React.FC = () => {
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
       {/* Navbar fija */}
-      <Navbar />
+      <UnifiedNavbar />
       <div className="h-16" /> {/* Este espacio ocupa la altura del Navbar */}
 
       <Banner

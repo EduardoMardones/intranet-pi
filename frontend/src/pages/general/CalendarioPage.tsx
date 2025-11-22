@@ -1,7 +1,6 @@
 // ======================================================
-// PÁGINA PRINCIPAL: Calendario Institucional CESFAM
-// Ubicación: src/pages/Calendario.tsx
-// Descripción: Vista principal que ensambla todos los componentes del calendario
+// CALENDARIO PAGE - VERSIÓN SIMPLE CON PERMISOS
+// Ubicación: src/pages/general/CalendarioPage.tsx
 // ======================================================
 
 import React, { useState } from 'react';
@@ -11,87 +10,74 @@ import { EventModal } from '@/components/common/calendario/EventModal';
 import type { CalendarEvent } from '@/types/calendar';
 import { mockEvents } from '@/data/mockEvents';
 import { getPreviousMonth, getNextMonth } from '@/utils/dateUtils';
-import { Navbar } from '@/components/common/layout/Navbar';
+import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
-import bannerHome from "@/components/images/banner_images/BannerCalendario.png"
+import bannerHome from "@/components/images/banner_images/BannerCalendario.png";
 
+// ✅ Sistema de permisos
+import { useAuth } from '@/api/contexts/AuthContext';
 
+// ======================================================
+// FUNCIÓN HELPER PARA PERMISOS
+// ======================================================
+function useCalendarioPermisos() {
+  const { user } = useAuth();
+  
+  // Determinar nivel basado en el rol
+  const rolNombre = user?.rol_nombre?.toLowerCase() || '';
+  const nivel = rolNombre.includes('direcci') && !rolNombre.includes('sub') ? 4
+    : rolNombre.includes('subdirecci') ? 3
+    : rolNombre.includes('jefe') || rolNombre.includes('jefa') ? 2
+    : 1;
+  
+  return {
+    puedeEditar: nivel >= 3, // Subdirección y Dirección
+    puedeEliminar: nivel >= 4, // Solo Dirección
+  };
+}
 
 // ======================================================
 // COMPONENTE PRINCIPAL
 // ======================================================
 
 const CalendarioPage: React.FC = () => {
-  // ======================================================
-  // ESTADOS
-  // ======================================================
+  // Permisos
+  const permisos = useCalendarioPermisos();
 
-  // Fecha actual que se está visualizando en el calendario
+  // Estados
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  
-  // Fecha seleccionada por el usuario
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  
-  // Evento seleccionado para mostrar en el modal
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  
-  // Estado del modal
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  
-  // Eventos del calendario (en producción vendrían de una API)
   const [events] = useState<CalendarEvent[]>(mockEvents);
 
-  // ======================================================
-  // MANEJADORES DE NAVEGACIÓN
-  // ======================================================
-
-  /**
-   * Navega al mes anterior
-   */
+  // Manejadores de navegación
   const handlePreviousMonth = () => {
     setCurrentDate(getPreviousMonth(currentDate));
     setSelectedDate(null);
   };
 
-  /**
-   * Navega al mes siguiente
-   */
   const handleNextMonth = () => {
     setCurrentDate(getNextMonth(currentDate));
     setSelectedDate(null);
   };
 
-  /**
-   * Vuelve al mes actual (hoy)
-   */
   const handleToday = () => {
     setCurrentDate(new Date());
     setSelectedDate(new Date());
   };
 
-  // ======================================================
-  // MANEJADORES DE EVENTOS
-  // ======================================================
-
-  /**
-   * Maneja el clic en una fecha del calendario
-   */
+  // Manejadores de eventos
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
   };
 
-  /**
-   * Maneja el clic en un evento específico
-   */
   const handleEventClick = (event: CalendarEvent) => {
     setSelectedEvent(event);
     setIsModalOpen(true);
   };
 
-  /**
-   * Cierra el modal de detalles del evento
-   */
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedEvent(null);
@@ -103,116 +89,81 @@ const CalendarioPage: React.FC = () => {
 
   return (
     <>
-    {/* Navbar */}
-      <Navbar />
-      <div className="h-16" /> {/* Este espacio ocupa la altura del Navbar */}
-    <Banner
+      <UnifiedNavbar />
+      <div className="h-16" />
+      
+      <Banner
         imageSrc={bannerHome}
         title=""
         subtitle=""
         height="250px"
       />
 
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50 p-4 md:p-8">
-      {/* Contenedor principal con ancho máximo */}
-      <div className="max-w-[1600px] mx-auto">
-        
-        {/* ======================================================
-            CABECERA DEL CALENDARIO
-            ====================================================== */}
-        <CalendarHeader
-          currentDate={currentDate}
-          onPreviousMonth={handlePreviousMonth}
-          onNextMonth={handleNextMonth}
-          onToday={handleToday}
-          showAddButton={false} // false = Vista Funcionario, true = Vista Admin
-        />
-
-        {/* ======================================================
-            CUADRÍCULA DEL CALENDARIO
-            ====================================================== */}
-        <CalendarGrid
-          currentDate={currentDate}
-          selectedDate={selectedDate}
-          events={events}
-          onDateClick={handleDateClick}
-          onEventClick={handleEventClick}
-        />
-
-        {/* ======================================================
-            MODAL DE DETALLES DEL EVENTO
-            ====================================================== */}
-        <EventModal
-          event={selectedEvent}
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-        />
-
-        {/* ======================================================
-            PIE DE PÁGINA INFORMATIVO
-            ====================================================== */}
-        
-      </div>
-
-      {/* ======================================================
-          NOTAS PARA DESARROLLO FUTURO - FUNCIONALIDAD ADMINISTRATIVA
-          ======================================================
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50 p-4 md:p-8">
+        <div className="max-w-[1600px] mx-auto">
           
-          Para habilitar funcionalidades administrativas:
-          
-          1. Cambiar showAddButton={true} en CalendarHeader
-          
-          2. Implementar sistema de roles/permisos:
-             - Crear contexto de autenticación
-             - Verificar rol del usuario (admin/funcionario)
-             - Mostrar/ocultar botones según permisos
-          
-          3. Agregar formulario de creación de eventos:
-             - Crear componente EventForm.tsx
-             - Implementar validaciones
-             - Conectar con API backend
-          
-          4. Implementar acciones CRUD:
-             - POST /api/events (crear)
-             - PUT /api/events/:id (editar)
-             - DELETE /api/events/:id (eliminar)
-          
-          5. Agregar confirmaciones:
-             - Dialog de confirmación para eliminar
-             - Toast notifications para feedback
-          
-          6. Implementar filtros adicionales:
-             - Por tipo de evento
-             - Por organizador
-             - Búsqueda de eventos
-          
-          Ejemplo de estructura con permisos:
-          
-          const { user } = useAuth();
-          const isAdmin = user?.role === 'admin';
-          
-          <CalendarHeader 
-            showAddButton={isAdmin}
-            ...
-          />
-          
-          En EventModal, mostrar botones solo si isAdmin:
-          
-          {isAdmin && (
-            <div className="flex gap-3">
-              <Button onClick={() => handleEdit(event)}>Editar</Button>
-              <Button onClick={() => handleDelete(event)}>Eliminar</Button>
+          {/* ======================================================
+              INFO DE PERMISOS (Temporal - para debug)
+              ====================================================== */}
+          {import.meta.env.DEV && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-900">
+                <strong>Tus permisos:</strong> 
+                {permisos.puedeEditar ? ' ✅ Puede editar' : ' ❌ Solo lectura'}
+                {permisos.puedeEliminar ? ' ✅ Puede eliminar' : ''}
+              </p>
             </div>
           )}
-      ====================================================== */}
-    </div>
-    <Footer></Footer>
+
+          {/* ======================================================
+              CABECERA DEL CALENDARIO
+              ====================================================== */}
+          <CalendarHeader
+            currentDate={currentDate}
+            onPreviousMonth={handlePreviousMonth}
+            onNextMonth={handleNextMonth}
+            onToday={handleToday}
+            showAddButton={permisos.puedeEditar}
+          />
+
+          {/* ======================================================
+              CUADRÍCULA DEL CALENDARIO
+              ====================================================== */}
+          <CalendarGrid
+            currentDate={currentDate}
+            selectedDate={selectedDate}
+            events={events}
+            onDateClick={handleDateClick}
+            onEventClick={handleEventClick}
+          />
+
+          {/* ======================================================
+              MODAL DE DETALLES DEL EVENTO
+              ====================================================== */}
+          <EventModal
+            event={selectedEvent}
+            isOpen={isModalOpen}
+            onClose={handleCloseModal}
+          />
+
+          {/* ======================================================
+              MENSAJE PARA USUARIOS SIN PERMISOS
+              ====================================================== */}
+          {!permisos.puedeEditar && (
+            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                ℹ️ Estás en modo de solo lectura. Si necesitas crear o editar eventos, 
+                contacta a tu jefatura o dirección.
+              </p>
+            </div>
+          )}
+
+        </div>
+      </div>
+      
+      <Footer />
     </>
   );
 };
-
-// ======================================================
-// EXPORT
-// ======================================================
 
 export default CalendarioPage;

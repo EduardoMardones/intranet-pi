@@ -11,7 +11,7 @@ import { AnnouncementList } from '@/components/common/anuncios/AnnouncementList'
 import type { Announcement } from '@/types/announcement';
 import { mockAnnouncements, sortAnnouncementsByDate } from '@/data/mockAnnouncements';
 import { Megaphone, Shield, FileCheck, AlertCircle } from 'lucide-react';
-import { Navbar } from '@/components/common/layout/Navbar';
+import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import bannerHome from "@/components/images/banner_images/BannerAnuncios.png"
 import Banner from "@/components/common/layout/Banner";
@@ -56,7 +56,7 @@ export const AnunciosPage: React.FC = () => {
 
   return (
     <>
-      <Navbar />
+      <UnifiedNavbar />
       <div className="h-16" /> {/* Este espacio ocupa la altura del Navbar */}
       <Banner
         imageSrc={bannerHome}

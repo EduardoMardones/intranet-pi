@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Navbar } from '@/components/common/layout/Navbar';
+import UnifiedNavbar from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import bannerHome from "@/components/images/banner_images/BannerSoporte.png" // Asegúrate que esta ruta sea correcta
 import Banner from '@/components/common/layout/Banner';
@@ -84,7 +84,7 @@ export const SoporteTecnicoPage = () => {
 
   return (
     <>
-      <Navbar></Navbar>
+      <UnifiedNavbar></UnifiedNavbar>
       <div className="h-16" /> {/* Este espacio ocupa la altura del Navbar */}
       <Banner
           imageSrc={bannerHome}

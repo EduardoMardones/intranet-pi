@@ -7,7 +7,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Navbar } from '@/components/common/layout/Navbar';
+import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
 import bannerSolicitudes from '@/components/images/banner_images/BannerSolicitudes.png';
@@ -269,7 +269,7 @@ export const SolicitarDiasPage: React.FC = () => {
 
   return (
     <>
-      <Navbar />
+      <UnifiedNavbar />
       <div className="h-16" />
       
       <Banner

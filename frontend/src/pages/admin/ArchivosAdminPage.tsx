@@ -5,7 +5,7 @@
 // ======================================================
 
 import React, { useState } from 'react';
-import { NavbarAdmin } from '@/components/common/layout/NavbarAdmin';
+import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
 import { FileUploaderArchivos } from '@/components/common/repositorio/FileUploaderArchivos';
@@ -196,7 +196,7 @@ export const ArchivosAdminPage: React.FC = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
-      <NavbarAdmin />
+      <UnifiedNavbar />
       <div className="h-16" />
 
       <Banner

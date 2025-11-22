@@ -8,7 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Navbar } from '@/components/common/layout/Navbar';
+import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import { useAuth } from '@/api/contexts/AuthContext';
 import {
@@ -79,7 +79,7 @@ export const PerfilUsuarioPage: React.FC = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
+        <UnifiedNavbar />
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
@@ -92,7 +92,7 @@ export const PerfilUsuarioPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <UnifiedNavbar />
       
       <main className="container mx-auto px-4 py-24 max-w-7xl">
         {/* Header del Perfil */}

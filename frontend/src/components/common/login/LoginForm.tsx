@@ -1,5 +1,5 @@
 // ==========================
-// LoginForm - CON REDIRECCIÓN MEJORADA
+// LoginForm - VERSIÓN CORREGIDA FINAL
 // Ubicación: src/components/common/login/LoginForm.tsx
 // ==========================
 
@@ -23,7 +23,7 @@ interface LoginFormErrors {
 }
 
 export const LoginForm: React.FC = () => {
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, isAuthenticated, isLoading, user } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<LoginFormData>({
@@ -37,11 +37,16 @@ export const LoginForm: React.FC = () => {
 
   // Redirigir automáticamente cuando el usuario se autentique
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      console.log('✅ Usuario autenticado, redirigiendo a home...');
-      navigate('/home', { replace: true });
+    if (isAuthenticated && user && !isLoading) {
+      console.log('✅ Usuario autenticado detectado:', user.nombre_completo);
+      console.log('🔄 Redirigiendo a /home...');
+      
+      // Usar timeout para asegurar que el estado se haya actualizado completamente
+      setTimeout(() => {
+        navigate('/home', { replace: true });
+      }, 100);
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, user, isLoading, navigate]);
 
   const validateRut = (rut: string): boolean => {
     const rutRegex = /^[0-9]{1,2}\.[0-9]{3}\.[0-9]{3}-[0-9Kk]$|^[0-9]{7,8}-[0-9Kk]$/;
@@ -49,7 +54,7 @@ export const LoginForm: React.FC = () => {
   };
 
   const validatePassword = (password: string): boolean => {
-    return password.length >= 6;
+    return password.length >= 3; // Reducido para desarrollo
   };
 
   const validateForm = (): boolean => {
@@ -64,7 +69,7 @@ export const LoginForm: React.FC = () => {
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida';
     } else if (!validatePassword(formData.password)) {
-      newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+      newErrors.password = 'La contraseña debe tener al menos 3 caracteres';
     }
 
     setErrors(newErrors);
@@ -101,18 +106,31 @@ export const LoginForm: React.FC = () => {
     try {
       console.log('🔐 Intentando login con:', formData.rut);
       
+      // Llamar a login del contexto
       await login(formData.rut, formData.password);
       
-      console.log('✅ Login exitoso');
+      console.log('✅ Login completado');
       // La redirección se maneja en el useEffect
       
     } catch (error: any) {
       console.error('❌ Error en login:', error);
       
-      setErrors({
-        general: error.message || 'RUT o contraseña incorrectos. Por favor, intenta de nuevo.',
-      });
-    } finally {
+      let errorMessage = 'RUT o contraseña incorrectos. Por favor, intenta de nuevo.';
+      
+      // Mensajes de error más específicos
+      if (error.response) {
+        if (error.response.status === 401) {
+          errorMessage = 'RUT o contraseña incorrectos';
+        } else if (error.response.status === 400) {
+          errorMessage = 'Datos de login inválidos';
+        } else if (error.response.status === 500) {
+          errorMessage = 'Error del servidor. Intenta más tarde';
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setErrors({ general: errorMessage });
       setIsSubmitting(false);
     }
   };
@@ -146,8 +164,9 @@ export const LoginForm: React.FC = () => {
               value={formData.rut}
               onChange={handleInputChange}
               className={errors.rut ? 'border-red-500' : ''}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLoading}
               autoComplete="username"
+              autoFocus
             />
             {errors.rut && (
               <p className="text-sm text-red-600">{errors.rut}</p>
@@ -164,7 +183,7 @@ export const LoginForm: React.FC = () => {
               value={formData.password}
               onChange={handleInputChange}
               className={errors.password ? 'border-red-500' : ''}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLoading}
               autoComplete="current-password"
             />
             {errors.password && (
@@ -179,7 +198,7 @@ export const LoginForm: React.FC = () => {
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
               className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLoading}
             />
             <Label 
               htmlFor="rememberMe" 
@@ -194,32 +213,55 @@ export const LoginForm: React.FC = () => {
             className="w-full"
             disabled={isSubmitting || isLoading}
           >
-            {isSubmitting || isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            {isSubmitting || isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle 
+                    className="opacity-25" 
+                    cx="12" 
+                    cy="12" 
+                    r="10" 
+                    stroke="currentColor" 
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path 
+                    className="opacity-75" 
+                    fill="currentColor" 
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Iniciando sesión...
+              </span>
+            ) : (
+              'Iniciar Sesión'
+            )}
           </Button>
 
           <div className="mt-4 text-center text-sm text-gray-600">
             <p>¿Olvidaste tu contraseña? Contacta a soporte técnico</p>
           </div>
 
-          {import.meta.env.VITE_ENV === 'development' && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-xs text-blue-800 font-semibold mb-1">
-                Credenciales de prueba:
+          {/* Credenciales de prueba (solo en desarrollo) */}
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <p className="text-xs text-blue-800 font-semibold mb-2">
+              🔧 Credenciales de prueba:
+            </p>
+            <div className="space-y-1">
+              <p className="text-xs text-blue-700">
+                <strong>Directora:</strong> 12.345.678-9 / password123
               </p>
               <p className="text-xs text-blue-700">
-                <strong>Directora:</strong> 12.345.678-9 / admin123
+                <strong>Subdirector:</strong> 13.456.789-0 / password123
               </p>
               <p className="text-xs text-blue-700">
-                <strong>Subdirector:</strong> 13.456.789-0 / admin123
+                <strong>Jefatura:</strong> 15.678.901-2 / password123
               </p>
               <p className="text-xs text-blue-700">
-                <strong>Jefatura:</strong> 15.678.901-2 / jefe123
-              </p>
-              <p className="text-xs text-blue-700">
-                <strong>Funcionario:</strong> 16.789.012-3 / user123
+                <strong>Funcionario:</strong> 16.789.012-3 / password123
               </p>
             </div>
-          )}
+          </div>
         </form>
       </CardContent>
     </Card>

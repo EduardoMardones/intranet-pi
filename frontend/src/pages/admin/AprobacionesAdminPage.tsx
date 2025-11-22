@@ -5,7 +5,7 @@
 // ======================================================
 
 import React, { useState, useMemo } from 'react';
-import { NavbarAdmin } from '@/components/common/layout/NavbarAdmin';
+import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
 import { SolicitudCard } from '@/components/common/aprobaciones/SolicitudCard';
@@ -232,7 +232,7 @@ export const AprobacionesAdminPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <NavbarAdmin />
+      <UnifiedNavbar />
       <Banner 
         title="" 
         subtitle={
