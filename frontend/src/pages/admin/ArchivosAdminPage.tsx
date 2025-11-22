@@ -24,6 +24,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import bannerArchivos from "@/components/images/banner_images/BannerArchivos.png";
+// ✅ SISTEMA DE PERMISOS
+import { useAuth } from '@/api/contexts/AuthContext';
+import { PermissionGate } from '@/components/common/PermissionGate';
 
 // ======================================================
 // TIPOS E INTERFACES
@@ -37,6 +40,25 @@ interface Archivo {
   tamaño: number; // en bytes
   subidoPor: string;
   url?: string;
+}
+
+
+function useArchivosPermisos() {
+  const { user } = useAuth();
+  
+  const rolNombre = user?.rol_nombre?.toLowerCase() || '';
+  const nivel = rolNombre.includes('direcci') && !rolNombre.includes('sub') ? 4
+    : rolNombre.includes('subdirecci') ? 3
+    : rolNombre.includes('jefe') || rolNombre.includes('jefa') ? 2
+    : 1;
+  
+  return {
+    nivel,
+    puedeSubir: nivel >= 3,       // Subdirección y Dirección
+    puedeEditar: nivel >= 3,      // Subdirección y Dirección  
+    puedeEliminar: nivel >= 4,    // Solo Dirección
+    esAdmin: nivel >= 3,
+  };
 }
 
 // ======================================================
@@ -64,7 +86,7 @@ export const ArchivosAdminPage: React.FC = () => {
   // ======================================================
   // ESTADOS
   // ======================================================
-
+  const permisos = useArchivosPermisos();
   const [archivos, setArchivos] = useState<Archivo[]>(generarArchivosMock());
   const [busqueda, setBusqueda] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<string>('todos');
@@ -212,20 +234,34 @@ export const ArchivosAdminPage: React.FC = () => {
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Gestión de Archivos
-            </h1>
-            <p className="text-gray-600">
-              Administra el repositorio de documentos del CESFAM
-            </p>
+                {permisos.esAdmin ? 'Gestión de Archivos' : 'Repositorio de Archivos'}
+              </h1>
+              <p className="text-gray-600">
+                {permisos.esAdmin 
+                  ? 'Administra el repositorio de documentos del CESFAM'
+                  : 'Consulta y descarga documentos del CESFAM'
+                }
+              </p>
           </div>
 
-          {/* FileUploader siempre visible */}
-          <div className="mb-6">
-            <FileUploaderArchivos
-              onFilesSelected={handleFilesSelected}
-              hasFiles={archivos.length > 0}
-            />
-          </div>
+          {/* ✅ FileUploader solo con permisos */}
+          <PermissionGate 
+            customCheck={(p) => p.nivel >= 3}
+            fallback={
+              <div className="mb-6 p-6 bg-blue-50 border-2 border-blue-200 rounded-xl">
+                <p className="text-blue-900 text-center">
+                  📁 <strong>Repositorio de Archivos</strong> - Solo puedes ver y descargar archivos
+                </p>
+              </div>
+            }
+          >
+            <div className="mb-6">
+              <FileUploaderArchivos
+                onFilesSelected={handleFilesSelected}
+                hasFiles={archivos.length > 0}
+              />
+            </div>
+          </PermissionGate>
 
           {/* Estadísticas */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -388,20 +424,27 @@ export const ArchivosAdminPage: React.FC = () => {
                             >
                               <Download className="h-4 w-4" />
                             </button>
-                            <button
-                              onClick={() => handleIniciarEdicion(archivo)}
-                              className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-                              title="Editar"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleIniciarEliminacion(archivo)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Eliminar"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            {/* ✅ Botón Editar - Solo Subdirección y Dirección */}
+                              <PermissionGate customCheck={(p) => p.nivel >= 3}>
+                                <button
+                                  onClick={() => handleIniciarEdicion(archivo)}
+                                  className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                                  title="Editar"
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </button>
+                              </PermissionGate>
+
+                              {/* ✅ Botón Eliminar - Solo Dirección */}
+                              <PermissionGate customCheck={(p) => p.nivel >= 4}>
+                                <button
+                                  onClick={() => handleIniciarEliminacion(archivo)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Eliminar"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </PermissionGate>
                           </div>
                         </td>
                       </tr>

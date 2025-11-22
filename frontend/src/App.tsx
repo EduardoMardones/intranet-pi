@@ -5,7 +5,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import { AuthProvider, useAuth } from "@/api/contexts/AuthContext"
 import HomePage from "@/pages/general/HomePage"
-import { ArchivosPage } from "@/pages/general/ArchivosPage"
+import ArchivosAdminPage from "./pages/admin/ArchivosAdminPage"
 import VacacionesPage  from "@/pages/general/VacacionesPage"
 import { ActividadesAdminPage } from "./pages/admin/ActividadesAdminPage"
 import { AnunciosAdminPage } from "./pages/admin/AnunciosAdminPage"
@@ -76,7 +76,7 @@ function AppRoutes() {
 
       {/* Rutas Protegidas - Generales */}
       <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-      <Route path="/repositorio" element={<ProtectedRoute><ArchivosPage /></ProtectedRoute>} />
+      <Route path="/repositorio" element={<ProtectedRoute><ArchivosAdminPage /></ProtectedRoute>} />
       <Route path="/vacaciones" element={<ProtectedRoute><VacacionesPage /></ProtectedRoute>} />
       <Route path="/actividades" element={<ProtectedRoute><ActividadesAdminPage /></ProtectedRoute>} />      
       <Route path="/anuncios" element={<ProtectedRoute><AnunciosAdminPage /></ProtectedRoute>} />
