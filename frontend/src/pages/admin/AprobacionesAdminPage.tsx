@@ -166,7 +166,8 @@ export const AprobacionesAdminPage: React.FC = () => {
 
     try {
       await solicitudService.aprobar(selectedSolicitud.id, {
-        comentario_aprobacion: comentario.trim() || undefined
+        aprobar: true,
+        comentarios: comentario.trim() || undefined
       });
 
       setSuccessMessage(`Solicitud de ${selectedSolicitud.usuario_nombre} aprobada exitosamente`);
@@ -196,7 +197,8 @@ export const AprobacionesAdminPage: React.FC = () => {
 
     try {
       await solicitudService.rechazar(selectedSolicitud.id, {
-        comentario_aprobacion: comentario.trim()
+        aprobar: false,
+        comentarios: comentario.trim()
       });
 
       setSuccessMessage(`Solicitud de ${selectedSolicitud.usuario_nombre} rechazada`);
@@ -211,11 +213,6 @@ export const AprobacionesAdminPage: React.FC = () => {
     } finally {
       setProcessing(false);
     }
-  };
-
-  const descargarArchivo = (archivoPath: string) => {
-    const url = solicitudService.getArchivoUrl(archivoPath);
-    window.open(url, '_blank');
   };
 
   // ======================================================
@@ -451,17 +448,17 @@ export const AprobacionesAdminPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Archivo adjunto */}
-                {solicitud.archivo_adjunto && (
+                {/* PDF generado */}
+                {solicitud.pdf_generado && solicitud.url_pdf && (
                   <div className="mb-4">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => descargarArchivo(solicitud.archivo_adjunto!)}
+                      onClick={() => window.open(solicitud.url_pdf, '_blank')}
                       className="text-[#52FFB8] hover:bg-[#52FFB8] hover:text-gray-900"
                     >
                       <Download className="w-4 h-4 mr-2" />
-                      Ver archivo adjunto
+                      Ver PDF de solicitud
                     </Button>
                   </div>
                 )}

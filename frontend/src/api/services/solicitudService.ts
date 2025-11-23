@@ -47,8 +47,9 @@ export interface Solicitud {
   fecha_aprobacion: string | null;
   comentario_aprobacion: string | null;
   
-  // Adjuntos (opcional)
-  archivo_adjunto: string | null;
+  // Adjuntos/PDF
+  pdf_generado: boolean;
+  url_pdf: string;
   
   // Auditoría
   creada_en: string;
@@ -150,19 +151,36 @@ class SolicitudService {
   }
 
   /**
-   * Aprobar solicitud (admin/jefe)
+   * Aprobar solicitud como jefatura
    */
-  async aprobar(id: string, data?: { comentario_aprobacion?: string }): Promise<Solicitud> {
-    const response = await axios.post(`${this.baseURL}/${id}/aprobar/`, data || {});
+  async aprobarJefatura(id: string, data: AprobarRechazarDTO): Promise<Solicitud> {
+    const response = await axios.post(`${this.baseURL}/${id}/aprobar_jefatura/`, data);
     return response.data;
   }
 
   /**
-   * Rechazar solicitud (admin/jefe)
+   * Aprobar solicitud como dirección
    */
-  async rechazar(id: string, data: { comentario_aprobacion: string }): Promise<Solicitud> {
-    const response = await axios.post(`${this.baseURL}/${id}/rechazar/`, data);
+  async aprobarDireccion(id: string, data: AprobarRechazarDTO): Promise<Solicitud> {
+    const response = await axios.post(`${this.baseURL}/${id}/aprobar_direccion/`, data);
     return response.data;
+  }
+
+  /**
+   * Método genérico de aprobación (determina automáticamente el nivel)
+   * Usa aprobarJefatura por defecto
+   */
+  async aprobar(id: string, data: AprobarRechazarDTO): Promise<Solicitud> {
+    // Por ahora usa jefatura, pero podría determinar automáticamente según el usuario
+    return this.aprobarJefatura(id, data);
+  }
+
+  /**
+   * Rechazar solicitud (genérico - usa jefatura)
+   */
+  async rechazar(id: string, data: AprobarRechazarDTO): Promise<Solicitud> {
+    // Rechazar es aprobar con aprobar: false
+    return this.aprobarJefatura(id, { ...data, aprobar: false });
   }
 
   /**

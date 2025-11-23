@@ -184,19 +184,74 @@ class UsuarioCreateSerializer(serializers.ModelSerializer):
 class SolicitudListSerializer(serializers.ModelSerializer):
     """Serializer para listado de solicitudes"""
     usuario_nombre = serializers.CharField(source='usuario.get_nombre_completo', read_only=True)
+    usuario_email = serializers.EmailField(source='usuario.email', read_only=True)
+    usuario_cargo = serializers.CharField(source='usuario.cargo', read_only=True)
+    usuario_area = serializers.CharField(source='usuario.area.nombre', read_only=True)
     area_nombre = serializers.CharField(source='usuario.area.nombre', read_only=True)
     tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
     estado_display = serializers.CharField(source='get_estado_display', read_only=True)
     
+    # Campos calculados para aprobador
+    aprobador = serializers.SerializerMethodField()
+    aprobador_nombre = serializers.SerializerMethodField()
+    fecha_aprobacion = serializers.SerializerMethodField()
+    comentario_aprobacion = serializers.SerializerMethodField()
+    
     class Meta:
         model = Solicitud
         fields = [
-            'id', 'numero_solicitud', 'usuario', 'usuario_nombre',
-            'area_nombre', 'tipo', 'tipo_display', 'fecha_inicio',
-            'fecha_termino', 'cantidad_dias', 'estado', 'estado_display',
-            'fecha_solicitud'
+            'id', 'numero_solicitud', 'usuario', 'usuario_nombre', 'usuario_email',
+            'usuario_cargo', 'usuario_area', 'area_nombre', 'tipo', 'tipo_display', 
+            'fecha_inicio', 'fecha_termino', 'cantidad_dias', 'motivo', 
+            'telefono_contacto', 'estado', 'estado_display', 'fecha_solicitud',
+            'pdf_generado', 'url_pdf', 'creada_en', 'actualizada_en',
+            'aprobador', 'aprobador_nombre', 'fecha_aprobacion', 'comentario_aprobacion'
         ]
-        read_only_fields = ('id', 'numero_solicitud', 'fecha_solicitud')
+        read_only_fields = ('id', 'numero_solicitud', 'fecha_solicitud', 'creada_en', 'actualizada_en')
+    
+    def get_aprobador(self, obj):
+        """Retorna el ID del aprobador (jefatura o dirección)"""
+        try:
+            if hasattr(obj, 'jefatura_aprobador') and obj.jefatura_aprobador:
+                return str(obj.jefatura_aprobador.id)
+            elif hasattr(obj, 'direccion_aprobador') and obj.direccion_aprobador:
+                return str(obj.direccion_aprobador.id)
+        except Exception:
+            pass
+        return None
+    
+    def get_aprobador_nombre(self, obj):
+        """Retorna el nombre del aprobador"""
+        try:
+            if hasattr(obj, 'jefatura_aprobador') and obj.jefatura_aprobador:
+                return obj.jefatura_aprobador.get_nombre_completo()
+            elif hasattr(obj, 'direccion_aprobador') and obj.direccion_aprobador:
+                return obj.direccion_aprobador.get_nombre_completo()
+        except Exception:
+            pass
+        return None
+    
+    def get_fecha_aprobacion(self, obj):
+        """Retorna la fecha de aprobación"""
+        try:
+            if hasattr(obj, 'fecha_aprobacion_jefatura') and obj.fecha_aprobacion_jefatura:
+                return obj.fecha_aprobacion_jefatura.isoformat()
+            elif hasattr(obj, 'fecha_aprobacion_direccion') and obj.fecha_aprobacion_direccion:
+                return obj.fecha_aprobacion_direccion.isoformat()
+        except Exception:
+            pass
+        return None
+    
+    def get_comentario_aprobacion(self, obj):
+        """Retorna los comentarios de aprobación"""
+        try:
+            if hasattr(obj, 'comentarios_jefatura') and obj.comentarios_jefatura:
+                return obj.comentarios_jefatura
+            elif hasattr(obj, 'comentarios_direccion') and obj.comentarios_direccion:
+                return obj.comentarios_direccion
+        except Exception:
+            pass
+        return None
 
 
 class SolicitudDetailSerializer(serializers.ModelSerializer):

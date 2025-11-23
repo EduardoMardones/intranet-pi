@@ -9,8 +9,8 @@ interface BannerProps {
 }
 
 export const Banner: React.FC<BannerProps> = ({
-  title = "Bienvenido",
-  subtitle = "Te estábamos esperando!",
+  title = "",
+  subtitle = "",
   imageSrc,
   height = "400px",
 }) => {

@@ -268,9 +268,9 @@ export function VacacionesTable() {
                         >
                           <VerSolicitud id={sol.id} />
                         </button>
-                        {sol.estado === 'aprobada' && sol.archivo_adjunto && (
+                        {sol.estado === 'aprobada' && sol.url_pdf && (
                           <button
-                            onClick={() => window.open(solicitudService.getArchivoUrl(sol.archivo_adjunto!), '_blank')}
+                            onClick={() => window.open(sol.url_pdf, '_blank')}
                             className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                             title="Descargar archivo"
                           >
