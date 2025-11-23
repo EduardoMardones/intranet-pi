@@ -5,7 +5,7 @@
 
 export * from './authService';
 export * from './usuarioService';
-export * from './solicitudesService';
+export * from './solicitudService';
 export * from './actividadesService';
 export * from './anunciosService';
 export * from './documentosService';

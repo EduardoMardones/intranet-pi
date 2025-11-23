@@ -11,8 +11,10 @@ export { usuarioService } from './services/usuarioService';
 export { rolService } from './services/rolService';
 export { areaService } from './services/areaService';
 
+// Servicios de solicitudes
+export { solicitudService } from './services/solicitudService';
+
 // TODO: Agregar cuando se implementen
-// export { solicitudService } from './services/solicitudService';
 // export { documentoService } from './services/documentoService';
 // export { anuncioService } from './services/anuncioService';
 // export { actividadService } from './services/actividadService';
@@ -23,3 +25,10 @@ export { areaService } from './services/areaService';
 export type { Usuario, CrearUsuarioDTO, ActualizarUsuarioDTO } from './services/usuarioService';
 export type { Rol, CrearRolDTO } from './services/rolService';
 export type { Area, CrearAreaDTO } from './services/areaService';
+export type { 
+  Solicitud, 
+  CrearSolicitudDTO, 
+  TipoSolicitud, 
+  EstadoSolicitud,
+  EstadisticasSolicitudes 
+} from './services/solicitudService';

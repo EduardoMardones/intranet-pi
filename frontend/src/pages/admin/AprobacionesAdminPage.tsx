@@ -1,487 +1,568 @@
 // ======================================================
-// PÁGINA: Gestión de Aprobaciones de Vacaciones y Días Administrativos
+// PÁGINA ADMIN: Aprobar/Rechazar Solicitudes
 // Ubicación: src/pages/admin/AprobacionesAdminPage.tsx
-// Descripción: Sistema de aprobación dual (jefatura + administración)
+// Descripción: Panel para gestionar solicitudes pendientes
 // ======================================================
 
-import React, { useState, useMemo } from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
-import { SolicitudCard } from '@/components/common/aprobaciones/SolicitudCard';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  Filter,
-  Search,
-  TrendingUp,
-  Users,
-  Calendar,
+import bannerSolicitudes from '@/components/images/banner_images/BannerSolicitudes.png';
+import {
+  CalendarDays,
+  CheckCircle,
+  XCircle,
+  Clock,
+  User,
   FileText,
-  Download
+  Download,
+  Filter,
+  AlertCircle,
+  Send
 } from 'lucide-react';
-import type{ 
-  SolicitudVacaciones, 
-  EstadoSolicitud,
-  TipoSolicitud,
-  ESTADO_CONFIG 
-} from '@/types/solicitud';
-import { 
-  mockSolicitudes, 
-  filtrarSolicitudesPorRol,
-  obtenerSolicitudesPendientes 
-} from '@/data/mockSolicitudes';
-import bannerSolicitudes from "@/components/images/banner_images/BannerSolicitudes.png";
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/common/multiusos/textarea';
+import { useAuth } from '@/api/contexts/AuthContext';
+import { solicitudService } from '@/api';
+import type { Solicitud, TipoSolicitud } from '@/api';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 // ======================================================
-// INTERFAZ DE PROPS Y TIPOS
+// UTILIDADES
 // ======================================================
 
-type VistaActual = 'pendientes' | 'aprobadas' | 'rechazadas' | 'todas';
+const formatearFecha = (fecha: string): string => {
+  return new Date(fecha).toLocaleDateString('es-CL', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  });
+};
+
+const getTipoBadge = (tipo: TipoSolicitud) => {
+  return tipo === 'vacaciones' ? (
+    <Badge className="bg-blue-100 text-blue-800 border-blue-200 border">
+      Vacaciones
+    </Badge>
+  ) : (
+    <Badge className="bg-purple-100 text-purple-800 border-purple-200 border">
+      Días Administrativos
+    </Badge>
+  );
+};
 
 // ======================================================
 // COMPONENTE PRINCIPAL
 // ======================================================
 
 export const AprobacionesAdminPage: React.FC = () => {
+  const { user } = useAuth();
+
+  // Estados
+  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
+  const [filteredSolicitudes, setFilteredSolicitudes] = useState<Solicitud[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string>('');
+
+  // Modal
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<'aprobar' | 'rechazar'>('aprobar');
+  const [selectedSolicitud, setSelectedSolicitud] = useState<Solicitud | null>(null);
+  const [comentario, setComentario] = useState('');
+  const [processing, setProcessing] = useState(false);
+
+  // Filtros
+  const [filtroTipo, setFiltroTipo] = useState<TipoSolicitud | 'TODOS'>('TODOS');
+  const [filtroArea, setFiltroArea] = useState<string>('TODOS');
+
   // ======================================================
-  // ESTADOS
+  // EFECTOS
   // ======================================================
 
-  // Simulación de rol de usuario (en producción vendría del contexto de autenticación)
-  const [userRole] = useState<'admin' | 'jefatura'>('admin'); // Cambiar a 'jefatura' para probar ese rol
-  const [userArea] = useState<string>('Enfermería'); // Área del usuario si es jefatura
-
-  const [solicitudes, setSolicitudes] = useState<SolicitudVacaciones[]>(mockSolicitudes);
-  const [vistaActual, setVistaActual] = useState<VistaActual>('pendientes');
-  const [filtroTipo, setFiltroTipo] = useState<TipoSolicitud | 'todas'>('todas');
-  const [filtroArea, setFiltroArea] = useState<string>('todas');
-  const [busqueda, setBusqueda] = useState<string>('');
-  const [mostrarFiltros, setMostrarFiltros] = useState(false);
-
-  // ======================================================
-  // DATOS FILTRADOS
-  // ======================================================
-
-  // Filtrar solicitudes según rol del usuario
-  const solicitudesPorRol = useMemo(() => {
-    return filtrarSolicitudesPorRol(solicitudes, userRole, userArea);
-  }, [solicitudes, userRole, userArea]);
-
-  // Obtener áreas únicas para el filtro
-  const areasDisponibles = useMemo(() => {
-    const areas = new Set(solicitudesPorRol.map(s => s.usuario.area));
-    return Array.from(areas).sort();
-  }, [solicitudesPorRol]);
-
-  // Aplicar filtros
-  const solicitudesFiltradas = useMemo(() => {
-    let resultado = [...solicitudesPorRol];
-
-    // Filtrar por vista actual
-    switch (vistaActual) {
-      case 'pendientes':
-        resultado = obtenerSolicitudesPendientes(resultado, userRole);
-        break;
-      case 'aprobadas':
-        resultado = resultado.filter(s => s.estado === 'aprobada');
-        break;
-      case 'rechazadas':
-        resultado = resultado.filter(s => 
-          s.estado === 'rechazada_jefatura' || 
-          s.estado === 'rechazada_administracion'
-        );
-        break;
-      // 'todas' no filtra
+  useEffect(() => {
+    if (user?.id) {
+      cargarSolicitudes();
     }
+  }, [user]);
 
-    // Filtrar por tipo
-    if (filtroTipo !== 'todas') {
+  useEffect(() => {
+    aplicarFiltros();
+  }, [solicitudes, filtroTipo, filtroArea]);
+
+  // ======================================================
+  // FUNCIONES
+  // ======================================================
+
+  const cargarSolicitudes = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await solicitudService.getPendientes();
+      // Ordenar por fecha de creación (más antigua primero)
+      const ordenadas = data.sort((a, b) => 
+        new Date(a.creada_en).getTime() - new Date(b.creada_en).getTime()
+      );
+      setSolicitudes(ordenadas);
+    } catch (err: any) {
+      console.error('Error al cargar solicitudes:', err);
+      setError('No se pudieron cargar las solicitudes pendientes. Intenta nuevamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const aplicarFiltros = () => {
+    let resultado = [...solicitudes];
+
+    if (filtroTipo !== 'TODOS') {
       resultado = resultado.filter(s => s.tipo === filtroTipo);
     }
 
-    // Filtrar por área
-    if (filtroArea !== 'todas') {
-      resultado = resultado.filter(s => s.usuario.area === filtroArea);
+    if (filtroArea !== 'TODOS') {
+      resultado = resultado.filter(s => s.usuario_area === filtroArea);
     }
 
-    // Filtrar por búsqueda
-    if (busqueda.trim()) {
-      const termino = busqueda.toLowerCase();
-      resultado = resultado.filter(s => 
-        s.usuario.nombre.toLowerCase().includes(termino) ||
-        s.usuario.apellidos.toLowerCase().includes(termino) ||
-        s.usuario.rut.includes(termino) ||
-        s.usuario.area.toLowerCase().includes(termino)
-      );
+    setFilteredSolicitudes(resultado);
+  };
+
+  const abrirModal = (solicitud: Solicitud, tipo: 'aprobar' | 'rechazar') => {
+    setSelectedSolicitud(solicitud);
+    setModalType(tipo);
+    setComentario('');
+    setModalOpen(true);
+  };
+
+  const cerrarModal = () => {
+    setModalOpen(false);
+    setSelectedSolicitud(null);
+    setComentario('');
+  };
+
+  const handleAprobar = async () => {
+    if (!selectedSolicitud) return;
+
+    setProcessing(true);
+
+    try {
+      await solicitudService.aprobar(selectedSolicitud.id, {
+        comentario_aprobacion: comentario.trim() || undefined
+      });
+
+      setSuccessMessage(`Solicitud de ${selectedSolicitud.usuario_nombre} aprobada exitosamente`);
+      await cargarSolicitudes();
+      cerrarModal();
+
+      setTimeout(() => setSuccessMessage(''), 5000);
+    } catch (err: any) {
+      console.error('Error al aprobar solicitud:', err);
+      setError(err.response?.data?.message || 'Error al aprobar la solicitud');
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleRechazar = async () => {
+    if (!selectedSolicitud) return;
+
+    if (!comentario.trim()) {
+      setError('Debes proporcionar un motivo para rechazar la solicitud');
+      setTimeout(() => setError(''), 3000);
+      return;
     }
 
-    // Ordenar por fecha de solicitud (más recientes primero)
-    resultado.sort((a, b) => 
-      new Date(b.fechaSolicitud).getTime() - new Date(a.fechaSolicitud).getTime()
+    setProcessing(true);
+
+    try {
+      await solicitudService.rechazar(selectedSolicitud.id, {
+        comentario_aprobacion: comentario.trim()
+      });
+
+      setSuccessMessage(`Solicitud de ${selectedSolicitud.usuario_nombre} rechazada`);
+      await cargarSolicitudes();
+      cerrarModal();
+
+      setTimeout(() => setSuccessMessage(''), 5000);
+    } catch (err: any) {
+      console.error('Error al rechazar solicitud:', err);
+      setError(err.response?.data?.message || 'Error al rechazar la solicitud');
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const descargarArchivo = (archivoPath: string) => {
+    const url = solicitudService.getArchivoUrl(archivoPath);
+    window.open(url, '_blank');
+  };
+
+  // ======================================================
+  // ÁREAS ÚNICAS (para filtro)
+  // ======================================================
+
+  const areasUnicas = Array.from(new Set(solicitudes.map(s => s.usuario_area)));
+
+  // ======================================================
+  // RENDER
+  // ======================================================
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <UnifiedNavbar />
+        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+          <p className="text-gray-500">Debes iniciar sesión</p>
+        </div>
+        <Footer />
+      </div>
     );
+  }
 
-    return resultado;
-  }, [solicitudesPorRol, vistaActual, filtroTipo, filtroArea, busqueda, userRole]);
-
-  // ======================================================
-  // ESTADÍSTICAS
-  // ======================================================
-
-  const estadisticas = useMemo(() => {
-    const pendientes = obtenerSolicitudesPendientes(solicitudesPorRol, userRole);
-    
-    return {
-      total: solicitudesPorRol.length,
-      pendientes: pendientes.length,
-      aprobadas: solicitudesPorRol.filter(s => s.estado === 'aprobada').length,
-      rechazadas: solicitudesPorRol.filter(s => 
-        s.estado === 'rechazada_jefatura' || 
-        s.estado === 'rechazada_administracion'
-      ).length,
-      porArea: areasDisponibles.reduce((acc, area) => {
-        acc[area] = solicitudesPorRol.filter(s => s.usuario.area === area).length;
-        return acc;
-      }, {} as Record<string, number>)
-    };
-  }, [solicitudesPorRol, userRole, areasDisponibles]);
-
-  // ======================================================
-  // MANEJADORES DE EVENTOS
-  // ======================================================
-
-  const handleAprobar = (id: string, comentarios?: string) => {
-    setSolicitudes(prev => prev.map(s => {
-      if (s.id === id) {
-        const nuevoEstado: EstadoSolicitud = 
-          userRole === 'jefatura' 
-            ? 'aprobada_jefatura' 
-            : 'aprobada';
-
-        const aprobacion = {
-          nivel: userRole === 'jefatura' ? 'jefatura' as const : 'administracion' as const,
-          aprobadoPor: 'user123', // En producción vendría del contexto
-          nombreAprobador: userRole === 'admin' ? 'Director Juan Valenzuela' : 'Jefe de Área',
-          fecha: new Date(),
-          comentarios: comentarios || '',
-          accion: 'aprobada' as const
-        };
-
-        return {
-          ...s,
-          estado: nuevoEstado,
-          ...(userRole === 'jefatura' 
-            ? { aprobacionJefatura: aprobacion }
-            : { aprobacionAdministracion: aprobacion }
-          ),
-          updatedAt: new Date()
-        };
-      }
-      return s;
-    }));
-
-    // Aquí iría la llamada a la API en producción
-    console.log(`Solicitud ${id} aprobada por ${userRole}`, comentarios);
-  };
-
-  const handleRechazar = (id: string, comentarios?: string) => {
-    setSolicitudes(prev => prev.map(s => {
-      if (s.id === id) {
-        const nuevoEstado: EstadoSolicitud = 
-          userRole === 'jefatura' 
-            ? 'rechazada_jefatura' 
-            : 'rechazada_administracion';
-
-        const aprobacion = {
-          nivel: userRole === 'jefatura' ? 'jefatura' as const : 'administracion' as const,
-          aprobadoPor: 'user123',
-          nombreAprobador: userRole === 'admin' ? 'Director Juan Valenzuela' : 'Jefe de Área',
-          fecha: new Date(),
-          comentarios: comentarios || '',
-          accion: 'rechazada' as const
-        };
-
-        return {
-          ...s,
-          estado: nuevoEstado,
-          ...(userRole === 'jefatura' 
-            ? { aprobacionJefatura: aprobacion }
-            : { aprobacionAdministracion: aprobacion }
-          ),
-          updatedAt: new Date()
-        };
-      }
-      return s;
-    }));
-
-    console.log(`Solicitud ${id} rechazada por ${userRole}`, comentarios);
-  };
-
-  const handleExportar = () => {
-    // En producción: generar archivo Excel o PDF con las solicitudes filtradas
-    console.log('Exportando solicitudes:', solicitudesFiltradas);
-    alert('Función de exportación en desarrollo');
-  };
-
-  // ======================================================
-  // RENDERIZADO
-  // ======================================================
+  // Verificar permisos
+  if (!user.rol_puede_aprobar_solicitudes) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <UnifiedNavbar />
+        <Banner title="Aprobaciones" imageSrc={bannerSolicitudes} />
+        <div className="flex items-center justify-center h-[calc(100vh-300px)]">
+          <Alert className="max-w-md bg-red-50 border-red-200">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              No tienes permisos para aprobar solicitudes.
+            </AlertDescription>
+          </Alert>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50">
       <UnifiedNavbar />
-      <Banner 
-        title="" 
-        subtitle={
-          userRole === 'admin' 
-            ? "" 
-            : ``
-        }
-        imageSrc={bannerSolicitudes}
-      />
+      <Banner title="Gestión de Solicitudes" imageSrc={bannerSolicitudes} />
 
-      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        {/* Badge de Rol */}
-        <div className="mb-6">
-          <Badge className={
-            userRole === 'admin' 
-              ? 'bg-purple-100 text-purple-700 border-purple-300 text-sm px-4 py-2'
-              : 'bg-blue-100 text-blue-700 border-blue-300 text-sm px-4 py-2'
-          }>
-            {userRole === 'admin' ? '👔 Rol: Administrador' : '📋 Rol: Jefatura'}
-            {userRole === 'jefatura' && ` - ${userArea}`}
-          </Badge>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        {/* Mensajes */}
+        {successMessage && (
+          <Alert className="mb-6 bg-green-50 border-green-200">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              {successMessage}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {error && (
+          <Alert className="mb-6 bg-red-50 border-red-200">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              {error}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-yellow-100 rounded-lg">
+                <Clock className="w-6 h-6 text-yellow-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Total Solicitudes</p>
-                <p className="text-3xl font-bold text-gray-900">{estadisticas.total}</p>
+                <p className="text-gray-500 text-sm">Pendientes</p>
+                <p className="text-3xl font-bold text-gray-800">{solicitudes.length}</p>
               </div>
-              <FileText className="h-10 w-10 text-gray-400" />
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-yellow-200 bg-yellow-50">
-            <div className="flex items-center justify-between">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <CalendarDays className="w-6 h-6 text-blue-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Pendientes</p>
-                <p className="text-3xl font-bold text-yellow-600">{estadisticas.pendientes}</p>
-              </div>
-              <Clock className="h-10 w-10 text-yellow-500" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-green-200 bg-green-50">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Aprobadas</p>
-                <p className="text-3xl font-bold text-green-600">{estadisticas.aprobadas}</p>
-              </div>
-              <CheckCircle className="h-10 w-10 text-green-500" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-red-200 bg-red-50">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Rechazadas</p>
-                <p className="text-3xl font-bold text-red-600">{estadisticas.rechazadas}</p>
-              </div>
-              <XCircle className="h-10 w-10 text-red-500" />
-            </div>
-          </div>
-        </div>
-
-        {/* Pestañas de Vista */}
-        <div className="bg-white rounded-lg shadow-sm mb-6 border border-gray-200">
-          <div className="flex border-b border-gray-200 overflow-x-auto">
-            <button
-              onClick={() => setVistaActual('pendientes')}
-              className={`px-6 py-4 text-sm font-medium transition-colors ${
-                vistaActual === 'pendientes'
-                  ? 'border-b-2 border-blue-500 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span>Pendientes</span>
-                <Badge className="bg-yellow-100 text-yellow-700">
-                  {estadisticas.pendientes}
-                </Badge>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setVistaActual('aprobadas')}
-              className={`px-6 py-4 text-sm font-medium transition-colors ${
-                vistaActual === 'aprobadas'
-                  ? 'border-b-2 border-blue-500 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
-                <span>Aprobadas</span>
-                <Badge className="bg-green-100 text-green-700">
-                  {estadisticas.aprobadas}
-                </Badge>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setVistaActual('rechazadas')}
-              className={`px-6 py-4 text-sm font-medium transition-colors ${
-                vistaActual === 'rechazadas'
-                  ? 'border-b-2 border-blue-500 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <XCircle className="h-4 w-4" />
-                <span>Rechazadas</span>
-                <Badge className="bg-red-100 text-red-700">
-                  {estadisticas.rechazadas}
-                </Badge>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setVistaActual('todas')}
-              className={`px-6 py-4 text-sm font-medium transition-colors ${
-                vistaActual === 'todas'
-                  ? 'border-b-2 border-blue-500 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                <span>Todas</span>
-                <Badge className="bg-gray-100 text-gray-700">
-                  {estadisticas.total}
-                </Badge>
-              </div>
-            </button>
-          </div>
-
-          {/* Barra de Búsqueda y Filtros */}
-          <div className="p-4 space-y-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Búsqueda */}
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar por nombre, RUT o área..."
-                  value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Botones de acción */}
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setMostrarFiltros(!mostrarFiltros)}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <Filter className="h-4 w-4" />
-                  Filtros
-                </Button>
-                <Button
-                  onClick={handleExportar}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  Exportar
-                </Button>
-              </div>
-            </div>
-
-            {/* Panel de Filtros */}
-            {mostrarFiltros && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                {/* Filtro por tipo */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tipo de Solicitud
-                  </label>
-                  <select
-                    value={filtroTipo}
-                    onChange={(e) => setFiltroTipo(e.target.value as TipoSolicitud | 'todas')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="todas">Todas</option>
-                    <option value="vacaciones">Vacaciones</option>
-                    <option value="dia_administrativo">Días Administrativos</option>
-                  </select>
-                </div>
-
-                {/* Filtro por área (solo para admin) */}
-                {userRole === 'admin' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Área
-                    </label>
-                    <select
-                      value={filtroArea}
-                      onChange={(e) => setFiltroArea(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="todas">Todas las áreas</option>
-                      {areasDisponibles.map(area => (
-                        <option key={area} value={area}>{area}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Lista de Solicitudes */}
-        <div className="space-y-4">
-          {solicitudesFiltradas.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm p-12 text-center border border-gray-200">
-              <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                No hay solicitudes
-              </h3>
-              <p className="text-gray-600">
-                No se encontraron solicitudes con los filtros seleccionados
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-gray-600">
-                  Mostrando <span className="font-semibold">{solicitudesFiltradas.length}</span> solicitud(es)
+                <p className="text-gray-500 text-sm">Vacaciones</p>
+                <p className="text-3xl font-bold text-gray-800">
+                  {solicitudes.filter(s => s.tipo === 'vacaciones').length}
                 </p>
               </div>
+            </div>
+          </div>
 
-              {solicitudesFiltradas.map(solicitud => (
-                <SolicitudCard
-                  key={solicitud.id}
-                  solicitud={solicitud}
-                  onAprobar={handleAprobar}
-                  onRechazar={handleRechazar}
-                  userRole={userRole}
-                />
-              ))}
-            </>
-          )}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <FileText className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-gray-500 text-sm">Días Admin.</p>
+                <p className="text-3xl font-bold text-gray-800">
+                  {solicitudes.filter(s => s.tipo === 'dia_administrativo').length}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
+
+        {/* Filtros */}
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Filter className="w-5 h-5 text-gray-400" />
+              <span className="text-sm font-semibold text-gray-700">Filtros:</span>
+            </div>
+
+            <Select value={filtroTipo} onValueChange={(value: any) => setFiltroTipo(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="TODOS">Todos los tipos</SelectItem>
+                <SelectItem value="VACACIONES">Vacaciones</SelectItem>
+                <SelectItem value="ADMINISTRATIVO">Días Admin.</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filtroArea} onValueChange={setFiltroArea}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Área" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="TODOS">Todas las áreas</SelectItem>
+                {areasUnicas.map(area => (
+                  <SelectItem key={area} value={area}>{area}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="ml-auto text-sm text-gray-500">
+              {filteredSolicitudes.length} solicitud(es)
+            </div>
+          </div>
+        </div>
+
+        {/* Lista de solicitudes */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#52FFB8]"></div>
+            <p className="text-gray-500 mt-4">Cargando solicitudes...</p>
+          </div>
+        ) : filteredSolicitudes.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow">
+            <CheckCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">
+              {solicitudes.length === 0 
+                ? '¡Excelente! No hay solicitudes pendientes'
+                : 'No hay solicitudes que coincidan con los filtros'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredSolicitudes.map((solicitud) => (
+              <div key={solicitud.id} className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-3 rounded-lg ${
+                      solicitud.tipo === 'vacaciones' ? 'bg-blue-50' : 'bg-purple-50'
+                    }`}>
+                      <CalendarDays className={`w-6 h-6 ${
+                        solicitud.tipo === 'vacaciones' ? 'text-blue-500' : 'text-purple-500'
+                      }`} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        {getTipoBadge(solicitud.tipo)}
+                        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 border flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          Pendiente
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        Solicitado el {formatearFecha(solicitud.creada_en)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Información del solicitante */}
+                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <User className="w-4 h-4 text-gray-400" />
+                    <p className="text-xs text-gray-500 font-semibold">SOLICITANTE</p>
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500">Nombre</p>
+                      <p className="font-semibold text-gray-800">{solicitud.usuario_nombre}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Cargo</p>
+                      <p className="font-semibold text-gray-800">{solicitud.usuario_cargo}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Área</p>
+                      <p className="font-semibold text-gray-800">{solicitud.usuario_area}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detalles de la solicitud */}
+                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Período Solicitado</p>
+                    <p className="font-semibold text-gray-800">
+                      {formatearFecha(solicitud.fecha_inicio)}
+                    </p>
+                    <p className="font-semibold text-gray-800">
+                      hasta {formatearFecha(solicitud.fecha_termino)}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {solicitud.cantidad_dias} día(s) hábil(es)
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Motivo</p>
+                    <p className="text-sm text-gray-700">{solicitud.motivo}</p>
+                  </div>
+                </div>
+
+                {/* Archivo adjunto */}
+                {solicitud.archivo_adjunto && (
+                  <div className="mb-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => descargarArchivo(solicitud.archivo_adjunto!)}
+                      className="text-[#52FFB8] hover:bg-[#52FFB8] hover:text-gray-900"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Ver archivo adjunto
+                    </Button>
+                  </div>
+                )}
+
+                {/* Acciones */}
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button
+                    onClick={() => abrirModal(solicitud, 'aprobar')}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Aprobar
+                  </Button>
+
+                  <Button
+                    onClick={() => abrirModal(solicitud, 'rechazar')}
+                    variant="outline"
+                    className="flex-1 text-red-600 border-red-600 hover:bg-red-50"
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Rechazar
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal de confirmación */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {modalType === 'aprobar' ? 'Aprobar Solicitud' : 'Rechazar Solicitud'}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedSolicitud && (
+                <>
+                  Solicitud de <strong>{selectedSolicitud.usuario_nombre}</strong>
+                  <br />
+                  {selectedSolicitud.tipo === 'vacaciones' ? 'Vacaciones' : 'Días Administrativos'}
+                  {' '}del {formatearFecha(selectedSolicitud.fecha_inicio)} al{' '}
+                  {formatearFecha(selectedSolicitud.fecha_termino)}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <Label className="text-gray-700 font-semibold mb-2 block">
+              Comentario {modalType === 'rechazar' ? '(Obligatorio)' : '(Opcional)'}
+            </Label>
+            <Textarea
+              value={comentario}
+              onChange={(e) => setComentario(e.target.value)}
+              placeholder={
+                modalType === 'aprobar'
+                  ? 'Agrega un comentario adicional (opcional)'
+                  : 'Explica el motivo del rechazo'
+              }
+              rows={4}
+              className={modalType === 'rechazar' && !comentario.trim() ? 'border-red-500' : ''}
+            />
+            {modalType === 'rechazar' && !comentario.trim() && (
+              <p className="text-xs text-red-500 mt-1">
+                Debes proporcionar un motivo para rechazar
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={cerrarModal}
+              disabled={processing}
+            >
+              Cancelar
+            </Button>
+
+            <Button
+              onClick={modalType === 'aprobar' ? handleAprobar : handleRechazar}
+              disabled={processing || (modalType === 'rechazar' && !comentario.trim())}
+              className={
+                modalType === 'aprobar'
+                  ? 'bg-green-600 hover:bg-green-700'
+                  : 'bg-red-600 hover:bg-red-700'
+              }
+            >
+              {processing ? (
+                'Procesando...'
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  {modalType === 'aprobar' ? 'Aprobar' : 'Rechazar'}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>

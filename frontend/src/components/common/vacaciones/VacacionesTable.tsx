@@ -4,103 +4,52 @@
 // Descripción: Tabla de solicitudes con estilo moderno
 // ======================================================
 
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { StateColorButton } from './StateColorButton';
 import PDFDownload from '../buttons/PDFDownload';
 import VerSolicitud from '../buttons/VerSolicitud';
 import { Search, Filter, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-
-// ======================================================
-// TIPOS
-// ======================================================
-
-interface Solicitud {
-  ID: string;
-  Tipo: string;
-  Periodo: string;
-  Días: number;
-  EstadoGeneral: string;
-  Jefatura: string;
-  Dirección: string;
-  FechaSolicitud: string;
-}
-
-// ======================================================
-// DATOS MOCK
-// ======================================================
-
-const generarSolicitudesMock = (): Solicitud[] => {
-  const solicitudes: Solicitud[] = [
-    {
-      ID: "VAC001",
-      Tipo: "Vacaciones",
-      Periodo: "22/10/2025 - 25/10/2025",
-      Días: 4,
-      EstadoGeneral: "Aprobado",
-      Jefatura: "María Torres",
-      Dirección: "Recursos Humanos",
-      FechaSolicitud: "15/10/2025"
-    },
-    {
-      ID: "VAC002",
-      Tipo: "Vacaciones",
-      Periodo: "05/11/2025 - 09/11/2025",
-      Días: 5,
-      EstadoGeneral: "Pendiente",
-      Jefatura: "Carlos Rivas",
-      Dirección: "Finanzas",
-      FechaSolicitud: "01/11/2025"
-    },
-    {
-      ID: "VAC003",
-      Tipo: "Días Admin.",
-      Periodo: "10/12/2025 - 12/12/2025",
-      Días: 3,
-      EstadoGeneral: "Rechazado",
-      Jefatura: "Laura Pino",
-      Dirección: "Operaciones",
-      FechaSolicitud: "09/12/2025"
-    }
-  ];
-
-  // Generar 12 solicitudes adicionales
-  const estados = ["Aprobado", "Pendiente", "Rechazado"];
-  
-  for (let i = 0; i < 12; i++) {
-    const id = `VAC${(i + 4).toString().padStart(3, "0")}`;
-    const dias = Math.floor(Math.random() * 5) + 3;
-    const startDate = new Date(2025, Math.floor(Math.random() * 12), Math.floor(Math.random() * 25) + 1);
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + dias);
-    
-    const formatDate = (d: Date) => 
-      `${d.getDate().toString().padStart(2,"0")}/${(d.getMonth()+1).toString().padStart(2,"0")}/${d.getFullYear()}`;
-    
-    solicitudes.push({
-      ID: id,
-      Tipo: Math.random() > 0.5 ? "Vacaciones" : "Días Admin.",
-      Periodo: `${formatDate(startDate)} - ${formatDate(endDate)}`,
-      Días: dias,
-      EstadoGeneral: estados[Math.floor(Math.random() * estados.length)],
-      Jefatura: `Jefatura ${i + 1}`,
-      Dirección: `Departamento ${i + 1}`,
-      FechaSolicitud: formatDate(new Date(2025, Math.floor(Math.random() * 12), Math.floor(Math.random() * 25) + 1))
-    });
-  }
-
-  return solicitudes;
-};
+// ✅ NUEVO: Imports del backend
+import { solicitudService } from '@/api';
+import type { Solicitud, EstadoSolicitud, TipoSolicitud } from '@/api';
 
 // ======================================================
 // COMPONENTE PRINCIPAL
 // ======================================================
 
 export function VacacionesTable() {
-  const [solicitudes] = useState<Solicitud[]>(generarSolicitudesMock());
+  // ✅ NUEVO: Estado para solicitudes del backend
+  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+  
   const [busqueda, setBusqueda] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<string>('todos');
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
+
+  // ✅ NUEVO: Cargar solicitudes desde el backend
+  useEffect(() => {
+    cargarSolicitudes();
+  }, []);
+
+  const cargarSolicitudes = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await solicitudService.getMisSolicitudes();
+      // Ordenar por fecha de creación (más reciente primero)
+      const ordenadas = data.sort((a, b) => 
+        new Date(b.creada_en).getTime() - new Date(a.creada_en).getTime()
+      );
+      setSolicitudes(ordenadas);
+    } catch (err) {
+      console.error('Error al cargar solicitudes:', err);
+      setError('No se pudieron cargar las solicitudes');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ======================================================
   // FILTROS
@@ -109,12 +58,12 @@ export function VacacionesTable() {
   const solicitudesFiltradas = useMemo(() => {
     return solicitudes.filter(sol => {
       const cumpleBusqueda = 
-        sol.ID.toLowerCase().includes(busqueda.toLowerCase()) ||
-        sol.Tipo.toLowerCase().includes(busqueda.toLowerCase()) ||
-        sol.Jefatura.toLowerCase().includes(busqueda.toLowerCase());
+        sol.id.toLowerCase().includes(busqueda.toLowerCase()) ||
+        sol.tipo.toLowerCase().includes(busqueda.toLowerCase()) ||
+        (sol.aprobador_nombre && sol.aprobador_nombre.toLowerCase().includes(busqueda.toLowerCase()));
       
-      const cumpleTipo = filtroTipo === 'todos' || sol.Tipo === filtroTipo;
-      const cumpleEstado = filtroEstado === 'todos' || sol.EstadoGeneral === filtroEstado;
+      const cumpleTipo = filtroTipo === 'todos' || sol.tipo === filtroTipo;
+      const cumpleEstado = filtroEstado === 'todos' || sol.estado === filtroEstado;
       
       return cumpleBusqueda && cumpleTipo && cumpleEstado;
     });
@@ -124,15 +73,75 @@ export function VacacionesTable() {
   // HELPERS
   // ======================================================
 
-  const getBadgeTipo = (tipo: string) => {
-    return tipo === 'Vacaciones' 
+  const getBadgeTipo = (tipo: TipoSolicitud) => {
+    return tipo === 'vacaciones' 
       ? 'bg-blue-100 text-blue-700 border-blue-300'
       : 'bg-purple-100 text-purple-700 border-purple-300';
+  };
+
+  const formatearFecha = (fecha: string): string => {
+    return new Date(fecha).toLocaleDateString('es-CL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatearPeriodo = (inicio: string, fin: string): string => {
+    return `${formatearFecha(inicio)} - ${formatearFecha(fin)}`;
+  };
+
+  // Mapear estados del backend a los del componente
+  const mapearEstado = (estado: EstadoSolicitud): string => {
+    const mapeo: Record<EstadoSolicitud, string> = {
+      'pendiente_jefatura': 'Pendiente',
+      'aprobada_jefatura': 'Aprobado Jefatura',
+      'rechazada_jefatura': 'Rechazado',
+      'pendiente_direccion': 'Pendiente Dirección',
+      'aprobada': 'Aprobado',
+      'rechazada_direccion': 'Rechazado',
+      'cancelada': 'Cancelado'
+    };
+    return mapeo[estado] || estado;
+  };
+
+  // Mapear tipo del backend a los del componente
+  const mapearTipo = (tipo: TipoSolicitud): string => {
+    return tipo === 'vacaciones' ? 'Vacaciones' : 'Días Admin.';
   };
 
   // ======================================================
   // RENDERIZADO
   // ======================================================
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
+        <div className="flex flex-col items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-500">Cargando solicitudes...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-red-200 p-12">
+        <div className="flex flex-col items-center justify-center text-center">
+          <FileText className="h-12 w-12 text-red-300 mb-4" />
+          <p className="text-red-600 font-semibold mb-2">Error al cargar solicitudes</p>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <button
+            onClick={cargarSolicitudes}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -160,8 +169,8 @@ export function VacacionesTable() {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="todos">Todos los tipos</option>
-              <option value="Vacaciones">Vacaciones</option>
-              <option value="Días Admin.">Días Administrativos</option>
+              <option value="VACACIONES">Vacaciones</option>
+              <option value="ADMINISTRATIVO">Días Administrativos</option>
             </select>
 
             <select
@@ -170,9 +179,9 @@ export function VacacionesTable() {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="todos">Todos los estados</option>
-              <option value="Aprobado">Aprobado</option>
-              <option value="Pendiente">Pendiente</option>
-              <option value="Rechazado">Rechazado</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="APROBADA">Aprobado</option>
+              <option value="RECHAZADA">Rechazado</option>
             </select>
           </div>
         </div>
@@ -223,49 +232,49 @@ export function VacacionesTable() {
                 </tr>
               ) : (
                 solicitudesFiltradas.map((sol) => (
-                  <tr key={sol.ID} className="hover:bg-gray-50 transition-colors">
+                  <tr key={sol.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {sol.ID}
+                      {sol.id.substring(0, 8)}...
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge className={getBadgeTipo(sol.Tipo)}>
-                        {sol.Tipo}
+                      <Badge className={getBadgeTipo(sol.tipo)}>
+                        {mapearTipo(sol.tipo)}
                       </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {sol.Periodo}
+                      {formatearPeriodo(sol.fecha_inicio, sol.fecha_termino)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {sol.Días} días
+                      {sol.cantidad_dias} días
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <StateColorButton estado={sol.EstadoGeneral} />
+                      <StateColorButton estado={mapearEstado(sol.estado)} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {sol.Jefatura}
+                      {sol.aprobador_nombre || 'Pendiente'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {sol.Dirección}
+                      {sol.usuario_area}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {sol.FechaSolicitud}
+                      {formatearFecha(sol.creada_en)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() => {/* Ver solicitud */}}
+                          onClick={() => {/* Ver solicitud - TODO: Implementar modal */}}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Ver detalles"
                         >
-                          <VerSolicitud id={sol.ID} />
+                          <VerSolicitud id={sol.id} />
                         </button>
-                        {sol.EstadoGeneral === 'Aprobado' && (
+                        {sol.estado === 'aprobada' && sol.archivo_adjunto && (
                           <button
-                            onClick={() => {/* Descargar PDF */}}
+                            onClick={() => window.open(solicitudService.getArchivoUrl(sol.archivo_adjunto!), '_blank')}
                             className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            title="Descargar PDF"
+                            title="Descargar archivo"
                           >
-                            <PDFDownload fileName={`${sol.ID}.pdf`} />
+                            <PDFDownload fileName={`${sol.id}.pdf`} />
                           </button>
                         )}
                       </div>
