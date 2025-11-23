@@ -78,24 +78,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (rut: string, password: string) => {
-    setIsLoading(true);
-    try {
-      console.log('🔐 Intentando login...');
-      const response = await authService.login({ rut, password });
-      
-      console.log('✅ Login exitoso:', response.user.nombre_completo);
-      console.log('📊 Datos del usuario recibidos:', response.user);
-      
-      // Importante: obtener el usuario completo después del login
-      const fullUser = await authService.getCurrentUser();
-      setUser(fullUser);
-    } catch (error) {
-      console.error('❌ Error en login:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  try {
+    console.log('🔐 Intentando login...');
+    const response = await authService.login({ rut, password });
+    
+    console.log('✅ Login exitoso, respuesta del servidor:', response);
+    
+    // ✅ IMPORTANTE: Obtener el usuario completo DESPUÉS del login
+    // No confiar en response.user porque puede no existir
+    const fullUser = await authService.getCurrentUser();
+    
+    console.log('✅ Usuario completo obtenido:', fullUser.nombre_completo);
+    setUser(fullUser);
+    
+    console.log('✅ Login completado exitosamente');
+  } catch (error) {
+    console.error('❌ Error en login:', error);
+    setUser(null); // ✅ Limpiar usuario en caso de error
+    throw error;
+  }
+};
 
   const logout = async () => {
     try {

@@ -10,7 +10,8 @@ import React, { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SearchBar } from '@/components/common/directorio/SearchBar';
-import { FormularioFuncionario } from '@/components/common/directorio/Formulariofuncionario';
+import { FormularioUsuarioCompleto } from '@/components/common/usuarios/FormularioUsuarioCompleto';
+import type { Usuario, CrearUsuarioDTO, EditarUsuarioDTO } from '@/types/usuario';
 import type { Employee, AreaType, RoleType } from '@/types/employee';
 import { ROLE_CONFIG, AREA_CONFIG } from '@/types/employee';
 import { mockEmployees, searchEmployees } from '@/data/mockEmployees';
@@ -80,8 +81,7 @@ export const DirectorioAdminPage: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState({ title: '', description: '' });
-  const [empleadoEditar, setEmpleadoEditar] = useState<Employee | undefined>();
-
+  const [empleadoEditar, setEmpleadoEditar] = useState<Usuario | undefined>();
   const filteredEmployees = useMemo(() => {
     let filtered = searchEmployees(employees, searchQuery);
     if (selectedArea !== 'all') filtered = filtered.filter(e => e.area === selectedArea);
@@ -103,22 +103,56 @@ export const DirectorioAdminPage: React.FC = () => {
     setTimeout(() => setShowSuccessMessage(false), 3000);
   };
 
-  const handleAgregarFuncionario = (nuevoFuncionario: Omit<Employee, 'id'>) => {
-    const nuevoId = `EMP${(employees.length + 1).toString().padStart(3, '0')}`;
-    setEmployees((prev) => [...prev, { id: nuevoId, ...nuevoFuncionario }]);
-    mostrarMensajeExito('¡Funcionario agregado!', 'El funcionario ha sido registrado exitosamente');
+  const handleAgregarFuncionario = (nuevoUsuario: CrearUsuarioDTO | EditarUsuarioDTO) => {
+  console.log('Crear usuario:', nuevoUsuario);
+  // TODO: Llamar al backend para crear usuario
+  mostrarMensajeExito('¡Funcionario agregado!', 'El funcionario ha sido registrado exitosamente');
   };
 
   const handleEditarClick = (employee: Employee) => {
-    setEmpleadoEditar(employee);
-    setDialogOpen(true);
+  // Adaptador temporal: convertir Employee a Usuario
+  const usuarioAdaptado: Usuario = {
+    id: employee.id,
+    rut: '12.345.678-9', // TODO: Obtener del backend
+    nombre: employee.nombre,
+    apellido_paterno: employee.apellidos.split(' ')[0] || '',
+    apellido_materno: employee.apellidos.split(' ')[1] || '',
+    email: employee.email,
+    telefono: employee.telefono,
+    fecha_nacimiento: '',
+    direccion: '',
+    cargo: '', // TODO: Obtener del backend
+    area: employee.area,
+    rol: employee.role,
+    fecha_ingreso: new Date().toISOString().split('T')[0],
+    es_jefe_de_area: false,
+    contacto_emergencia_nombre: '',
+    contacto_emergencia_telefono: '',
+    contacto_emergencia_relacion: '',
+    dias_vacaciones_anuales: 15,
+    dias_vacaciones_disponibles: 15,
+    dias_vacaciones_usados: 0,
+    dias_administrativos_anuales: 6,
+    dias_administrativos_disponibles: 6,
+    dias_administrativos_usados: 0,
+    avatar: employee.avatar,
+    tema_preferido: 'light',
+    is_active: true,
+    is_staff: false,
+    creado_en: new Date().toISOString(),
+    actualizado_en: new Date().toISOString(),
+  };
+  
+  setEmpleadoEditar(usuarioAdaptado);
+  setDialogOpen(true);
   };
 
-  const handleGuardarEdicion = (funcionarioEditado: Omit<Employee, 'id'>) => {
-    if (!empleadoEditar) return;
-    setEmployees((prev) => prev.map((emp) => emp.id === empleadoEditar.id ? { ...funcionarioEditado, id: empleadoEditar.id } : emp));
-    mostrarMensajeExito('¡Datos editados!', 'Los cambios han sido guardados');
-    setEmpleadoEditar(undefined);
+  const handleGuardarEdicion = (usuarioEditado: CrearUsuarioDTO | EditarUsuarioDTO) => {
+  if (!empleadoEditar) return;
+  console.log('Editar usuario:', usuarioEditado);
+  // TODO: Llamar al backend para editar usuario
+  mostrarMensajeExito('¡Datos editados!', 'Los cambios han sido guardados');
+  setEmpleadoEditar(undefined);
   };
 
   const handleEliminar = (employee: Employee) => {
@@ -275,8 +309,14 @@ export const DirectorioAdminPage: React.FC = () => {
       <Footer />
 
       <PermissionGate customCheck={(p) => p.nivel >= 3}>
-        <FormularioFuncionario open={dialogOpen} onOpenChange={handleDialogClose} onSubmit={empleadoEditar ? handleGuardarEdicion : handleAgregarFuncionario} empleadoEditar={empleadoEditar} />
-      </PermissionGate>
+        <FormularioUsuarioCompleto 
+          open={dialogOpen} 
+          onOpenChange={handleDialogClose} 
+          onSubmit={empleadoEditar ? handleGuardarEdicion : handleAgregarFuncionario} 
+          usuarioEditar={empleadoEditar} 
+          modo={empleadoEditar ? 'editar' : 'crear'}
+        />
+</PermissionGate>
     </>
   );
 };

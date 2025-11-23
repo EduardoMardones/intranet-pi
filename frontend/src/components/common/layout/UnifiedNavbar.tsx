@@ -110,15 +110,7 @@ export const UnifiedNavbar: React.FC = () => {
           </Link>
         )}
 
-        {/* ==================== CREAR USUARIO - Solo Dirección ==================== */}
-        {permisos.puedeCrearUsuarios && (
-          <Link
-            to="/crear-usuario"
-            className="text-gray-700 font-semibold text-lg hover:text-cyan-500 transition"
-          >
-            Usuarios
-          </Link>
-        )}
+       
 
         {/* ==================== SOPORTE - TODOS ==================== */}
         <Link

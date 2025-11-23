@@ -1,9 +1,10 @@
 // ==========================
-// App.tsx - ACTUALIZADO CON RUTAS UNIFICADAS
+// App.tsx - CORREGIDO PARA LOGIN
 // ==========================
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom"
 import { AuthProvider, useAuth } from "@/api/contexts/AuthContext"
+import { useEffect } from "react"
 import HomePage from "@/pages/general/HomePage"
 import ArchivosAdminPage from "./pages/admin/ArchivosAdminPage"
 import VacacionesPage  from "@/pages/general/VacacionesPage"
@@ -19,7 +20,6 @@ import { SolicitarDiasPage } from "./pages/general/SolicitarDiasPage"
 // ✅ PÁGINAS ADMIN UNIFICADAS (con permisos internos)
 import { CalendarioAdminPage } from "./pages/admin/CalendarioAdminPage"
 import { LicenciasMedicasPage } from "./pages/admin/LicenciasMedicasPage"
-import CrearUsuarioPage from "./pages/admin/CrearUsuarioPage"
 import { AprobacionesAdminPage } from "./pages/admin/AprobacionesAdminPage"
 
 import ToastProvider from "./components/common/actividades/Toast"
@@ -51,15 +51,29 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Componente para Rutas Públicas (redirige al home si ya está autenticado)
+// ✅ COMPONENTE MEJORADO: PublicRoute sin bloqueo
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
+  // Debug
+  useEffect(() => {
+    console.log('PublicRoute - Estado:', { 
+      isAuthenticated, 
+      isLoading, 
+      path: location.pathname 
+    });
+  }, [isAuthenticated, isLoading, location.pathname]);
+
+  // ✅ IMPORTANTE: No bloquear mientras está cargando
   if (isLoading) {
+    console.log('PublicRoute - Mostrando loading...');
     return <LoadingScreen />;
   }
 
-  if (isAuthenticated) {
+  // ✅ Solo redirigir si está autenticado Y la carga terminó
+  if (isAuthenticated && !isLoading) {
+    console.log('PublicRoute - Usuario autenticado, redirigiendo a /home');
     return <Navigate to="/home" replace />;
   }
 
@@ -91,17 +105,6 @@ function AppRoutes() {
       {/* Rutas Admin Exclusivas (sin versión general) */}
       <Route path="/aprobaciones" element={<ProtectedRoute><AprobacionesAdminPage /></ProtectedRoute>} />
       <Route path="/licencias" element={<ProtectedRoute><LicenciasMedicasPage /></ProtectedRoute>} />
-      <Route path="/crear-usuario" element={<ProtectedRoute><CrearUsuarioPage /></ProtectedRoute>} />
-
-      {/* ❌ RUTAS OBSOLETAS ELIMINADAS:
-          /calendarioadmin
-          /anunciosadmin
-          /directorioadmin
-          /actividadesadmin
-          /archivosadmin
-          /crearusuarioadmin
-          /aprobacionesadmin
-      */}
 
       {/* Ruta 404 */}
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,9 +1,9 @@
 // ==========================
-// LoginForm - VERSIÓN CORREGIDA FINAL
+// LoginForm - VERSIÓN CORREGIDA CON REDIRECCIÓN
 // Ubicación: src/components/common/login/LoginForm.tsx
 // ==========================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,7 +23,7 @@ interface LoginFormErrors {
 }
 
 export const LoginForm: React.FC = () => {
-  const { login, isAuthenticated, isLoading, user } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<LoginFormData>({
@@ -34,19 +34,6 @@ export const LoginForm: React.FC = () => {
   const [errors, setErrors] = useState<LoginFormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [rememberMe, setRememberMe] = useState<boolean>(false);
-
-  // Redirigir automáticamente cuando el usuario se autentique
-  useEffect(() => {
-    if (isAuthenticated && user && !isLoading) {
-      console.log('✅ Usuario autenticado detectado:', user.nombre_completo);
-      console.log('🔄 Redirigiendo a /home...');
-      
-      // Usar timeout para asegurar que el estado se haya actualizado completamente
-      setTimeout(() => {
-        navigate('/home', { replace: true });
-      }, 100);
-    }
-  }, [isAuthenticated, user, isLoading, navigate]);
 
   const validateRut = (rut: string): boolean => {
     const rutRegex = /^[0-9]{1,2}\.[0-9]{3}\.[0-9]{3}-[0-9Kk]$|^[0-9]{7,8}-[0-9Kk]$/;
@@ -109,8 +96,11 @@ export const LoginForm: React.FC = () => {
       // Llamar a login del contexto
       await login(formData.rut, formData.password);
       
-      console.log('✅ Login completado');
-      // La redirección se maneja en el useEffect
+      console.log('✅ Login completado exitosamente');
+      console.log('🔄 Redirigiendo a /home...');
+      
+      // ✅ REDIRECCIÓN INMEDIATA DESPUÉS DEL LOGIN
+      navigate('/home', { replace: true });
       
     } catch (error: any) {
       console.error('❌ Error en login:', error);
@@ -164,7 +154,7 @@ export const LoginForm: React.FC = () => {
               value={formData.rut}
               onChange={handleInputChange}
               className={errors.rut ? 'border-red-500' : ''}
-              disabled={isSubmitting || isLoading}
+              disabled={isSubmitting}
               autoComplete="username"
               autoFocus
             />
@@ -183,7 +173,7 @@ export const LoginForm: React.FC = () => {
               value={formData.password}
               onChange={handleInputChange}
               className={errors.password ? 'border-red-500' : ''}
-              disabled={isSubmitting || isLoading}
+              disabled={isSubmitting}
               autoComplete="current-password"
             />
             {errors.password && (
@@ -198,7 +188,7 @@ export const LoginForm: React.FC = () => {
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
               className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-              disabled={isSubmitting || isLoading}
+              disabled={isSubmitting}
             />
             <Label 
               htmlFor="rememberMe" 
@@ -211,9 +201,9 @@ export const LoginForm: React.FC = () => {
           <Button
             type="submit"
             className="w-full"
-            disabled={isSubmitting || isLoading}
+            disabled={isSubmitting}
           >
-            {isSubmitting || isLoading ? (
+            {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
                 <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                   <circle 
