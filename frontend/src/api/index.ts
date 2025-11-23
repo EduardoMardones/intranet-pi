@@ -1,24 +1,25 @@
 // ======================================================
-// API INDEX - Exportación principal
+// API INDEX - Exportaciones centralizadas
 // Ubicación: frontend/src/api/index.ts
 // ======================================================
 
-// Configuración y cliente
-export { API_BASE_URL, buildUrl, getAuthHeaders } from './config';
-export { ApiClient } from './client';
+// Servicios de autenticación
+export { authService } from './services/authService';
 
-// Servicios
-export * from './services';
+// Servicios de usuarios y organización
+export { usuarioService } from './services/usuarioService';
+export { rolService } from './services/rolService';
+export { areaService } from './services/areaService';
 
-// Re-exportar servicios principales para acceso directo
-export {
-  authService,
-  usuariosService,
-  solicitudesService,
-  actividadesService,
-  anunciosService,
-  documentosService,
-  notificacionesService,
-  areasService,
-  rolesService,
-} from './services';
+// TODO: Agregar cuando se implementen
+// export { solicitudService } from './services/solicitudService';
+// export { documentoService } from './services/documentoService';
+// export { anuncioService } from './services/anuncioService';
+// export { actividadService } from './services/actividadService';
+// export { licenciaService } from './services/licenciaService';
+// export { notificacionService } from './services/notificacionService';
+
+// Re-exportar tipos comunes
+export type { Usuario, CrearUsuarioDTO, ActualizarUsuarioDTO } from './services/usuarioService';
+export type { Rol, CrearRolDTO } from './services/rolService';
+export type { Area, CrearAreaDTO } from './services/areaService';

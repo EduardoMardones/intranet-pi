@@ -4,7 +4,7 @@
 // ======================================================
 
 export * from './authService';
-export * from './usuariosService';
+export * from './usuarioService';
 export * from './solicitudesService';
 export * from './actividadesService';
 export * from './anunciosService';
