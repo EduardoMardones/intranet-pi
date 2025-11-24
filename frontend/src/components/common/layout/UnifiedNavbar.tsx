@@ -5,10 +5,11 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { FaClinicMedical } from "react-icons/fa";
 import { PerfilIconButton } from "../buttons/PerfilIconButton";
 import { useAuth } from "@/api/contexts/AuthContext";
 import { usePermissions } from "@/hooks/userPermissions";
+import cesfamLogo from '@/components/images/cesfamsta.png';
+
 export const UnifiedNavbar: React.FC = () => {
   const { user } = useAuth();
   const permisos = usePermissions();
@@ -22,13 +23,32 @@ export const UnifiedNavbar: React.FC = () => {
 
   return (
     <div className="fixed top-0 left-0 w-full h-16 shadow flex items-center justify-between px-6 z-50 bg-white">
-      {/* Logo a la izquierda */}
-      <div className="flex items-center gap-2">
-        <div className="p-2 rounded-full bg-[#009DDC]">
-          <FaClinicMedical className="text-white text-2xl" />
+      
+      {/* =========================================================
+          LOGO A LA IZQUIERDA (MODIFICADO)
+          - Redirige a /home
+          - Colores de hover personalizados
+      ========================================================= */}
+      <Link to="/home" className="flex items-center gap-3 group select-none">
+        {/* Imagen del Logo */}
+        <img 
+          src={cesfamLogo} 
+          alt="Logo CESFAM" 
+          className="h-12 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
+        />
+        
+        {/* Texto separado */}
+        <div className="font-semibold text-lg text-gray-700 flex gap-1.5">
+          {/* Cambiamos 'hover:' por 'group-hover:' */}
+          <span className="transition-colors duration-300 group-hover:text-[#F19106]">
+            CESFAM
+          </span>
+          {/* Cambiamos 'hover:' por 'group-hover:' */}
+          <span className="transition-colors duration-300 group-hover:text-[#95C122]">
+            Intranet
+          </span>
         </div>
-        <span className="font-semibold text-lg text-gray-700">CESFAM Intranet</span>
-      </div>
+      </Link>
 
       {/* Navegación Dinámica */}
       <nav className="flex gap-8">
@@ -109,8 +129,6 @@ export const UnifiedNavbar: React.FC = () => {
             Licencias
           </Link>
         )}
-
-       
 
         {/* ==================== SOPORTE - TODOS ==================== */}
         <Link

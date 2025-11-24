@@ -79,10 +79,12 @@ export function usePermissions(): Permisos {
     puedeSubirDocumentos: user.rol_puede_subir_documentos || false,
     puedeCrearActividades: user.rol_puede_crear_actividades || false,
     puedeCrearAnuncios: user.rol_puede_crear_anuncios || false,
-    puedeGestionarLicencias: user.rol_puede_gestionar_licencias || false,
     puedeVerReportes: user.rol_puede_ver_reportes || false,
     puedeEditarCalendario: user.rol_puede_editar_calendario || false,
     
+    puedeGestionarLicencias: esSubdirector, 
+
+
     // Funciones de utilidad
     puedeAprobarSolicitud: (solicitudAreaId: string) => {
       if (esDirector || esSubdirector) return true;

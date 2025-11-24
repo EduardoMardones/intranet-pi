@@ -239,16 +239,16 @@ export const LoginForm: React.FC = () => {
             </p>
             <div className="space-y-1">
               <p className="text-xs text-blue-700">
-                <strong>Directora:</strong> 12.345.678-9 / password123
+                <strong>Directora:</strong> 12.345.678-9 / admin123123
               </p>
               <p className="text-xs text-blue-700">
-                <strong>Subdirector:</strong> 13.456.789-0 / password123
+                <strong>Subdirector:</strong> 14.567.890-1 / subadmin123
               </p>
               <p className="text-xs text-blue-700">
-                <strong>Jefatura:</strong> 15.678.901-2 / password123
+                <strong>Jefatura:</strong> 15.678.901-2 / jefatura123
               </p>
               <p className="text-xs text-blue-700">
-                <strong>Funcionario:</strong> 16.789.012-3 / password123
+                <strong>Funcionario:</strong> 16.789.012-3 / funcionario123
               </p>
             </div>
           </div>

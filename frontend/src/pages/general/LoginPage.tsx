@@ -7,6 +7,9 @@
 import React from 'react';
 import LoginForm from '@/components/common/login/LoginForm';
 import medicinaGeneralImg from '@/components/images/medicina-general.jpg'; 
+import cesfamLogo from '@/components/images/cesfamsta.png';
+
+
 
 // ==========================
 // Componente Principal
@@ -27,22 +30,15 @@ const LoginPage: React.FC = () => {
         <div className="w-full max-w-md">
           {/* Logo o Título del Sistema */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 mb-4 bg-blue-600 rounded-full">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-8 w-8 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
+            {/* NUEVO LOGO CON IMAGEN */}
+            <div className="inline-flex items-center justify-center w-40 h-40 mb-6 bg-white rounded-2xl shadow-lg overflow-hidden transform hover:scale-105 transition-transform duration-300">
+              <img 
+                src={cesfamLogo} 
+                alt="Logo CESFAM" 
+                className="w-full h-full object-contain" 
+              />
             </div>
+            
             <h1 className="text-3xl font-bold text-gray-900">
               Intranet Médico
             </h1>

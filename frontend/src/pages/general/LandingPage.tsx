@@ -9,6 +9,8 @@
 import React from 'react';
 import { MedicalVectors } from '@/components/common/landing/MedicalVectors';
 import { ArrowRight, Shield, Clock, Users } from 'lucide-react';
+import cesfamLogo from '@/components/images/cesfamsta.png';
+
 
 // ======================================================
 // COMPONENTE PRINCIPAL
@@ -101,20 +103,13 @@ const LandingPage: React.FC = () => {
         <div className="relative z-20 w-full max-w-md px-8">
           {/* Logo/Título */}
           <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-24 h-24 bg-white rounded-3xl shadow-2xl mb-6 transform hover:scale-105 transition-transform duration-300">
-              <svg
-                className="w-14 h-14 text-[#009DDC]"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
+            {/* Contenedor del Logo modificado */}
+            <div className="inline-flex items-center justify-center w-40 h-40 bg-white rounded-3xl shadow-2xl mb-6 transform hover:scale-105 transition-transform duration-300 overflow-hidden">
+              <img 
+                src={cesfamLogo} 
+                alt="Logo CESFAM" 
+                className="w-full h-full object-contain " 
+              />
             </div>
             
             <h1 className="text-4xl md:text-5xl font-bold text-white drop-shadow-lg mb-3">
