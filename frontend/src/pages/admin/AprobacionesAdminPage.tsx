@@ -115,12 +115,42 @@ export const AprobacionesAdminPage: React.FC = () => {
   // ======================================================
 
   const cargarSolicitudes = async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
       setError('');
       const data = await solicitudService.getPendientes();
+      
+      // Filtrar solicitudes según el rol del usuario
+      const isDireccion = user.rol_nombre && (
+        user.rol_nombre.toLowerCase().includes('dirección') || 
+        user.rol_nombre.toLowerCase().includes('direccion') ||
+        user.rol_nombre.toLowerCase().includes('subdirección') ||
+        user.rol_nombre.toLowerCase().includes('subdireccion')
+      );
+
+      let solicitudesFiltradas = data;
+      
+      if (isDireccion) {
+        // Dirección/Subdirección solo ve solicitudes en estado pendiente_direccion
+        solicitudesFiltradas = data.filter(s => 
+          s.estado === 'pendiente_direccion' || s.estado === 'aprobada_jefatura'
+        );
+      } else {
+        // Jefatura solo ve solicitudes en estado pendiente_jefatura de su área
+        solicitudesFiltradas = data.filter(s => {
+          // Si es jefe de área, solo ve solicitudes de su área
+          if (user.es_jefe_de_area) {
+            return s.estado === 'pendiente_jefatura' && s.usuario_area === user.area_nombre;
+          }
+          // Si no es jefe pero tiene permisos, ve todas las pendientes de jefatura
+          return s.estado === 'pendiente_jefatura';
+        });
+      }
+      
       // Ordenar por fecha de creación (más antigua primero)
-      const ordenadas = data.sort((a, b) => 
+      const ordenadas = solicitudesFiltradas.sort((a, b) => 
         new Date(a.creada_en).getTime() - new Date(b.creada_en).getTime()
       );
       setSolicitudes(ordenadas);
@@ -160,15 +190,19 @@ export const AprobacionesAdminPage: React.FC = () => {
   };
 
   const handleAprobar = async () => {
-    if (!selectedSolicitud) return;
+    if (!selectedSolicitud || !user) return;
 
     setProcessing(true);
 
     try {
-      await solicitudService.aprobar(selectedSolicitud.id, {
-        aprobar: true,
-        comentarios: comentario.trim() || undefined
-      });
+      await solicitudService.aprobar(
+        selectedSolicitud.id, 
+        {
+          aprobar: true,
+          comentarios: comentario.trim() || undefined
+        },
+        user.rol_nombre  // ✅ Pasar el rol para determinar el endpoint correcto
+      );
 
       setSuccessMessage(`Solicitud de ${selectedSolicitud.usuario_nombre} aprobada exitosamente`);
       await cargarSolicitudes();
@@ -177,7 +211,8 @@ export const AprobacionesAdminPage: React.FC = () => {
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err: any) {
       console.error('Error al aprobar solicitud:', err);
-      setError(err.response?.data?.message || 'Error al aprobar la solicitud');
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Error al aprobar la solicitud';
+      setError(errorMsg);
       setTimeout(() => setError(''), 5000);
     } finally {
       setProcessing(false);
@@ -185,7 +220,7 @@ export const AprobacionesAdminPage: React.FC = () => {
   };
 
   const handleRechazar = async () => {
-    if (!selectedSolicitud) return;
+    if (!selectedSolicitud || !user) return;
 
     if (!comentario.trim()) {
       setError('Debes proporcionar un motivo para rechazar la solicitud');
@@ -196,10 +231,13 @@ export const AprobacionesAdminPage: React.FC = () => {
     setProcessing(true);
 
     try {
-      await solicitudService.rechazar(selectedSolicitud.id, {
-        aprobar: false,
-        comentarios: comentario.trim()
-      });
+      await solicitudService.rechazar(
+        selectedSolicitud.id, 
+        {
+          comentarios: comentario.trim()
+        },
+        user.rol_nombre  // ✅ Pasar el rol para determinar el endpoint correcto
+      );
 
       setSuccessMessage(`Solicitud de ${selectedSolicitud.usuario_nombre} rechazada`);
       await cargarSolicitudes();
@@ -208,7 +246,8 @@ export const AprobacionesAdminPage: React.FC = () => {
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err: any) {
       console.error('Error al rechazar solicitud:', err);
-      setError(err.response?.data?.message || 'Error al rechazar la solicitud');
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Error al rechazar la solicitud';
+      setError(errorMsg);
       setTimeout(() => setError(''), 5000);
     } finally {
       setProcessing(false);
@@ -259,7 +298,7 @@ export const AprobacionesAdminPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <UnifiedNavbar />
-      <Banner title="Gestión de Solicitudes" imageSrc={bannerSolicitudes} />
+      <Banner title="" imageSrc={bannerSolicitudes} />
 
       <div className="max-w-7xl mx-auto px-4 py-12">
         {/* Mensajes */}
@@ -372,9 +411,21 @@ export const AprobacionesAdminPage: React.FC = () => {
             <CheckCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">
               {solicitudes.length === 0 
-                ? '¡Excelente! No hay solicitudes pendientes'
+                ? (user && (user.rol_nombre.toLowerCase().includes('dirección') || user.rol_nombre.toLowerCase().includes('direccion'))
+                    ? 'No hay solicitudes pendientes de aprobación por dirección'
+                    : 'No hay solicitudes pendientes de aprobación por jefatura')
                 : 'No hay solicitudes que coincidan con los filtros'}
             </p>
+            {solicitudes.length === 0 && user && !user.rol_nombre.toLowerCase().includes('dirección') && !user.rol_nombre.toLowerCase().includes('direccion') && (
+              <p className="text-sm text-gray-400 mt-2">
+                Las solicitudes aparecerán aquí cuando estén en estado <strong>pendiente_jefatura</strong>
+              </p>
+            )}
+            {solicitudes.length === 0 && user && (user.rol_nombre.toLowerCase().includes('dirección') || user.rol_nombre.toLowerCase().includes('direccion')) && (
+              <p className="text-sm text-gray-400 mt-2">
+                Las solicitudes aparecerán aquí cuando ya hayan sido aprobadas por jefatura
+              </p>
+            )}
           </div>
         ) : (
           <div className="space-y-4">

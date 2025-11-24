@@ -251,10 +251,14 @@ export function VacacionesTable() {
                       <StateColorButton estado={mapearEstado(sol.estado)} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {sol.aprobador_nombre || 'Pendiente'}
+                      {sol.jefatura_aprobador_nombre || (
+                        <span className="text-gray-400 italic">Pendiente</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {sol.usuario_area}
+                      {sol.direccion_aprobador_nombre || (
+                        <span className="text-gray-400 italic">Pendiente</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatearFecha(sol.creada_en)}

@@ -191,11 +191,21 @@ class SolicitudListSerializer(serializers.ModelSerializer):
     tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
     estado_display = serializers.CharField(source='get_estado_display', read_only=True)
     
-    # Campos calculados para aprobador
+    # Campos calculados para aprobador (retrocompatibilidad)
     aprobador = serializers.SerializerMethodField()
     aprobador_nombre = serializers.SerializerMethodField()
     fecha_aprobacion = serializers.SerializerMethodField()
     comentario_aprobacion = serializers.SerializerMethodField()
+    
+    # Campos separados para jefatura
+    jefatura_aprobador_nombre = serializers.SerializerMethodField()
+    jefatura_fecha_aprobacion = serializers.SerializerMethodField()
+    jefatura_comentarios = serializers.SerializerMethodField()
+    
+    # Campos separados para dirección
+    direccion_aprobador_nombre = serializers.SerializerMethodField()
+    direccion_fecha_aprobacion = serializers.SerializerMethodField()
+    direccion_comentarios = serializers.SerializerMethodField()
     
     class Meta:
         model = Solicitud
@@ -205,7 +215,9 @@ class SolicitudListSerializer(serializers.ModelSerializer):
             'fecha_inicio', 'fecha_termino', 'cantidad_dias', 'motivo', 
             'telefono_contacto', 'estado', 'estado_display', 'fecha_solicitud',
             'pdf_generado', 'url_pdf', 'creada_en', 'actualizada_en',
-            'aprobador', 'aprobador_nombre', 'fecha_aprobacion', 'comentario_aprobacion'
+            'aprobador', 'aprobador_nombre', 'fecha_aprobacion', 'comentario_aprobacion',
+            'jefatura_aprobador_nombre', 'jefatura_fecha_aprobacion', 'jefatura_comentarios',
+            'direccion_aprobador_nombre', 'direccion_fecha_aprobacion', 'direccion_comentarios'
         ]
         read_only_fields = ('id', 'numero_solicitud', 'fecha_solicitud', 'creada_en', 'actualizada_en')
     
@@ -248,6 +260,62 @@ class SolicitudListSerializer(serializers.ModelSerializer):
             if hasattr(obj, 'comentarios_jefatura') and obj.comentarios_jefatura:
                 return obj.comentarios_jefatura
             elif hasattr(obj, 'comentarios_direccion') and obj.comentarios_direccion:
+                return obj.comentarios_direccion
+        except Exception:
+            pass
+        return None
+    
+    # Métodos para campos de jefatura
+    def get_jefatura_aprobador_nombre(self, obj):
+        """Retorna el nombre del aprobador de jefatura o None"""
+        try:
+            if hasattr(obj, 'jefatura_aprobador') and obj.jefatura_aprobador:
+                return obj.jefatura_aprobador.get_nombre_completo()
+        except Exception:
+            pass
+        return None
+    
+    def get_jefatura_fecha_aprobacion(self, obj):
+        """Retorna la fecha de aprobación de jefatura o None"""
+        try:
+            if hasattr(obj, 'fecha_aprobacion_jefatura') and obj.fecha_aprobacion_jefatura:
+                return obj.fecha_aprobacion_jefatura.isoformat()
+        except Exception:
+            pass
+        return None
+    
+    def get_jefatura_comentarios(self, obj):
+        """Retorna los comentarios de jefatura o None"""
+        try:
+            if hasattr(obj, 'comentarios_jefatura') and obj.comentarios_jefatura:
+                return obj.comentarios_jefatura
+        except Exception:
+            pass
+        return None
+    
+    # Métodos para campos de dirección
+    def get_direccion_aprobador_nombre(self, obj):
+        """Retorna el nombre del aprobador de dirección o None"""
+        try:
+            if hasattr(obj, 'direccion_aprobador') and obj.direccion_aprobador:
+                return obj.direccion_aprobador.get_nombre_completo()
+        except Exception:
+            pass
+        return None
+    
+    def get_direccion_fecha_aprobacion(self, obj):
+        """Retorna la fecha de aprobación de dirección o None"""
+        try:
+            if hasattr(obj, 'fecha_aprobacion_direccion') and obj.fecha_aprobacion_direccion:
+                return obj.fecha_aprobacion_direccion.isoformat()
+        except Exception:
+            pass
+        return None
+    
+    def get_direccion_comentarios(self, obj):
+        """Retorna los comentarios de dirección o None"""
+        try:
+            if hasattr(obj, 'comentarios_direccion') and obj.comentarios_direccion:
                 return obj.comentarios_direccion
         except Exception:
             pass

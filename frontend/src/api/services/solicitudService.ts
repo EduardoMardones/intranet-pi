@@ -31,6 +31,7 @@ export interface Solicitud {
   usuario_cargo: string;
   usuario_area: string;
   
+  // Aprobaciones (retrocompatibilidad)
   aprobador: string | null;
   aprobador_nombre: string | null;
   
@@ -46,6 +47,16 @@ export interface Solicitud {
   estado: EstadoSolicitud;
   fecha_aprobacion: string | null;
   comentario_aprobacion: string | null;
+  
+  // Aprobación de Jefatura
+  jefatura_aprobador_nombre: string | null;
+  jefatura_fecha_aprobacion: string | null;
+  jefatura_comentarios: string | null;
+  
+  // Aprobación de Dirección
+  direccion_aprobador_nombre: string | null;
+  direccion_fecha_aprobacion: string | null;
+  direccion_comentarios: string | null;
   
   // Adjuntos/PDF
   pdf_generado: boolean;
@@ -167,20 +178,41 @@ class SolicitudService {
   }
 
   /**
-   * Método genérico de aprobación (determina automáticamente el nivel)
-   * Usa aprobarJefatura por defecto
+   * Método genérico de aprobación que detecta automáticamente el nivel según el usuario
+   * @param id - ID de la solicitud
+   * @param data - Datos de aprobación
+   * @param userRole - Nombre del rol del usuario ('Jefatura', 'Dirección', 'Subdirección', etc.)
    */
-  async aprobar(id: string, data: AprobarRechazarDTO): Promise<Solicitud> {
-    // Por ahora usa jefatura, pero podría determinar automáticamente según el usuario
-    return this.aprobarJefatura(id, data);
+  async aprobar(
+    id: string, 
+    data: AprobarRechazarDTO,
+    userRole?: string
+  ): Promise<Solicitud> {
+    // Determinar endpoint según el rol
+    const isDireccion = userRole && (
+      userRole.toLowerCase().includes('dirección') || 
+      userRole.toLowerCase().includes('direccion') ||
+      userRole.toLowerCase().includes('subdirección') ||
+      userRole.toLowerCase().includes('subdireccion')
+    );
+
+    if (isDireccion) {
+      return this.aprobarDireccion(id, data);
+    } else {
+      return this.aprobarJefatura(id, data);
+    }
   }
 
   /**
-   * Rechazar solicitud (genérico - usa jefatura)
+   * Rechazar solicitud (genérico - detecta automáticamente el nivel)
    */
-  async rechazar(id: string, data: AprobarRechazarDTO): Promise<Solicitud> {
+  async rechazar(
+    id: string, 
+    data: Omit<AprobarRechazarDTO, 'aprobar'> & { comentarios: string },
+    userRole?: string
+  ): Promise<Solicitud> {
     // Rechazar es aprobar con aprobar: false
-    return this.aprobarJefatura(id, { ...data, aprobar: false });
+    return this.aprobar(id, { aprobar: false, ...data }, userRole);
   }
 
   /**
