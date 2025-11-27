@@ -218,7 +218,7 @@ export function VacacionesTable() {
                   Fecha Solicitud
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
+                  Descargar
                 </th>
               </tr>
             </thead>
@@ -264,22 +264,32 @@ export function VacacionesTable() {
                       {formatearFecha(sol.creada_en)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => {/* Ver solicitud - TODO: Implementar modal */}}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Ver detalles"
-                        >
-                          <VerSolicitud id={sol.id} />
-                        </button>
-                        {sol.estado === 'aprobada' && sol.url_pdf && (
+                      <div className="flex items-center justify-center">
+                        {sol.estado === 'aprobada' ? (
                           <button
-                            onClick={() => window.open(sol.url_pdf, '_blank')}
+                            onClick={async () => {
+                              try {
+                                const pdfBlob = await solicitudService.descargarPDF(sol.id);
+                                const url = window.URL.createObjectURL(pdfBlob);
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.download = `solicitud_${sol.id}.pdf`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                window.URL.revokeObjectURL(url);
+                              } catch (error) {
+                                console.error('Error al descargar PDF:', error);
+                                // Descarga silenciosa - sin alert
+                              }
+                            }}
                             className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            title="Descargar archivo"
+                            title="Descargar PDF"
                           >
-                            <PDFDownload fileName={`${sol.id}.pdf`} />
+                            <PDFDownload fileName={`solicitud_${sol.id}.pdf`} />
                           </button>
+                        ) : (
+                          <span className="text-gray-400">—</span>
                         )}
                       </div>
                     </td>

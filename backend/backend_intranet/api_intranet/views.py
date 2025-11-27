@@ -278,6 +278,39 @@ class SolicitudViewSet(viewsets.ModelViewSet):
         solicitudes = Solicitud.objects.filter(usuario=request.user)
         serializer = SolicitudListSerializer(solicitudes, many=True)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def descargar_pdf(self, request, pk=None):
+        """Descargar PDF de solicitud aprobada"""
+        from django.http import HttpResponse
+        from .pdf_generator import generar_pdf_solicitud
+        
+        solicitud = self.get_object()
+        
+        # Verificar que la solicitud esté completamente aprobada
+        if solicitud.estado != 'aprobada':
+            return Response(
+                {'error': 'Solo se puede descargar el PDF de solicitudes aprobadas'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Verificar que el usuario tenga permiso para descargar este PDF
+        # El usuario puede descargar su propia solicitud, o si tiene permisos de jefatura/dirección
+        if solicitud.usuario != request.user and not request.user.puede_aprobar_solicitud(solicitud):
+            return Response(
+                {'error': 'No tienes permisos para descargar este PDF'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Generar el PDF
+        pdf_buffer = generar_pdf_solicitud(solicitud)
+        
+        # Preparar la respuesta HTTP
+        response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+        filename = f"solicitud_{solicitud.numero_solicitud}.pdf"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
 
 
 # ======================================================

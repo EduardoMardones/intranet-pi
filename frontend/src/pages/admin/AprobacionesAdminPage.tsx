@@ -298,7 +298,7 @@ export const AprobacionesAdminPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <UnifiedNavbar />
-      <Banner title="" imageSrc={bannerSolicitudes} />
+      <Banner title="" imageSrc={bannerSolicitudes} height="250px"/>
 
       <div className="max-w-7xl mx-auto px-4 py-12">
         {/* Mensajes */}

@@ -285,6 +285,23 @@ class SolicitudService {
   getArchivoUrl(archivoPath: string): string {
     return `${axios.defaults.baseURL}${archivoPath}`;
   }
+
+  /**
+   * Descargar PDF de solicitud aprobada
+   */
+  async descargarPDF(id: string): Promise<Blob> {
+    const response = await axios.get(`${this.baseURL}/${id}/descargar_pdf/`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  }
+
+  /**
+   * Obtener URL para descargar PDF de solicitud aprobada
+   */
+  getPDFUrl(id: string): string {
+    return `${axios.defaults.baseURL}${this.baseURL}/${id}/descargar_pdf/`;
+  }
 }
 
 // ======================================================

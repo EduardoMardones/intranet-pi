@@ -16,12 +16,14 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
-  FileText
+  FileText,
+  FileDown
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { SolicitudVacaciones } from '@/types/solicitud';
 import { ESTADO_CONFIG, TIPO_SOLICITUD_CONFIG } from '@/types/solicitud';
+import { solicitudService } from '@/api/services/solicitudService';
 
 interface SolicitudCardProps {
   solicitud: SolicitudVacaciones;
@@ -40,6 +42,7 @@ export const SolicitudCard: React.FC<SolicitudCardProps> = ({
   const [showModal, setShowModal] = useState(false);
   const [modalAction, setModalAction] = useState<'aprobar' | 'rechazar'>('aprobar');
   const [comentarios, setComentarios] = useState('');
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   const estadoConfig = ESTADO_CONFIG[solicitud.estado];
   const tipoConfig = TIPO_SOLICITUD_CONFIG[solicitud.tipo];
@@ -69,6 +72,34 @@ export const SolicitudCard: React.FC<SolicitudCardProps> = ({
     }
     setShowModal(false);
     setComentarios('');
+  };
+
+  const handleDescargarPDF = async () => {
+    try {
+      setDownloadingPDF(true);
+      
+      // Descargar el PDF
+      const pdfBlob = await solicitudService.descargarPDF(solicitud.id);
+      
+      // Crear URL temporal para el blob
+      const url = window.URL.createObjectURL(pdfBlob);
+      
+      // Crear elemento <a> temporal para descargar
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `solicitud_${solicitud.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Limpiar
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error al descargar PDF:', error);
+      // Descarga silenciosa - sin alert
+    } finally {
+      setDownloadingPDF(false);
+    }
   };
 
   const formatearFecha = (fecha: Date) => {
@@ -312,6 +343,20 @@ export const SolicitudCard: React.FC<SolicitudCardProps> = ({
             >
               <CheckCircle className="h-4 w-4 mr-2" />
               Aprobar
+            </Button>
+          </div>
+        )}
+
+        {/* Botón de descarga de PDF para solicitudes aprobadas */}
+        {solicitud.estado === 'aprobada' && (
+          <div className="p-4 bg-green-50 border-t border-green-200 flex gap-3">
+            <Button
+              onClick={handleDescargarPDF}
+              disabled={downloadingPDF}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <FileDown className="h-4 w-4 mr-2" />
+              {downloadingPDF ? 'Descargando...' : 'Descargar Solicitud en PDF'}
             </Button>
           </div>
         )}

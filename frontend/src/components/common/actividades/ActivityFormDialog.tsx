@@ -18,7 +18,7 @@ import {
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
-import { Calendar, MapPin, FileText, Image, Clock, Tag } from 'lucide-react';
+import { Calendar, MapPin, FileText, Image, Clock, Tag, Upload } from 'lucide-react';
 
 // ======================================================
 // INTERFACES
@@ -67,6 +67,11 @@ export const ActivityFormDialog: React.FC<ActivityFormDialogProps> = ({
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof Omit<Activity, 'id'>, string>>>({});
+  
+  // Estados para manejo de imagen
+  const [imageSource, setImageSource] = useState<'url' | 'file'>('url');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
 
   // ======================================================
   // EFECTOS
@@ -87,6 +92,12 @@ export const ActivityFormDialog: React.FC<ActivityFormDialogProps> = ({
           imageUrl: activity.imageUrl,
           type: activity.type
         });
+        // Si tiene URL, asumir que es URL
+        if (activity.imageUrl) {
+          setImageSource('url');
+          setImagePreview('');
+          setSelectedFile(null);
+        }
       } else {
         // MODO CREACIÓN: resetear formulario
         setFormData({
@@ -97,6 +108,9 @@ export const ActivityFormDialog: React.FC<ActivityFormDialogProps> = ({
           imageUrl: '',
           type: 'otra'
         });
+        setImageSource('url');
+        setImagePreview('');
+        setSelectedFile(null);
       }
       setErrors({});
     }
@@ -136,6 +150,60 @@ export const ActivityFormDialog: React.FC<ActivityFormDialogProps> = ({
   };
 
   /**
+   * Maneja el cambio de fuente de imagen (URL o Archivo)
+   */
+  const handleImageSourceChange = (source: 'url' | 'file') => {
+    setImageSource(source);
+    // Limpiar estados al cambiar de fuente
+    if (source === 'url') {
+      setSelectedFile(null);
+      setImagePreview('');
+    } else {
+      setFormData(prev => ({ ...prev, imageUrl: '' }));
+    }
+    // Limpiar error de imagen
+    if (errors.imageUrl) {
+      setErrors(prev => ({ ...prev, imageUrl: undefined }));
+    }
+  };
+
+  /**
+   * Maneja la selección de archivo de imagen
+   */
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validar que sea una imagen
+      if (!file.type.startsWith('image/')) {
+        setErrors(prev => ({ ...prev, imageUrl: 'Por favor selecciona un archivo de imagen' }));
+        return;
+      }
+
+      // Validar tamaño (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, imageUrl: 'La imagen no debe superar 5MB' }));
+        return;
+      }
+
+      setSelectedFile(file);
+      
+      // Crear preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+        // Guardar el base64 en formData para poder guardarlo
+        setFormData(prev => ({ ...prev, imageUrl: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+
+      // Limpiar error
+      if (errors.imageUrl) {
+        setErrors(prev => ({ ...prev, imageUrl: undefined }));
+      }
+    }
+  };
+
+  /**
    * Valida el formulario
    */
   const validateForm = (): boolean => {
@@ -161,10 +229,18 @@ export const ActivityFormDialog: React.FC<ActivityFormDialogProps> = ({
       newErrors.location = 'La ubicación es obligatoria';
     }
 
-    if (!formData.imageUrl.trim()) {
-      newErrors.imageUrl = 'La URL de la imagen es obligatoria';
-    } else if (!isValidUrl(formData.imageUrl)) {
-      newErrors.imageUrl = 'Ingresa una URL válida';
+    // Validación de imagen según la fuente
+    if (imageSource === 'url') {
+      if (!formData.imageUrl.trim()) {
+        newErrors.imageUrl = 'La URL de la imagen es obligatoria';
+      } else if (!isValidUrl(formData.imageUrl)) {
+        newErrors.imageUrl = 'Ingresa una URL válida';
+      }
+    } else {
+      // Modo archivo
+      if (!selectedFile && !formData.imageUrl) {
+        newErrors.imageUrl = 'Debes seleccionar una imagen';
+      }
     }
 
     if (formData.date < new Date(new Date().setHours(0, 0, 0, 0))) {
@@ -333,38 +409,105 @@ export const ActivityFormDialog: React.FC<ActivityFormDialogProps> = ({
           </div>
 
           {/* ======================================================
-              URL DE IMAGEN
+              IMAGEN DE LA ACTIVIDAD
               ====================================================== */}
-          <div className="space-y-2">
-            <Label htmlFor="imageUrl" className="text-base font-semibold">
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">
               <Image className="w-4 h-4 inline mr-1" />
-              URL de la Imagen *
+              Imagen de la Actividad *
             </Label>
-            <Input
-              id="imageUrl"
-              type="url"
-              value={formData.imageUrl}
-              onChange={(e) => handleChange('imageUrl', e.target.value)}
-              placeholder="https://picsum.photos/seed/cesfam-activity/600/400"
-              aria-invalid={!!errors.imageUrl}
-              className="text-base"
-            />
+            
+            {/* Selector de tipo de fuente */}
+            <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
+              <button
+                type="button"
+                onClick={() => handleImageSourceChange('url')}
+                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  imageSource === 'url'
+                    ? 'bg-white text-[#009DDC] shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Image className="w-4 h-4 inline mr-1" />
+                URL de Imagen
+              </button>
+              <button
+                type="button"
+                onClick={() => handleImageSourceChange('file')}
+                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  imageSource === 'file'
+                    ? 'bg-white text-[#009DDC] shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Upload className="w-4 h-4 inline mr-1" />
+                Subir Archivo
+              </button>
+            </div>
+
+            {/* Campo de URL */}
+            {imageSource === 'url' && (
+              <div className="space-y-2">
+                <Input
+                  id="imageUrl"
+                  type="url"
+                  value={formData.imageUrl}
+                  onChange={(e) => handleChange('imageUrl', e.target.value)}
+                  placeholder="https://picsum.photos/seed/cesfam-activity/600/400"
+                  aria-invalid={!!errors.imageUrl}
+                  className="text-base"
+                />
+                <p className="text-xs text-gray-500">
+                  💡 Sugerencia: Usa <a href="https://picsum.photos/" target="_blank" rel="noopener noreferrer" className="text-[#009DDC] underline">Lorem Picsum</a> para imágenes de prueba
+                </p>
+              </div>
+            )}
+
+            {/* Campo de archivo */}
+            {imageSource === 'file' && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-center w-full">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Upload className="w-8 h-8 mb-2 text-gray-500" />
+                      <p className="mb-1 text-sm text-gray-600 font-medium">
+                        {selectedFile ? selectedFile.name : 'Haz clic para seleccionar una imagen'}
+                      </p>
+                      <p className="text-xs text-gray-500">PNG, JPG, GIF (máx. 5MB)</p>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Mensajes de error */}
             {errors.imageUrl && (
               <p className="text-sm text-red-600 font-medium">{errors.imageUrl}</p>
             )}
-            <p className="text-xs text-gray-500">
-              💡 Sugerencia: Usa <a href="https://picsum.photos/" target="_blank" rel="noopener noreferrer" className="text-[#009DDC] underline">Lorem Picsum</a> para imágenes de prueba
-            </p>
-            {formData.imageUrl && isValidUrl(formData.imageUrl) && (
-              <div className="mt-2 rounded-lg overflow-hidden border-2 border-gray-200">
+
+            {/* Vista previa */}
+            {((imageSource === 'url' && formData.imageUrl && isValidUrl(formData.imageUrl)) || 
+              (imageSource === 'file' && imagePreview)) && (
+              <div className="mt-3 rounded-lg overflow-hidden border-2 border-gray-200">
                 <img
-                  src={formData.imageUrl}
+                  src={imageSource === 'url' ? formData.imageUrl : imagePreview}
                   alt="Vista previa"
                   className="w-full h-48 object-cover"
                   onError={(e) => {
-                    e.currentTarget.src = 'https://via.placeholder.com/600x400?text=Error+al+cargar+imagen';
+                    if (imageSource === 'url') {
+                      e.currentTarget.src = 'https://via.placeholder.com/600x400?text=Error+al+cargar+imagen';
+                    }
                   }}
                 />
+                <div className="px-3 py-2 bg-gray-50 text-xs text-gray-600">
+                  Vista previa de la imagen
+                </div>
               </div>
             )}
           </div>
