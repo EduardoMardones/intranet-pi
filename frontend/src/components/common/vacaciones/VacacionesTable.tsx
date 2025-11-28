@@ -6,8 +6,6 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { StateColorButton } from './StateColorButton';
-import PDFDownload from '../buttons/PDFDownload';
-import VerSolicitud from '../buttons/VerSolicitud';
 import { Search, Filter, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 // ✅ NUEVO: Imports del backend
@@ -267,26 +265,34 @@ export function VacacionesTable() {
                       <div className="flex items-center justify-center">
                         {sol.estado === 'aprobada' ? (
                           <button
-                            onClick={async () => {
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
                               try {
                                 const pdfBlob = await solicitudService.descargarPDF(sol.id);
                                 const url = window.URL.createObjectURL(pdfBlob);
                                 const link = document.createElement('a');
                                 link.href = url;
                                 link.download = `solicitud_${sol.id}.pdf`;
+                                link.style.display = 'none';
                                 document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                                window.URL.revokeObjectURL(url);
+                                
+                                // Forzar descarga sin navegación
+                                setTimeout(() => {
+                                  link.click();
+                                  setTimeout(() => {
+                                    document.body.removeChild(link);
+                                    window.URL.revokeObjectURL(url);
+                                  }, 100);
+                                }, 0);
                               } catch (error) {
                                 console.error('Error al descargar PDF:', error);
-                                // Descarga silenciosa - sin alert
                               }
                             }}
                             className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                             title="Descargar PDF"
                           >
-                            <PDFDownload fileName={`solicitud_${sol.id}.pdf`} />
+                            <FileText className="w-5 h-5" />
                           </button>
                         ) : (
                           <span className="text-gray-400">—</span>

@@ -40,7 +40,7 @@ function useActividadesPermisos() {
     nivel,
     puedeCrear: nivel >= 3,       // Subdirección y Dirección
     puedeEditar: nivel >= 3,      // Subdirección y Dirección
-    puedeEliminar: nivel >= 4,    // Solo Dirección
+    puedeEliminar: nivel >= 3,    // Subdirección y Dirección
     esAdmin: nivel >= 3,
   };
 }

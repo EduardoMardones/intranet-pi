@@ -82,6 +82,8 @@ export function usePermissions(): Permisos {
     puedeVerReportes: user.rol_puede_ver_reportes || false,
     puedeEditarCalendario: user.rol_puede_editar_calendario || false,
     
+    // Solo Subdirección puede gestionar licencias médicas
+    // Dirección NO puede gestionar licencias
     puedeGestionarLicencias: esSubdirector, 
 
 
@@ -93,7 +95,9 @@ export function usePermissions(): Permisos {
     },
     
     puedeEditarContenido: (creadorId: string) => {
-      if (esDirector) return true;
+      // Dirección y Subdirección pueden editar cualquier contenido
+      if (esDirector || esSubdirector) return true;
+      // El creador siempre puede editar su propio contenido
       return creadorId === user.id;
     },
     

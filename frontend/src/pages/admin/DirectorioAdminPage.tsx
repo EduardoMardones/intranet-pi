@@ -37,9 +37,9 @@ function useDirectorioPermisos() {
   
   return {
     nivel,
-    puedeCrear: nivel >= 3,
-    puedeEditar: nivel >= 3,
-    puedeEliminar: nivel >= 4,
+    puedeCrear: nivel >= 3,       // Subdirección y Dirección
+    puedeEditar: nivel >= 3,      // Subdirección y Dirección
+    puedeEliminar: nivel >= 3,    // Subdirección y Dirección
     esAdmin: nivel >= 3,
   };
 }
@@ -511,7 +511,7 @@ export const DirectorioAdminPage: React.FC = () => {
                           <Edit className="w-4 h-4 mr-1" />
                           Editar
                         </Button>
-                        <PermissionGate customCheck={(p) => p.nivel >= 4}>
+                        <PermissionGate customCheck={(p) => p.nivel >= 3}>
                           <Button 
                             size="sm" 
                             variant="outline" 

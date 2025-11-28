@@ -60,9 +60,9 @@ const LoginPage: React.FC = () => {
       {/* ==========================
           Columna Derecha: Imagen
           ========================== */}
-      <div className="hidden lg:flex flex-1 relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700">
+      <div className="hidden lg:flex flex-1 relative overflow-hidden bg-gradient-to-br from-[#009DDC] via-[#4DFFF3] to-[#52FFB8]">
         {/* Overlay decorativo */}
-        <div className="absolute inset-0 bg-black/20 z-10"></div>
+        <div className="absolute inset-0 bg-black/10 z-10"></div>
         
         {/* Patrón de fondo decorativo */}
         <div className="absolute inset-0 opacity-10 z-0">
@@ -96,27 +96,27 @@ const LoginPage: React.FC = () => {
             </div>
 
             {/* Texto informativo */}
-            <div className="text-center space-y-4">
-              <h2 className="text-4xl font-bold">
+            <div className="backdrop-blur-md bg-white/10 rounded-2xl p-8 border border-white/20 shadow-2xl">
+              <h2 className="text-4xl font-bold drop-shadow-lg mb-4">
                 Tecnología al servicio de la salud
               </h2>
-              <p className="text-xl text-blue-100">
+              <p className="text-xl text-white/90 drop-shadow-md mb-6">
                 Sistema integral de gestión de actividades y servicios administrativos
               </p>
               
               {/* Características destacadas */}
               <div className="grid grid-cols-3 gap-4 mt-8">
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
                   <div className="text-3xl font-bold">24/7</div>
-                  <div className="text-sm text-blue-100">Disponibilidad</div>
+                  <div className="text-sm text-white/90">Disponibilidad</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
                   <div className="text-3xl font-bold">100%</div>
-                  <div className="text-sm text-blue-100">Seguro</div>
+                  <div className="text-sm text-white/90">Seguro</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
                   <div className="text-3xl font-bold">+5K</div>
-                  <div className="text-sm text-blue-100">Usuarios</div>
+                  <div className="text-sm text-white/90">Usuarios</div>
                 </div>
               </div>
             </div>

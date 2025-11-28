@@ -42,7 +42,7 @@ function useAnunciosPermisos() {
     nivel,
     puedeCrear: nivel >= 3,       // Subdirección y Dirección
     puedeEditar: nivel >= 3,      // Subdirección y Dirección
-    puedeEliminar: nivel >= 4,    // Solo Dirección
+    puedeEliminar: nivel >= 3,    // Subdirección y Dirección
     esAdmin: nivel >= 3,
   };
 }
@@ -428,8 +428,8 @@ const getCategoryLabel = (category: AnnouncementCategory) => {
                         <Edit className="w-4 h-4" />
                       </Button>
 
-                      {/* ✅ Botón Eliminar (Solo Dirección) */}
-                      <PermissionGate customCheck={(p) => p.nivel >= 4}>
+                      {/* ✅ Botón Eliminar (Subdirección y Dirección) */}
+                      <PermissionGate customCheck={(p) => p.nivel >= 3}>
                         <Button
                           size="sm"
                           variant="outline"

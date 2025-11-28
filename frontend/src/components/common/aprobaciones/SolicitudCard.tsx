@@ -10,13 +10,11 @@ import {
   User, 
   Briefcase, 
   Mail, 
-  MessageSquare,
   CheckCircle,
   XCircle,
   Clock,
   ChevronDown,
   ChevronUp,
-  FileText,
   FileDown
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -78,27 +76,28 @@ export const SolicitudCard: React.FC<SolicitudCardProps> = ({
     try {
       setDownloadingPDF(true);
       
-      // Descargar el PDF
       const pdfBlob = await solicitudService.descargarPDF(solicitud.id);
-      
-      // Crear URL temporal para el blob
       const url = window.URL.createObjectURL(pdfBlob);
-      
-      // Crear elemento <a> temporal para descargar
       const link = document.createElement('a');
       link.href = url;
       link.download = `solicitud_${solicitud.id}.pdf`;
+      link.style.display = 'none';
       document.body.appendChild(link);
-      link.click();
       
-      // Limpiar
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Forzar descarga sin navegación
+      setTimeout(() => {
+        link.click();
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+      }, 0);
     } catch (error) {
       console.error('Error al descargar PDF:', error);
-      // Descarga silenciosa - sin alert
     } finally {
-      setDownloadingPDF(false);
+      setTimeout(() => {
+        setDownloadingPDF(false);
+      }, 500);
     }
   };
 

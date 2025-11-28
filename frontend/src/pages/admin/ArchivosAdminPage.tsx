@@ -56,7 +56,7 @@ function useArchivosPermisos() {
     nivel,
     puedeSubir: nivel >= 3,       // Subdirección y Dirección
     puedeEditar: nivel >= 3,      // Subdirección y Dirección  
-    puedeEliminar: nivel >= 4,    // Solo Dirección
+    puedeEliminar: nivel >= 3,    // Subdirección y Dirección
     esAdmin: nivel >= 3,
   };
 }
@@ -203,13 +203,179 @@ export const ArchivosAdminPage: React.FC = () => {
 
   // Otras acciones
   const handleDescargar = (archivo: Archivo) => {
-    console.log('Descargar:', archivo);
-    alert(`Descargando: ${archivo.nombre}`);
+    try {
+      // Si el archivo tiene URL (archivo subido), descargar directamente
+      if (archivo.url) {
+        const link = document.createElement('a');
+        link.href = archivo.url;
+        link.download = `${archivo.nombre}.${getExtension(archivo.tipo)}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
+      }
+
+      // Si no tiene URL (archivo mock), generar archivo de ejemplo
+      const extension = getExtension(archivo.tipo);
+      const fileName = `${archivo.nombre}.${extension}`;
+      
+      if (archivo.tipo === 'PDF') {
+        // Generar PDF de ejemplo
+        const pdfContent = createMockPDF(fileName);
+        const blob = new Blob([pdfContent], { type: 'application/pdf' });
+        downloadBlob(blob, fileName);
+      } else if (archivo.tipo === 'Imagen') {
+        // Generar imagen de ejemplo
+        createMockImage(fileName);
+      } else {
+        // Generar archivo de texto de ejemplo
+        const content = `Archivo: ${archivo.nombre}\nTipo: ${archivo.tipo}\nTamaño: ${formatearTamaño(archivo.tamaño)}\nFecha: ${formatearFecha(archivo.fechaSubida)}\n\nContenido de ejemplo para demostración.`;
+        const blob = new Blob([content], { type: 'text/plain' });
+        downloadBlob(blob, fileName);
+      }
+    } catch (error) {
+      console.error('Error al descargar archivo:', error);
+      alert('Error al descargar el archivo');
+    }
   };
 
   const handleVer = (archivo: Archivo) => {
-    console.log('Ver:', archivo);
-    alert(`Ver archivo: ${archivo.nombre}`);
+    try {
+      // Si tiene URL, abrir en nueva pestaña
+      if (archivo.url) {
+        window.open(archivo.url, '_blank');
+        return;
+      }
+
+      // Si no tiene URL, mostrar vista previa simple
+      alert(`Vista previa de: ${archivo.nombre}\n\nTipo: ${archivo.tipo}\nTamaño: ${formatearTamaño(archivo.tamaño)}\nFecha: ${formatearFecha(archivo.fechaSubida)}\n\nEste es un archivo de ejemplo. En producción se mostraría el contenido real.`);
+    } catch (error) {
+      console.error('Error al ver archivo:', error);
+    }
+  };
+
+  // Funciones auxiliares para descarga
+  const getExtension = (tipo: string): string => {
+    switch (tipo) {
+      case 'PDF': return 'pdf';
+      case 'Imagen': return 'jpg';
+      case 'Video': return 'mp4';
+      default: return 'txt';
+    }
+  };
+
+  const downloadBlob = (blob: Blob, fileName: string) => {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const createMockPDF = (fileName: string): string => {
+    return `%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+>>
+>>
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<<
+/Length 150
+>>
+stream
+BT
+/F1 18 Tf
+50 750 Td
+(Documento de Repositorio CESFAM) Tj
+0 -30 Td
+/F1 12 Tf
+(Archivo: ${fileName}) Tj
+0 -20 Td
+(Este es un documento generado para demostracion) Tj
+0 -20 Td
+(del sistema de gestion de archivos) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f
+0000000009 00000 n
+0000000058 00000 n
+0000000115 00000 n
+0000000317 00000 n
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+525
+%%EOF`;
+  };
+
+  const createMockImage = (fileName: string) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 600;
+    const ctx = canvas.getContext('2d');
+    
+    if (ctx) {
+      // Fondo
+      ctx.fillStyle = '#e5e7eb';
+      ctx.fillRect(0, 0, 800, 600);
+      
+      // Título
+      ctx.fillStyle = '#1f2937';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('CESFAM Santa Rosa', 400, 250);
+      
+      // Subtítulo
+      ctx.font = '20px Arial';
+      ctx.fillStyle = '#4b5563';
+      ctx.fillText('Repositorio de Archivos', 400, 290);
+      
+      // Nombre del archivo
+      ctx.font = '16px Arial';
+      ctx.fillStyle = '#6b7280';
+      ctx.fillText(fileName, 400, 330);
+    }
+    
+    canvas.toBlob((blob) => {
+      if (blob) {
+        downloadBlob(blob, fileName);
+      }
+    });
   };
 
   // ======================================================
@@ -231,116 +397,136 @@ export const ArchivosAdminPage: React.FC = () => {
       <div className="flex-1 min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 p-4 md:p-8">
         <div className="max-w-[1600px] mx-auto">
           
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {permisos.esAdmin ? 'Gestión de Archivos' : 'Repositorio de Archivos'}
-              </h1>
-              <p className="text-gray-600">
-                {permisos.esAdmin 
-                  ? 'Administra el repositorio de documentos del CESFAM'
-                  : 'Consulta y descarga documentos del CESFAM'
+          {/* ======================================================
+              HEADER Y CONTROLES - Contenedor blanco
+              ====================================================== */}
+          <div className="bg-white shadow-lg rounded-xl overflow-hidden mb-6">
+            <div className="py-8 px-6">
+              
+              {/* Header con título */}
+              <div className="mb-6">
+                <div className="flex items-center gap-4 mb-2">
+                  <div className={`p-3 rounded-xl ${
+                    permisos.esAdmin 
+                      ? 'bg-gradient-to-br from-[#009DDC] to-[#4DFFF3]' 
+                      : 'bg-gradient-to-br from-gray-400 to-gray-500'
+                  }`}>
+                    <FileText className="w-6 h-6 text-white" />
+                  </div>
+                  
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-800">
+                      {permisos.esAdmin ? 'Gestión de Archivos' : 'Repositorio de Archivos'}
+                    </h1>
+                    <p className="text-sm text-gray-500">
+                      {permisos.esAdmin 
+                        ? 'Administra el repositorio de documentos del CESFAM'
+                        : 'Consulta y descarga documentos del CESFAM'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ✅ FileUploader solo con permisos */}
+              <PermissionGate 
+                customCheck={(p) => p.nivel >= 3}
+                fallback={
+                  <div className="mb-6 p-6 bg-blue-50 border-2 border-blue-200 rounded-xl">
+                    <p className="text-blue-900 text-center">
+                      📁 <strong>Repositorio de Archivos</strong> - Solo puedes ver y descargar archivos
+                    </p>
+                  </div>
                 }
-              </p>
-          </div>
-
-          {/* ✅ FileUploader solo con permisos */}
-          <PermissionGate 
-            customCheck={(p) => p.nivel >= 3}
-            fallback={
-              <div className="mb-6 p-6 bg-blue-50 border-2 border-blue-200 rounded-xl">
-                <p className="text-blue-900 text-center">
-                  📁 <strong>Repositorio de Archivos</strong> - Solo puedes ver y descargar archivos
-                </p>
-              </div>
-            }
-          >
-            <div className="mb-6">
-              <FileUploaderArchivos
-                onFilesSelected={handleFilesSelected}
-                hasFiles={archivos.length > 0}
-              />
-            </div>
-          </PermissionGate>
-
-          {/* Estadísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Archivos</p>
-                  <p className="text-2xl font-bold text-gray-900">{archivos.length}</p>
+              >
+                <div className="mb-6">
+                  <FileUploaderArchivos
+                    onFilesSelected={handleFilesSelected}
+                    hasFiles={archivos.length > 0}
+                  />
                 </div>
-                <FileText className="h-8 w-8 text-gray-400" />
-              </div>
-            </div>
+              </PermissionGate>
 
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-red-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">PDFs</p>
-                  <p className="text-2xl font-bold text-red-600">
-                    {archivos.filter(a => a.tipo === 'PDF').length}
-                  </p>
+              {/* Estadísticas */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border-l-4 border-gray-400">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Total Archivos</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{archivos.length}</p>
+                    </div>
+                    <FileText className="h-8 w-8 text-gray-400" />
+                  </div>
                 </div>
-                <FileText className="h-8 w-8 text-red-400" />
-              </div>
-            </div>
 
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-blue-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Imágenes</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {archivos.filter(a => a.tipo === 'Imagen').length}
-                  </p>
+                <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 border-l-4 border-red-400">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-red-600 uppercase tracking-wide">PDFs</p>
+                      <p className="text-2xl font-bold text-red-700 mt-1">
+                        {archivos.filter(a => a.tipo === 'PDF').length}
+                      </p>
+                    </div>
+                    <FileText className="h-8 w-8 text-red-400" />
+                  </div>
                 </div>
-                <Image className="h-8 w-8 text-blue-400" />
-              </div>
-            </div>
 
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-purple-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Videos</p>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {archivos.filter(a => a.tipo === 'Video').length}
-                  </p>
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border-l-4 border-blue-400">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">Imágenes</p>
+                      <p className="text-2xl font-bold text-blue-700 mt-1">
+                        {archivos.filter(a => a.tipo === 'Imagen').length}
+                      </p>
+                    </div>
+                    <Image className="h-8 w-8 text-blue-400" />
+                  </div>
                 </div>
-                <Video className="h-8 w-8 text-purple-400" />
-              </div>
-            </div>
-          </div>
 
-          {/* Barra de búsqueda y filtros */}
-          <div className="bg-white rounded-lg shadow-sm p-4 mb-6 border border-gray-200">
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Búsqueda */}
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar por nombre o ID..."
-                  value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border-l-4 border-purple-400">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-purple-600 uppercase tracking-wide">Videos</p>
+                      <p className="text-2xl font-bold text-purple-700 mt-1">
+                        {archivos.filter(a => a.tipo === 'Video').length}
+                      </p>
+                    </div>
+                    <Video className="h-8 w-8 text-purple-400" />
+                  </div>
+                </div>
               </div>
 
-              {/* Filtro por tipo */}
-              <div className="flex items-center gap-2">
-                <Filter className="h-5 w-5 text-gray-400" />
-                <select
-                  value={filtroTipo}
-                  onChange={(e) => setFiltroTipo(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="todos">Todos los tipos</option>
-                  <option value="PDF">PDF</option>
-                  <option value="Imagen">Imágenes</option>
-                  <option value="Video">Videos</option>
-                  <option value="Documento">Documentos</option>
-                </select>
+              {/* Barra de búsqueda y filtros */}
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <div className="flex flex-col md:flex-row gap-4">
+                  {/* Búsqueda */}
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por nombre o ID..."
+                      value={busqueda}
+                      onChange={(e) => setBusqueda(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    />
+                  </div>
+
+                  {/* Filtro por tipo */}
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-5 w-5 text-gray-400" />
+                    <select
+                      value={filtroTipo}
+                      onChange={(e) => setFiltroTipo(e.target.value)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="todos">Todos los tipos</option>
+                      <option value="PDF">PDF</option>
+                      <option value="Imagen">Imágenes</option>
+                      <option value="Video">Videos</option>
+                      <option value="Documento">Documentos</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -435,8 +621,8 @@ export const ArchivosAdminPage: React.FC = () => {
                                 </button>
                               </PermissionGate>
 
-                              {/* ✅ Botón Eliminar - Solo Dirección */}
-                              <PermissionGate customCheck={(p) => p.nivel >= 4}>
+                              {/* ✅ Botón Eliminar - Subdirección y Dirección */}
+                              <PermissionGate customCheck={(p) => p.nivel >= 3}>
                                 <button
                                   onClick={() => handleIniciarEliminacion(archivo)}
                                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
