@@ -122,16 +122,28 @@ export const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
           ====================================================== */}
       <CardContent className="pt-4">
         {/* Descripción resumida */}
-        <p className="text-sm text-gray-700 leading-relaxed mb-4 line-clamp-3">
+        <p className="text-sm text-gray-700 leading-relaxed mb-3 line-clamp-3">
           {truncateText(announcement.description, 200)}
         </p>
 
+        {/* Indicador de archivos adjuntos */}
+        {announcement.attachments && announcement.attachments.length > 0 && (
+          <div className="flex items-center gap-2 text-sm text-blue-600 mb-4 bg-blue-50 rounded-lg px-3 py-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+            <span className="font-medium">
+              {announcement.attachments.length} archivo{announcement.attachments.length > 1 ? 's' : ''} adjunto{announcement.attachments.length > 1 ? 's' : ''}
+            </span>
+          </div>
+        )}
+
         {/* Botones de acción */}
         <div className="flex gap-2">
-          {/* Botón Ver Detalles - Siempre visible */}
+          {/* Botón Ver Detalles - Tamaño reducido */}
           <Button
             onClick={() => onViewDetails?.(announcement)}
-            className="flex-1 bg-gradient-to-r from-[#009DDC] to-[#4DFFF3] hover:shadow-lg transition-all"
+            className="bg-gradient-to-r from-[#009DDC] to-[#4DFFF3] hover:shadow-lg transition-all"
             size="sm"
           >
             <Eye className="w-4 h-4 mr-2" />

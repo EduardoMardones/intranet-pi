@@ -14,7 +14,7 @@ import {
   FileSpreadsheet, 
   Image as ImageIcon, 
   File,
-  Download 
+  ExternalLink
 } from 'lucide-react';
 
 // ======================================================
@@ -52,26 +52,31 @@ const getFileIcon = (fileType: Attachment['fileType']) => {
 export const AttachmentLink: React.FC<AttachmentLinkProps> = ({ attachment }) => {
   const config = FILE_TYPE_CONFIG[attachment.fileType];
 
-  const handleDownload = (e: React.MouseEvent) => {
-    // Prevenir navegación por defecto si es un placeholder
-    if (attachment.fileUrl === '#') {
-      e.preventDefault();
-      console.log('Descargando:', attachment.fileName);
-      // En producción, aquí se implementaría la lógica de descarga real
-      alert(`Descarga simulada: ${attachment.fileName}`);
+  const handleClick = (e: React.MouseEvent) => {
+    // Prevenir el comportamiento por defecto
+    e.preventDefault();
+    
+    // Abrir en nueva pestaña
+    if (attachment.fileUrl && attachment.fileUrl !== '#') {
+      window.open(attachment.fileUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      // Si es un placeholder, mostrar alerta
+      console.log('Abriendo:', attachment.fileName);
+      alert(`Vista previa simulada: ${attachment.fileName}`);
     }
   };
 
   return (
     <a
       href={attachment.fileUrl}
-      onClick={handleDownload}
-      download={attachment.fileName}
+      onClick={handleClick}
+      target="_blank"
+      rel="noopener noreferrer"
       className={`
         flex items-center gap-3 p-3 rounded-lg border-2 border-dashed
         ${config.bgColor} border-gray-300
         hover:border-[#009DDC] hover:shadow-md
-        transition-all duration-200 group
+        transition-all duration-200 group cursor-pointer
       `}
     >
       {/* Ícono del tipo de archivo */}
@@ -104,7 +109,7 @@ export const AttachmentLink: React.FC<AttachmentLinkProps> = ({ attachment }) =>
         </div>
       </div>
 
-      {/* Ícono de descarga */}
+      {/* Ícono de abrir en nueva pestaña */}
       <div className={`
         flex-shrink-0 w-8 h-8 rounded-full
         bg-white shadow-sm
@@ -113,7 +118,7 @@ export const AttachmentLink: React.FC<AttachmentLinkProps> = ({ attachment }) =>
         group-hover:bg-[#009DDC] group-hover:text-white
         transition-all duration-200
       `}>
-        <Download className="w-4 h-4" />
+        <ExternalLink className="w-4 h-4" />
       </div>
     </a>
   );

@@ -487,6 +487,38 @@ class AnuncioViewSet(viewsets.ModelViewSet):
         """Registrar quién creó el anuncio"""
         serializer.save(creado_por=self.request.user)
     
+    def create(self, request, *args, **kwargs):
+        """Sobrescribir create para manejar adjuntos"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
+    @action(detail=True, methods=['post'])
+    def subir_adjunto(self, request, pk=None):
+        """Subir archivo adjunto a un anuncio"""
+        anuncio = self.get_object()
+        archivo = request.FILES.get('archivo')
+        
+        if not archivo:
+            return Response(
+                {'error': 'No se proporcionó archivo'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Crear el adjunto
+        adjunto = AdjuntoAnuncio.objects.create(
+            anuncio=anuncio,
+            nombre_archivo=archivo.name,
+            archivo=archivo,
+            tipo_archivo=archivo.content_type,
+            tamano=archivo.size
+        )
+        
+        serializer = AdjuntoAnuncioSerializer(adjunto)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
     @action(detail=False, methods=['get'])
     def vigentes(self, request):
         """Listar anuncios vigentes"""

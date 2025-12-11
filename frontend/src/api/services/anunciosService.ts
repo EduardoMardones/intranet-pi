@@ -156,6 +156,20 @@ export const anunciosService = {
   },
 
   /**
+   * Subir archivo adjunto a un anuncio
+   */
+  async uploadAdjunto(anuncioId: string, file: File): Promise<AdjuntoAnuncio> {
+    const formData = new FormData();
+    formData.append('archivo', file);
+    
+    const response = await ApiClient.postFormData<AdjuntoAnuncio>(
+      `/anuncios/${anuncioId}/subir_adjunto/`,
+      formData
+    );
+    return response;
+  },
+
+  /**
    * Crear anuncio con imagen
    */
   async createWithImage(data: CrearAnuncioData, imagen?: File): Promise<Anuncio> {

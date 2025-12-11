@@ -175,16 +175,20 @@ export const AnunciosAdminPage: React.FC = () => {
       // Crear en el backend
       const anuncioCreado = await anunciosService.create(datosBackend);
       
-      // TODO: Subir adjuntos si existen
-      // if (formData.adjuntos && formData.adjuntos.length > 0) {
-      //   for (const adjunto of formData.adjuntos) {
-      //     await adjuntosService.upload(anuncioCreado.id, adjunto);
-      //   }
-      // }
-      
-      // Convertir al formato frontend y agregar a la lista
-      const anuncioConvertido = anuncioToAnnouncement(anuncioCreado);
-      setAnnouncements((prev) => [anuncioConvertido, ...prev]);
+      // Subir adjuntos si existen
+      if (formData.adjuntos && formData.adjuntos.length > 0) {
+        for (const adjunto of formData.adjuntos) {
+          await anunciosService.uploadAdjunto(anuncioCreado.id, adjunto);
+        }
+        // Recargar el anuncio con los adjuntos
+        const anuncioActualizado = await anunciosService.getById(anuncioCreado.id);
+        const anuncioConvertido = anuncioToAnnouncement(anuncioActualizado);
+        setAnnouncements((prev) => [anuncioConvertido, ...prev]);
+      } else {
+        // Sin adjuntos, agregar directamente
+        const anuncioConvertido = anuncioToAnnouncement(anuncioCreado);
+        setAnnouncements((prev) => [anuncioConvertido, ...prev]);
+      }
       
       mostrarMensajeExito('¡Comunicado publicado!', 'El comunicado ha sido publicado exitosamente');
     } catch (err) {
@@ -221,11 +225,24 @@ export const AnunciosAdminPage: React.FC = () => {
       // Actualizar en el backend
       const anuncioActualizado = await anunciosService.patch(comunicadoEditar.id, datosBackend);
       
-      // Convertir al formato frontend y actualizar en la lista
-      const anuncioConvertido = anuncioToAnnouncement(anuncioActualizado);
-      setAnnouncements((prev) =>
-        prev.map((comm) => (comm.id === comunicadoEditar.id ? anuncioConvertido : comm))
-      );
+      // Subir nuevos adjuntos si existen
+      if (formData.adjuntos && formData.adjuntos.length > 0) {
+        for (const adjunto of formData.adjuntos) {
+          await anunciosService.uploadAdjunto(comunicadoEditar.id, adjunto);
+        }
+        // Recargar el anuncio con los adjuntos actualizados
+        const anuncioConAdjuntos = await anunciosService.getById(comunicadoEditar.id);
+        const anuncioConvertido = anuncioToAnnouncement(anuncioConAdjuntos);
+        setAnnouncements((prev) =>
+          prev.map((comm) => (comm.id === comunicadoEditar.id ? anuncioConvertido : comm))
+        );
+      } else {
+        // Sin adjuntos nuevos, usar el actualizado
+        const anuncioConvertido = anuncioToAnnouncement(anuncioActualizado);
+        setAnnouncements((prev) =>
+          prev.map((comm) => (comm.id === comunicadoEditar.id ? anuncioConvertido : comm))
+        );
+      }
       
       mostrarMensajeExito('¡Comunicado editado exitosamente!', 'El comunicado ha sido editado exitosamente');
       setComunicadoEditar(undefined);
