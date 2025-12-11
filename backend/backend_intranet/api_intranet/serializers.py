@@ -464,17 +464,23 @@ class AnuncioListSerializer(serializers.ModelSerializer):
     tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
     visibilidad_roles_display = serializers.CharField(source='get_visibilidad_roles_display', read_only=True)
     creado_por_nombre = serializers.CharField(source='creado_por.get_nombre_completo', read_only=True)
+    areas_destinatarias_nombres = serializers.SerializerMethodField()
+    adjuntos = AdjuntoAnuncioSerializer(many=True, read_only=True)
     esta_vigente = serializers.SerializerMethodField()
     
     class Meta:
         model = Anuncio
         fields = [
-            'id', 'titulo', 'tipo', 'tipo_display', 'es_destacado',
+            'id', 'titulo', 'contenido', 'tipo', 'tipo_display', 'es_destacado',
             'prioridad', 'fecha_publicacion', 'fecha_expiracion',
             'imagen', 'activo', 'esta_vigente', 'creado_por_nombre',
-            'creado_en', 'visibilidad_roles', 'visibilidad_roles_display'
+            'creado_en', 'visibilidad_roles', 'visibilidad_roles_display',
+            'para_todas_areas', 'areas_destinatarias_nombres', 'adjuntos'
         ]
         read_only_fields = ('id', 'creado_en')
+    
+    def get_areas_destinatarias_nombres(self, obj):
+        return [area.nombre for area in obj.areas_destinatarias.all()]
     
     def get_esta_vigente(self, obj):
         return obj.esta_vigente()

@@ -1,14 +1,15 @@
 // ======================================================
-// COMPONENTE: AnnouncementList
-// Ubicación: src/components/common/AnnouncementList.tsx
-// Descripción: Lista vertical de comunicados oficiales
+// COMPONENTE: AnnouncementList (VERSION DEBUG)
+// Ubicación: src/components/common/anuncios/AnnouncementList.tsx
+// Descripción: Versión con manejo de errores para diagnosticar
 // ======================================================
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { Announcement } from '@/types/announcement';
 import { AnnouncementCard } from './AnnouncementCard';
+import { AnnouncementDetailsModal } from './AnnouncementDetailsModal';
 import { FileSearch, Loader2 } from 'lucide-react';
 
 // ======================================================
@@ -19,6 +20,8 @@ interface AnnouncementListProps {
   announcements: Announcement[];
   isLoading?: boolean;
   isAdminView?: boolean;
+  onEdit?: (announcement: Announcement) => void;
+  onDelete?: (announcement: Announcement) => void;
 }
 
 // ======================================================
@@ -49,8 +52,26 @@ const AnnouncementSkeleton: React.FC = () => (
 export const AnnouncementList: React.FC<AnnouncementListProps> = ({
   announcements,
   isLoading = false,
-  isAdminView = false
+  isAdminView = false,
+  onEdit,
+  onDelete
 }) => {
+  // Estado para el modal de detalles
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Manejador para abrir el modal de detalles
+  const handleViewDetails = (announcement: Announcement) => {
+    console.log('Abriendo modal para:', announcement.title);
+    setSelectedAnnouncement(announcement);
+    setIsModalOpen(true);
+  };
+
+  console.log('AnnouncementList renderizando:', { 
+    announcements: announcements?.length, 
+    isLoading 
+  });
+
   // ======================================================
   // ESTADO DE CARGA
   // ======================================================
@@ -73,7 +94,7 @@ export const AnnouncementList: React.FC<AnnouncementListProps> = ({
   // ======================================================
   // ESTADO VACÍO
   // ======================================================
-  if (announcements.length === 0) {
+  if (!announcements || announcements.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4">
         {/* Ícono decorativo */}
@@ -104,77 +125,65 @@ export const AnnouncementList: React.FC<AnnouncementListProps> = ({
   // ======================================================
   // RENDERIZADO DE LA LISTA
   // ======================================================
-  return (
-    <div className="space-y-6">
-      {/* Contador de comunicados */}
-      <div className="flex items-center justify-between bg-white rounded-lg shadow-sm p-4 border-l-4 border-l-[#009DDC]">
-        <div>
-          <p className="text-sm font-medium text-gray-600">
-            Total de Comunicados Oficiales
-          </p>
-          <p className="text-2xl font-bold text-gray-900">
-            {announcements.length}
-          </p>
-        </div>
-        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] flex items-center justify-center">
-          <span className="text-2xl">📢</span>
-        </div>
-      </div>
-
-      {/* Lista de comunicados */}
-      {announcements.map((announcement, index) => (
-        <div
-          key={announcement.id}
-          className="animate-fadeIn"
-          style={{ animationDelay: `${index * 100}ms` }}
-        >
-          <AnnouncementCard
-            announcement={announcement}
-            isAdminView={isAdminView}
-          />
-        </div>
-      ))}
-
-      {/* ======================================================
-          NOTAS PARA IMPLEMENTACIÓN FUTURA
-          ======================================================
-          
-          FUNCIONALIDADES A IMPLEMENTAR:
-          
-          1. PAGINACIÓN:
-          <div className="flex justify-center gap-2 mt-8">
-            <button className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
-              ← Anterior
-            </button>
-            <span className="px-4 py-2">Página 1 de 3</span>
-            <button className="px-4 py-2 bg-[#009DDC] text-white rounded hover:bg-[#0088c4]">
-              Siguiente →
-            </button>
+  try {
+    return (
+      <>
+        <div className="space-y-6">
+          {/* Contador de comunicados */}
+          <div className="flex items-center justify-between bg-white rounded-lg shadow-sm p-4 border-l-4 border-l-[#009DDC]">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Total de Comunicados Oficiales
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {announcements.length}
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] flex items-center justify-center">
+              <span className="text-2xl">📢</span>
+            </div>
           </div>
-          
-          2. BOTÓN "CARGAR MÁS":
-          <div className="flex justify-center mt-8">
-            <button className="px-6 py-3 bg-gradient-to-r from-[#009DDC] to-[#4DFFF3] text-white rounded-lg font-semibold hover:shadow-lg transition-all">
-              Cargar más comunicados
-            </button>
-          </div>
-          
-          3. FILTROS POR CATEGORÍA:
-          Agregar barra de filtros encima de la lista
-          
-          4. BÚSQUEDA:
-          Campo de búsqueda para filtrar por título o contenido
-          
-          5. MARCADO COMO LEÍDO:
-          Sistema para marcar comunicados como leídos/no leídos
-      ====================================================== */}
 
-      {/* Mensaje al final de la lista */}
-      <div className="text-center py-6 text-sm text-gray-500">
-        <p>Has visto todos los comunicados oficiales</p>
+          {/* Lista de comunicados */}
+          {announcements.map((announcement, index) => (
+            <div
+              key={announcement.id}
+              className="animate-fadeIn"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <AnnouncementCard
+                announcement={announcement}
+                isAdminView={isAdminView}
+                onViewDetails={handleViewDetails}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            </div>
+          ))}
+
+          {/* Mensaje al final de la lista */}
+          <div className="text-center py-6 text-sm text-gray-500">
+            <p>Has visto todos los comunicados oficiales</p>
+          </div>
+        </div>
+
+        {/* Modal de detalles */}
+        <AnnouncementDetailsModal
+          announcement={selectedAnnouncement}
+          open={isModalOpen}
+          onOpenChange={setIsModalOpen}
+        />
+      </>
+    );
+  } catch (error) {
+    console.error('Error en AnnouncementList:', error);
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+        <h3 className="text-lg font-bold text-red-800 mb-2">Error al cargar anuncios</h3>
+        <p className="text-red-600">Por favor, revisa la consola del navegador para más detalles.</p>
       </div>
-    </div>
-  );
+    );
+  }
 };
 
 export default AnnouncementList;

@@ -42,12 +42,17 @@ export interface Announcement {
   id: string;
   title: string;
   publicationDate: Date;
+  expirationDate?: Date | null;
   description: string;
   attachments?: Attachment[];
   category?: AnnouncementCategory;
+  authorName?: string;
+  visibilidadRoles?: string;
+  visibilidadRolesDisplay?: string;
+  paraTodasAreas?: boolean;
+  areasDestinatarias?: string[];
   // Campos para escalabilidad futura
   // authorRole?: AuthorRole;
-  // authorName?: string;
   // lastEditedDate?: Date;
   // isPinned?: boolean; // Para fijar comunicados importantes
   // views?: number; // Contador de visualizaciones

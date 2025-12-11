@@ -62,8 +62,14 @@ export function anuncioToAnnouncement(anuncio: Anuncio): Announcement {
     title: anuncio.titulo,
     description: anuncio.contenido,
     publicationDate: new Date(anuncio.fecha_publicacion),
+    expirationDate: anuncio.fecha_expiracion ? new Date(anuncio.fecha_expiracion) : null,
     category: tipoToCategory[anuncio.tipo],
     attachments: attachments.length > 0 ? attachments : undefined,
+    authorName: anuncio.creado_por_nombre,
+    visibilidadRoles: anuncio.visibilidad_roles,
+    visibilidadRolesDisplay: anuncio.visibilidad_roles_display,
+    paraTodasAreas: anuncio.para_todas_areas,
+    areasDestinatarias: anuncio.areas_destinatarias_nombres,
   };
 }
 

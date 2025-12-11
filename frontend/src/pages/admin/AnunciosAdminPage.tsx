@@ -8,6 +8,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { FormularioComunicado, type FormularioComunicadoData } from '@/components/common/anuncios/FormularioComunicado';
+import { AnnouncementList } from '@/components/common/anuncios/AnnouncementList';
 import type { Announcement, AnnouncementCategory } from '@/types/announcement';
 import { sortAnnouncementsByDate } from '@/data/mockAnnouncements';
 import { 
@@ -523,73 +524,13 @@ const getCategoryLabel = (category: AnnouncementCategory) => {
           {/* ======================================================
               LISTA DE ANUNCIOS
               ====================================================== */}
-          <div className="space-y-4">
-            {sortedAnnouncements.map((announcement) => (
-              <div
-                key={announcement.id}
-                className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    {/* Categoría */}
-                    {announcement.category && (
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border mb-3 ${getCategoryColor(announcement.category)}`}>
-                        {getCategoryLabel(announcement.category)}
-                      </span>
-                    )}
-                    {/* Título */}
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
-                      {announcement.title}
-                    </h3>
-
-                    {/* Descripción */}
-                    <p className="text-gray-600 mb-3 leading-relaxed">
-                      {announcement.description}
-                    </p>
-
-                    {/* Fecha */}
-                    <p className="text-sm text-gray-500">
-                      Publicado el {announcement.publicationDate.toLocaleDateString('es-CL')}
-                    </p>
-
-                    {/* Archivos adjuntos */}
-                    {announcement.attachments && announcement.attachments.length > 0 && (
-                      <div className="mt-3 flex items-center gap-2 text-sm text-blue-600">
-                        <FileCheck className="w-4 h-4" />
-                        <span>{announcement.attachments.length} archivo(s) adjunto(s)</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ✅ Botones Admin (Solo con permisos) */}
-                  <PermissionGate customCheck={(p) => p.nivel >= 3}>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEditarClick(announcement)}
-                        className="border-blue-200 hover:border-blue-400 hover:bg-blue-50"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-
-                      {/* ✅ Botón Eliminar (Subdirección y Dirección) */}
-                      <PermissionGate customCheck={(p) => p.nivel >= 3}>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEliminar(announcement)}
-                          className="border-red-200 hover:border-red-400 hover:bg-red-50 text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </PermissionGate>
-                    </div>
-                  </PermissionGate>
-                </div>
-              </div>
-            ))}
-          </div>
+          <AnnouncementList 
+            announcements={sortedAnnouncements}
+            isLoading={loading}
+            isAdminView={permisos.esAdmin}
+            onEdit={handleEditarClick}
+            onDelete={handleEliminar}
+          />
 
           {/* Fin del condicional !loading && !error */}
           </>
