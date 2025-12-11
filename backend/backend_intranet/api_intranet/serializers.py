@@ -462,6 +462,7 @@ class AdjuntoAnuncioSerializer(serializers.ModelSerializer):
 class AnuncioListSerializer(serializers.ModelSerializer):
     """Serializer para listado de anuncios"""
     tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    visibilidad_roles_display = serializers.CharField(source='get_visibilidad_roles_display', read_only=True)
     creado_por_nombre = serializers.CharField(source='creado_por.get_nombre_completo', read_only=True)
     esta_vigente = serializers.SerializerMethodField()
     
@@ -471,7 +472,7 @@ class AnuncioListSerializer(serializers.ModelSerializer):
             'id', 'titulo', 'tipo', 'tipo_display', 'es_destacado',
             'prioridad', 'fecha_publicacion', 'fecha_expiracion',
             'imagen', 'activo', 'esta_vigente', 'creado_por_nombre',
-            'creado_en'
+            'creado_en', 'visibilidad_roles', 'visibilidad_roles_display'
         ]
         read_only_fields = ('id', 'creado_en')
     
@@ -482,6 +483,7 @@ class AnuncioListSerializer(serializers.ModelSerializer):
 class AnuncioDetailSerializer(serializers.ModelSerializer):
     """Serializer completo para detalle de anuncio"""
     tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    visibilidad_roles_display = serializers.CharField(source='get_visibilidad_roles_display', read_only=True)
     creado_por_nombre = serializers.CharField(source='creado_por.get_nombre_completo', read_only=True)
     areas_destinatarias_nombres = serializers.SerializerMethodField()
     adjuntos = AdjuntoAnuncioSerializer(many=True, read_only=True)
@@ -497,6 +499,7 @@ class AnuncioDetailSerializer(serializers.ModelSerializer):
     
     def get_esta_vigente(self, obj):
         return obj.esta_vigente()
+
 
 
 # ======================================================

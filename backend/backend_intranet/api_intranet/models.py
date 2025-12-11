@@ -376,6 +376,13 @@ class Anuncio(models.Model):
         ('administrativa', 'Administrativa'),
     ]
     
+    VISIBILIDAD_ROLES_CHOICES = [
+        ('solo_funcionarios', 'Solo Funcionarios'),
+        ('solo_jefatura', 'Solo Jefatura'),
+        ('funcionarios_y_jefatura', 'Funcionarios y Jefatura'),
+        ('solo_direccion', 'Solo Dirección y Subdirección'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     titulo = models.CharField(max_length=200)
     contenido = models.TextField()
@@ -392,9 +399,17 @@ class Anuncio(models.Model):
     # Archivos adjuntos
     imagen = models.ImageField(upload_to='anuncios/', blank=True, null=True)
     
-    # Destinatarios
+    # Destinatarios por áreas
     para_todas_areas = models.BooleanField(default=True)
     areas_destinatarias = models.ManyToManyField(Area, blank=True)
+    
+    # Destinatarios por roles
+    visibilidad_roles = models.CharField(
+        max_length=30,
+        choices=VISIBILIDAD_ROLES_CHOICES,
+        default='funcionarios_y_jefatura',
+        help_text='Determina qué roles pueden ver este anuncio. Dirección y Subdirección siempre pueden ver todos los anuncios.'
+    )
     
     # Estado
     activo = models.BooleanField(default=True)
@@ -412,6 +427,7 @@ class Anuncio(models.Model):
             models.Index(fields=['fecha_publicacion']),
             models.Index(fields=['tipo']),
             models.Index(fields=['es_destacado']),
+            models.Index(fields=['visibilidad_roles']),
         ]
     
     def __str__(self):
@@ -423,6 +439,28 @@ class Anuncio(models.Model):
         if self.fecha_expiracion:
             return self.activo and now <= self.fecha_expiracion
         return self.activo
+    
+    def puede_ver(self, usuario):
+        """
+        Determina si un usuario puede ver este anuncio basándose en su rol
+        """
+        nivel_usuario = usuario.rol.nivel
+        
+        # Dirección y Subdirección siempre pueden ver todo
+        if nivel_usuario >= 3:
+            return True
+        
+        # Verificar visibilidad por rol
+        if self.visibilidad_roles == 'solo_funcionarios':
+            return nivel_usuario == 1
+        elif self.visibilidad_roles == 'solo_jefatura':
+            return nivel_usuario == 2
+        elif self.visibilidad_roles == 'funcionarios_y_jefatura':
+            return nivel_usuario in [1, 2]
+        elif self.visibilidad_roles == 'solo_direccion':
+            return False  # Solo dirección/subdirección, y ya se verificó arriba
+        
+        return False
 
 
 class AdjuntoAnuncio(models.Model):

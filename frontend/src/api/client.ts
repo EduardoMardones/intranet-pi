@@ -89,6 +89,32 @@ export class ApiClient {
   }
 
   /**
+   * PATCH request with FormData (for file uploads)
+   */
+  static async patchFormData<T>(endpoint: string, formData: FormData): Promise<T> {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const headers: HeadersInit = {};
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      // NO agregar Content-Type para FormData - el browser lo hace automáticamente
+      
+      const response = await fetch(buildUrl(endpoint), {
+        method: 'PATCH',
+        headers,
+        credentials: 'include',
+        body: formData,
+      });
+      
+      return handleResponse<T>(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  }
+
+  /**
    * DELETE request
    */
   static async delete<T>(endpoint: string): Promise<T> {

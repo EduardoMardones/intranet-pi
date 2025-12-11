@@ -1,15 +1,15 @@
 // ======================================================
-// PÁGINA: Anuncios CESFAM - CON PERMISOS
+// PÁGINA: Anuncios CESFAM - CON BACKEND REAL
 // Ubicación: src/pages/admin/AnunciosAdminPage.tsx
-// Descripción: Vista unificada con control de permisos por rol
+// Descripción: Vista unificada con control de permisos y datos reales
 // ======================================================
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { FormularioComunicado } from '@/components/common/anuncios/FormularioComunicado';
+import React, { useState, useMemo, useEffect } from 'react';
+import { FormularioComunicado, type FormularioComunicadoData } from '@/components/common/anuncios/FormularioComunicado';
 import type { Announcement, AnnouncementCategory } from '@/types/announcement';
-import { mockAnnouncements, sortAnnouncementsByDate } from '@/data/mockAnnouncements';
+import { sortAnnouncementsByDate } from '@/data/mockAnnouncements';
 import { 
   Megaphone, Shield, FileCheck, AlertCircle, Plus, 
   CheckCircle2, Edit, Trash2, Filter, Download, Eye 
@@ -25,6 +25,13 @@ import Banner from "@/components/common/layout/Banner";
 // ✅ SISTEMA DE PERMISOS
 import { useAuth } from '@/api/contexts/AuthContext';
 import { PermissionGate } from '@/components/common/PermissionGate';
+
+// ✅ SERVICIO DE BACKEND
+import { anunciosService } from '@/api/services/anunciosService';
+import type { Anuncio, CrearAnuncioData, TipoAnuncio } from '@/api/services/anunciosService';
+
+// ✅ ADAPTADOR
+import { anunciosToAnnouncements, anuncioToAnnouncement, categoryToBackendTipo, dateToBackendString } from '@/utils/anunciosAdapter';
 
 // ======================================================
 // HELPER: Calcular permisos
@@ -59,12 +66,45 @@ export const AnunciosAdminPage: React.FC = () => {
   // ESTADOS
   // ======================================================
 
-  const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState({ title: '', description: '' });
   const [comunicadoEditar, setComunicadoEditar] = useState<Announcement | undefined>();
   const [filterCategory, setFilterCategory] = useState<AnnouncementCategory | 'all'>('all');
+
+  // ======================================================
+  // EFECTOS - CARGA DE DATOS
+  // ======================================================
+
+  useEffect(() => {
+    cargarAnuncios();
+  }, []);
+
+  // ======================================================
+  // FUNCIONES DE BACKEND
+  // ======================================================
+
+  /**
+   * Carga los anuncios desde el backend
+   */
+  const cargarAnuncios = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await anunciosService.getAll({ activo: true });
+      const anunciosConvertidos = anunciosToAnnouncements(data);
+      setAnnouncements(anunciosConvertidos);
+    } catch (err) {
+      console.error('Error al cargar anuncios:', err);
+      setError('Error al cargar los anuncios. Por favor, intente nuevamente.');
+      setAnnouncements([]); // Lista vacía en caso de error
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ======================================================
   // DATOS PROCESADOS
@@ -101,7 +141,7 @@ export const AnunciosAdminPage: React.FC = () => {
   }, [announcements]);
 
   // ======================================================
-  // MANEJADORES
+  // MANEJADORES - CON BACKEND
   // ======================================================
 
   const mostrarMensajeExito = (title: string, description: string) => {
@@ -110,15 +150,51 @@ export const AnunciosAdminPage: React.FC = () => {
     setTimeout(() => setShowSuccessMessage(false), 3000);
   };
 
-  const handleAgregarComunicado = (nuevoComunicado: Omit<Announcement, 'id' | 'publicationDate'>) => {
-    const nuevoId = `ANN${(announcements.length + 1).toString().padStart(3, '0')}`;
-    const comunicadoCompleto: Announcement = {
-      id: nuevoId,
-      ...nuevoComunicado,
-      publicationDate: new Date(),
-    };
-    setAnnouncements((prev) => [comunicadoCompleto, ...prev]);
-    mostrarMensajeExito('¡Comunicado publicado!', 'El comunicado ha sido publicado exitosamente');
+  const handleAgregarComunicado = async (formData: FormularioComunicadoData) => {
+    try {
+      // Convertir del formato frontend al backend
+      const datosBackend: CrearAnuncioData = {
+        titulo: formData.title,
+        contenido: formData.description,
+        tipo: categoryToBackendTipo(formData.category || 'general'),
+        fecha_publicacion: formData.fecha_publicacion 
+          ? dateToBackendString(formData.fecha_publicacion)
+          : dateToBackendString(new Date()),
+        fecha_expiracion: formData.fecha_expiracion 
+          ? dateToBackendString(formData.fecha_expiracion)
+          : null,
+        es_destacado: false,
+        prioridad: 1,
+        para_todas_areas: formData.para_todas_areas,
+        areas_destinatarias: formData.para_todas_areas ? [] : formData.areas_destinatarias,
+        visibilidad_roles: formData.visibilidad_roles,
+        activo: true,
+      };
+
+      // Crear en el backend
+      const anuncioCreado = await anunciosService.create(datosBackend);
+      
+      // Subir imagen si existe
+      if (formData.imagen) {
+        await anunciosService.uploadImage(anuncioCreado.id, formData.imagen);
+      }
+      
+      // TODO: Subir adjuntos si existen
+      // if (formData.adjuntos && formData.adjuntos.length > 0) {
+      //   for (const adjunto of formData.adjuntos) {
+      //     await adjuntosService.upload(anuncioCreado.id, adjunto);
+      //   }
+      // }
+      
+      // Convertir al formato frontend y agregar a la lista
+      const anuncioConvertido = anuncioToAnnouncement(anuncioCreado);
+      setAnnouncements((prev) => [anuncioConvertido, ...prev]);
+      
+      mostrarMensajeExito('¡Comunicado publicado!', 'El comunicado ha sido publicado exitosamente');
+    } catch (err) {
+      console.error('Error al crear anuncio:', err);
+      alert('Error al crear el comunicado. Por favor, intente nuevamente.');
+    }
   };
 
   const handleEditarClick = (announcement: Announcement) => {
@@ -126,24 +202,63 @@ export const AnunciosAdminPage: React.FC = () => {
     setDialogOpen(true);
   };
 
-  const handleGuardarEdicion = (comunicadoEditado: Omit<Announcement, 'id' | 'publicationDate'>) => {
+  const handleGuardarEdicion = async (formData: FormularioComunicadoData) => {
     if (!comunicadoEditar) return;
-    setAnnouncements((prev) =>
-      prev.map((comm) =>
-        comm.id === comunicadoEditar.id
-          ? { ...comunicadoEditado, id: comunicadoEditar.id, publicationDate: comunicadoEditar.publicationDate }
-          : comm
-      )
-    );
-    mostrarMensajeExito('¡Comunicado editado exitosamente!', 'El comunicado ha sido editado exitosamente');
-    setComunicadoEditar(undefined);
+    
+    try {
+      // Convertir del formato frontend al backend
+      const datosBackend = {
+        titulo: formData.title,
+        contenido: formData.description,
+        tipo: categoryToBackendTipo(formData.category || 'general') as TipoAnuncio,
+        fecha_publicacion: formData.fecha_publicacion 
+          ? dateToBackendString(formData.fecha_publicacion)
+          : undefined,
+        fecha_expiracion: formData.fecha_expiracion 
+          ? dateToBackendString(formData.fecha_expiracion)
+          : null,
+        para_todas_areas: formData.para_todas_areas,
+        areas_destinatarias: formData.para_todas_areas ? [] : formData.areas_destinatarias,
+        visibilidad_roles: formData.visibilidad_roles,
+      };
+
+      // Actualizar en el backend
+      const anuncioActualizado = await anunciosService.patch(comunicadoEditar.id, datosBackend);
+      
+      // Subir imagen si existe
+      if (formData.imagen) {
+        await anunciosService.uploadImage(anuncioActualizado.id, formData.imagen);
+      }
+      
+      // Convertir al formato frontend y actualizar en la lista
+      const anuncioConvertido = anuncioToAnnouncement(anuncioActualizado);
+      setAnnouncements((prev) =>
+        prev.map((comm) => (comm.id === comunicadoEditar.id ? anuncioConvertido : comm))
+      );
+      
+      mostrarMensajeExito('¡Comunicado editado exitosamente!', 'El comunicado ha sido editado exitosamente');
+      setComunicadoEditar(undefined);
+    } catch (err) {
+      console.error('Error al editar anuncio:', err);
+      alert('Error al editar el comunicado. Por favor, intente nuevamente.');
+    }
   };
 
-  const handleEliminar = (announcement: Announcement) => {
+  const handleEliminar = async (announcement: Announcement) => {
     const confirmar = window.confirm(`¿Está seguro que desea eliminar el comunicado "${announcement.title}"?`);
     if (confirmar) {
-      setAnnouncements((prev) => prev.filter((comm) => comm.id !== announcement.id));
-      mostrarMensajeExito('¡Comunicado eliminado exitosamente!', 'El comunicado ha sido eliminado exitosamente');
+      try {
+        // Eliminar en el backend
+        await anunciosService.delete(announcement.id);
+        
+        // Eliminar de la lista local
+        setAnnouncements((prev) => prev.filter((comm) => comm.id !== announcement.id));
+        
+        mostrarMensajeExito('¡Comunicado eliminado exitosamente!', 'El comunicado ha sido eliminado exitosamente');
+      } catch (err) {
+        console.error('Error al eliminar anuncio:', err);
+        alert('Error al eliminar el comunicado. Por favor, intente nuevamente.');
+      }
     }
   };
 
@@ -217,6 +332,46 @@ const getCategoryLabel = (category: AnnouncementCategory) => {
 
       <div className="flex-1 min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100 p-4 md:p-8">
         <div className="max-w-[1600px] mx-auto">
+          
+          {/* ======================================================
+              ESTADO DE CARGA
+              ====================================================== */}
+          {loading && (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#009DDC] mx-auto mb-4"></div>
+                <p className="text-gray-600">Cargando anuncios...</p>
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================
+              ESTADO DE ERROR
+              ====================================================== */}
+          {error && !loading && (
+            <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-6 mb-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-1">Error al cargar</h3>
+                  <p className="text-sm text-gray-700">{error}</p>
+                  <Button
+                    onClick={cargarAnuncios}
+                    className="mt-3 bg-red-600 hover:bg-red-700 text-white"
+                    size="sm"
+                  >
+                    Reintentar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================
+              CONTENIDO PRINCIPAL
+              ====================================================== */}
+          {!loading && !error && (
+            <>
           
           {/* ======================================================
               HEADER
@@ -445,6 +600,10 @@ const getCategoryLabel = (category: AnnouncementCategory) => {
               </div>
             ))}
           </div>
+
+          {/* Fin del condicional !loading && !error */}
+          </>
+          )}
 
         </div>
       </div>

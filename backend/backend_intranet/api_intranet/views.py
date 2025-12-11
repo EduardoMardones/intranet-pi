@@ -446,20 +446,35 @@ class AnuncioViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de anuncios"""
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['tipo', 'es_destacado', 'activo']
+    filterset_fields = ['tipo', 'es_destacado', 'activo', 'visibilidad_roles']
     search_fields = ['titulo', 'contenido']
     ordering_fields = ['fecha_publicacion', 'prioridad']
     ordering = ['-fecha_publicacion', '-prioridad']
     
     def get_queryset(self):
         user = self.request.user
+        nivel_usuario = user.rol.nivel
         queryset = Anuncio.objects.all()
         
         # Filtrar por áreas si no son para todas
-        if not user.rol.nivel >= 3:
+        if nivel_usuario < 3:
             queryset = queryset.filter(
                 Q(para_todas_areas=True) | Q(areas_destinatarias=user.area)
             )
+        
+        # Filtrar por visibilidad de roles
+        if nivel_usuario < 3:  # Si no es Dirección/Subdirección
+            if nivel_usuario == 1:  # Funcionario
+                queryset = queryset.filter(
+                    Q(visibilidad_roles='solo_funcionarios') |
+                    Q(visibilidad_roles='funcionarios_y_jefatura')
+                )
+            elif nivel_usuario == 2:  # Jefatura
+                queryset = queryset.filter(
+                    Q(visibilidad_roles='solo_jefatura') |
+                    Q(visibilidad_roles='funcionarios_y_jefatura')
+                )
+        # Si es nivel 3 o 4 (Dirección/Subdirección), ve todos los anuncios
         
         return queryset.distinct()
     
@@ -479,6 +494,7 @@ class AnuncioViewSet(viewsets.ModelViewSet):
         anuncios = [a for a in anuncios if a.esta_vigente()]
         serializer = self.get_serializer(anuncios, many=True)
         return Response(serializer.data)
+
 
 
 # ======================================================
