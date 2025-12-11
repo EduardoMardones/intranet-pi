@@ -21,7 +21,7 @@ import type { Announcement, AnnouncementCategory } from '@/types/announcement';
 import type { VisibilidadRoles } from '@/api/services/anunciosService';
 import { 
   Megaphone, FileText, Calendar, Paperclip, Loader2, 
-  Users, Shield, Image as ImageIcon, X, Upload 
+  Users, Shield, Upload 
 } from 'lucide-react';
 import { areaService } from '@/api';
 
@@ -43,7 +43,6 @@ export interface FormularioComunicadoData {
   areas_destinatarias: string[];
   fecha_publicacion?: Date;
   fecha_expiracion?: Date;
-  imagen?: File;
   adjuntos?: File[];
 }
 
@@ -88,11 +87,10 @@ export const FormularioComunicado: React.FC<FormularioComunicadoProps> = ({
     areas_destinatarias: [],
     fecha_publicacion: new Date(),
     fecha_expiracion: undefined,
-    imagen: undefined,
     adjuntos: [],
   });
 
-  const [imagenPreview, setImagenPreview] = useState<string | null>(null);
+  // Estado eliminado: imagenPreview
 
   // ======================================================
   // EFECTOS
@@ -115,14 +113,12 @@ export const FormularioComunicado: React.FC<FormularioComunicadoProps> = ({
         areas_destinatarias: [],
         fecha_publicacion: comunicadoEditar.publicationDate,
         fecha_expiracion: undefined,
-        imagen: undefined,
         adjuntos: [],
       });
     } else {
       resetForm();
     }
     setErrors({});
-    setImagenPreview(null);
   }, [comunicadoEditar, open]);
 
   // ======================================================
@@ -151,10 +147,8 @@ export const FormularioComunicado: React.FC<FormularioComunicadoProps> = ({
       areas_destinatarias: [],
       fecha_publicacion: new Date(),
       fecha_expiracion: undefined,
-      imagen: undefined,
       adjuntos: [],
     });
-    setImagenPreview(null);
   };
 
   // ======================================================
@@ -205,30 +199,6 @@ export const FormularioComunicado: React.FC<FormularioComunicadoProps> = ({
     });
   };
 
-  const handleImagenChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validar tipo y tamaño
-      if (!file.type.startsWith('image/')) {
-        alert('Por favor seleccione una imagen válida');
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) { // 5MB
-        alert('La imagen no debe superar los 5MB');
-        return;
-      }
-
-      setFormData(prev => ({ ...prev, imagen: file }));
-      
-      // Crear preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagenPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleAdjuntosChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     
@@ -240,11 +210,6 @@ export const FormularioComunicado: React.FC<FormularioComunicadoProps> = ({
     }
 
     setFormData(prev => ({ ...prev, adjuntos: files }));
-  };
-
-  const handleRemoveImagen = () => {
-    setFormData(prev => ({ ...prev, imagen: undefined }));
-    setImagenPreview(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -477,52 +442,6 @@ export const FormularioComunicado: React.FC<FormularioComunicadoProps> = ({
             />
             {errors.content && (
               <p className="text-xs text-red-500">{errors.content}</p>
-            )}
-          </div>
-
-          {/* Imagen del Anuncio */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-              <ImageIcon className="w-4 h-4 text-purple-600" />
-              Imagen del Anuncio (Opcional)
-            </Label>
-            
-            {imagenPreview ? (
-              <div className="relative">
-                <img 
-                  src={imagenPreview} 
-                  alt="Preview" 
-                  className="w-full max-h-48 object-cover rounded-lg border-2 border-gray-200"
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="destructive"
-                  onClick={handleRemoveImagen}
-                  className="absolute top-2 right-2"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                <input
-                  type="file"
-                  id="imagen"
-                  accept="image/*"
-                  onChange={handleImagenChange}
-                  className="hidden"
-                  disabled={loading}
-                />
-                <Label
-                  htmlFor="imagen"
-                  className="flex flex-col items-center cursor-pointer"
-                >
-                  <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-600">Haga clic para subir una imagen</span>
-                  <span className="text-xs text-gray-400 mt-1">PNG, JPG - Máx. 5MB</span>
-                </Label>
-              </div>
             )}
           </div>
 

@@ -174,11 +174,6 @@ export const AnunciosAdminPage: React.FC = () => {
       // Crear en el backend
       const anuncioCreado = await anunciosService.create(datosBackend);
       
-      // Subir imagen si existe
-      if (formData.imagen) {
-        await anunciosService.uploadImage(anuncioCreado.id, formData.imagen);
-      }
-      
       // TODO: Subir adjuntos si existen
       // if (formData.adjuntos && formData.adjuntos.length > 0) {
       //   for (const adjunto of formData.adjuntos) {
@@ -224,11 +219,6 @@ export const AnunciosAdminPage: React.FC = () => {
 
       // Actualizar en el backend
       const anuncioActualizado = await anunciosService.patch(comunicadoEditar.id, datosBackend);
-      
-      // Subir imagen si existe
-      if (formData.imagen) {
-        await anunciosService.uploadImage(anuncioActualizado.id, formData.imagen);
-      }
       
       // Convertir al formato frontend y actualizar en la lista
       const anuncioConvertido = anuncioToAnnouncement(anuncioActualizado);
