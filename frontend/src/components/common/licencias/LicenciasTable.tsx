@@ -9,7 +9,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import type { LicenciaMedica } from '@/types/licencia';
-import { FILE_TYPE_CONFIG, STATUS_CONFIG } from '@/types/licencia';
+import { FILE_TYPE_CONFIG, STATUS_CONFIG, calcularEstadoLicencia } from '@/types/licencia';
 import { formatFileSize } from '@/data/mockLicencias';
 import { Eye, Download, Trash2, Calendar, User, Briefcase } from 'lucide-react';
 
@@ -101,7 +101,13 @@ export const LicenciasTable: React.FC<LicenciasTableProps> = ({
           <tbody className="bg-white divide-y divide-gray-100">
             {licencias.map((licencia, index) => {
               const fileConfig = FILE_TYPE_CONFIG[licencia.tipoArchivo];
-              const statusConfig = licencia.status ? STATUS_CONFIG[licencia.status] : null;
+              
+              // ✅ CALCULAR ESTADO AUTOMÁTICAMENTE BASADO EN FECHA DE TÉRMINO
+              const estadoActual = licencia.fechaTermino 
+                ? calcularEstadoLicencia(licencia.fechaTermino)
+                : 'vencida'; // Por defecto vencida si no hay fecha
+              
+              const statusConfig = STATUS_CONFIG[estadoActual];
 
               return (
                 <tr 
@@ -168,16 +174,12 @@ export const LicenciasTable: React.FC<LicenciasTableProps> = ({
 
                   {/* COLUMNA: Estado */}
                   <td className="px-6 py-4">
-                    {statusConfig ? (
-                      <span className={`
-                        inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
-                        border ${statusConfig.badge}
-                      `}>
-                        {statusConfig.label}
-                      </span>
-                    ) : (
-                      <span className="text-sm text-gray-400">-</span>
-                    )}
+                    <span className={`
+                      inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
+                      border ${statusConfig.badge}
+                    `}>
+                      {statusConfig.label}
+                    </span>
                   </td>
 
                   {/* COLUMNA: Subido por */}

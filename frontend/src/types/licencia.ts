@@ -11,7 +11,7 @@ export type FileTypeAllowed = 'pdf' | 'jpeg' | 'jpg' | 'png';
 /**
  * Estado de la licencia médica
  */
-export type LicenciaStatus = 'pendiente' | 'aprobada' | 'rechazada' | 'vigente' | 'vencida';
+export type LicenciaStatus = 'vigente' | 'vencida';
 
 /**
  * Interface principal de una licencia médica
@@ -91,21 +91,9 @@ export const STATUS_CONFIG: Record<LicenciaStatus, {
   label: string;
   badge: string;
 }> = {
-  pendiente: {
-    label: 'Pendiente',
-    badge: 'bg-yellow-100 text-yellow-700 border-yellow-300'
-  },
-  aprobada: {
-    label: 'Aprobada',
-    badge: 'bg-green-100 text-green-700 border-green-300'
-  },
-  rechazada: {
-    label: 'Rechazada',
-    badge: 'bg-red-100 text-red-700 border-red-300'
-  },
   vigente: {
     label: 'Vigente',
-    badge: 'bg-blue-100 text-blue-700 border-blue-300'
+    badge: 'bg-green-100 text-green-700 border-green-300'
   },
   vencida: {
     label: 'Vencida',
@@ -132,3 +120,17 @@ export const ALLOWED_EXTENSIONS = ['.pdf', '.jpeg', '.jpg', '.png'];
  * Tamaño máximo de archivo (10MB en bytes)
  */
 export const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+/**
+ * Función para calcular el estado de una licencia automáticamente
+ * basándose en la fecha de término
+ */
+export const calcularEstadoLicencia = (fechaTermino: Date): LicenciaStatus => {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0); // Resetear horas para comparar solo fechas
+  
+  const fechaFin = new Date(fechaTermino);
+  fechaFin.setHours(0, 0, 0, 0);
+  
+  return fechaFin >= hoy ? 'vigente' : 'vencida';
+};
