@@ -273,6 +273,44 @@ class SolicitudViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
+    def mis_aprobaciones(self, request):
+        """Listar solicitudes que YO aprobé o rechacé"""
+        user = request.user
+        
+        if user.rol.nivel < 2:
+            return Response(
+                {'error': 'No tienes permisos para ver este historial'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Buscar donde el usuario aprobó/rechazó
+        solicitudes = Solicitud.objects.filter(
+            Q(jefatura_aprobador=user) | Q(direccion_aprobador=user)
+        ).select_related('usuario', 'usuario__area', 'jefatura_aprobador', 'direccion_aprobador')
+        
+        serializer = SolicitudListSerializer(solicitudes, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def historial_completo(self, request):
+        """Listar TODAS las solicitudes aprobadas/rechazadas (solo Dirección/Subdirección)"""
+        user = request.user
+        
+        if user.rol.nivel < 3:
+            return Response(
+                {'error': 'Solo Dirección y Subdirección pueden ver el historial completo'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Todas las solicitudes que NO estén pendientes
+        solicitudes = Solicitud.objects.exclude(
+            estado__in=['pendiente_jefatura', 'pendiente_direccion']
+        ).select_related('usuario', 'usuario__area')
+        
+        serializer = SolicitudListSerializer(solicitudes, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
     def mis_solicitudes(self, request):
         """Listar solicitudes del usuario actual"""
         solicitudes = Solicitud.objects.filter(usuario=request.user)

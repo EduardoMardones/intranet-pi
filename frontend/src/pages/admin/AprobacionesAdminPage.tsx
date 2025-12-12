@@ -71,6 +71,61 @@ const getTipoBadge = (tipo: TipoSolicitud) => {
   );
 };
 
+const getEstadoBadge = (estado: string) => {
+  switch (estado) {
+    case 'pendiente_jefatura':
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 border flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          Pendiente Jefatura
+        </Badge>
+      );
+    case 'pendiente_direccion':
+    case 'aprobada_jefatura':
+      return (
+        <Badge className="bg-orange-100 text-orange-800 border-orange-200 border flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          Pendiente Dirección
+        </Badge>
+      );
+    case 'aprobada':
+      return (
+        <Badge className="bg-green-100 text-green-800 border-green-200 border flex items-center gap-1">
+          <CheckCircle className="w-3 h-3" />
+          Aprobada
+        </Badge>
+      );
+    case 'rechazada_jefatura':
+      return (
+        <Badge className="bg-red-100 text-red-800 border-red-200 border flex items-center gap-1">
+          <XCircle className="w-3 h-3" />
+          Rechazada (Jefatura)
+        </Badge>
+      );
+    case 'rechazada_direccion':
+      return (
+        <Badge className="bg-red-100 text-red-800 border-red-200 border flex items-center gap-1">
+          <XCircle className="w-3 h-3" />
+          Rechazada (Dirección)
+        </Badge>
+      );
+    case 'cancelada':
+      return (
+        <Badge className="bg-gray-100 text-gray-800 border-gray-200 border flex items-center gap-1">
+          <XCircle className="w-3 h-3" />
+          Cancelada
+        </Badge>
+      );
+    default:
+      return (
+        <Badge className="bg-gray-100 text-gray-800 border-gray-200 border flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          {estado}
+        </Badge>
+      );
+  }
+};
+
 // ======================================================
 // COMPONENTE PRINCIPAL
 // ======================================================
@@ -84,6 +139,9 @@ export const AprobacionesAdminPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
+  
+  // Vista actual: 'pendientes' | 'mis_aprobaciones' | 'historial_completo'
+  const [vistaActual, setVistaActual] = useState<'pendientes' | 'mis_aprobaciones' | 'historial_completo'>('pendientes');
 
   // Modal
   const [modalOpen, setModalOpen] = useState(false);
@@ -104,7 +162,7 @@ export const AprobacionesAdminPage: React.FC = () => {
     if (user?.id) {
       cargarSolicitudes();
     }
-  }, [user]);
+  }, [user, vistaActual]);
 
   useEffect(() => {
     aplicarFiltros();
@@ -120,43 +178,61 @@ export const AprobacionesAdminPage: React.FC = () => {
     try {
       setLoading(true);
       setError('');
-      const data = await solicitudService.getPendientes();
       
-      // Filtrar solicitudes según el rol del usuario
-      const isDireccion = user.rol_nombre && (
-        user.rol_nombre.toLowerCase().includes('dirección') || 
-        user.rol_nombre.toLowerCase().includes('direccion') ||
-        user.rol_nombre.toLowerCase().includes('subdirección') ||
-        user.rol_nombre.toLowerCase().includes('subdireccion')
-      );
-
-      let solicitudesFiltradas = data;
+      let data: Solicitud[];
       
-      if (isDireccion) {
-        // Dirección/Subdirección solo ve solicitudes en estado pendiente_direccion
-        solicitudesFiltradas = data.filter(s => 
-          s.estado === 'pendiente_direccion' || s.estado === 'aprobada_jefatura'
-        );
+      // Cargar según la vista actual
+      if (vistaActual === 'pendientes') {
+        data = await solicitudService.getPendientes();
+      } else if (vistaActual === 'mis_aprobaciones') {
+        data = await solicitudService.getMisAprobaciones();
       } else {
-        // Jefatura solo ve solicitudes en estado pendiente_jefatura de su área
-        solicitudesFiltradas = data.filter(s => {
-          // Si es jefe de área, solo ve solicitudes de su área
-          if (user.es_jefe_de_area) {
-            return s.estado === 'pendiente_jefatura' && s.usuario_area === user.area_nombre;
-          }
-          // Si no es jefe pero tiene permisos, ve todas las pendientes de jefatura
-          return s.estado === 'pendiente_jefatura';
-        });
+        data = await solicitudService.getHistorialCompleto();
       }
       
-      // Ordenar por fecha de creación (más antigua primero)
-      const ordenadas = solicitudesFiltradas.sort((a, b) => 
-        new Date(a.creada_en).getTime() - new Date(b.creada_en).getTime()
-      );
-      setSolicitudes(ordenadas);
+      // Para vista pendientes, aplicar filtros
+      if (vistaActual === 'pendientes') {
+        const isDireccion = user.rol_nombre && (
+          user.rol_nombre.toLowerCase().includes('dirección') || 
+          user.rol_nombre.toLowerCase().includes('direccion') ||
+          user.rol_nombre.toLowerCase().includes('subdirección') ||
+          user.rol_nombre.toLowerCase().includes('subdireccion')
+        );
+
+        let solicitudesFiltradas = data;
+        
+        if (isDireccion) {
+          // Dirección/Subdirección solo ve solicitudes en estado pendiente_direccion
+          solicitudesFiltradas = data.filter(s => 
+          s.estado === 'pendiente_direccion' || s.estado === 'aprobada_jefatura'
+        );
+        } else {
+          // Jefatura solo ve solicitudes en estado pendiente_jefatura de su área
+          solicitudesFiltradas = data.filter(s => {
+            // Si es jefe de área, solo ve solicitudes de su área
+            if (user.es_jefe_de_area) {
+              return s.estado === 'pendiente_jefatura' && s.usuario_area === user.area_nombre;
+            }
+            // Si no es jefe pero tiene permisos, ve todas las pendientes de jefatura
+            return s.estado === 'pendiente_jefatura';
+          });
+        }
+        
+        // Ordenar por fecha de creación (más antigua primero)
+        const ordenadas = solicitudesFiltradas.sort((a, b) => 
+          new Date(a.creada_en).getTime() - new Date(b.creada_en).getTime()
+        );
+        setSolicitudes(ordenadas);
+      } else {
+        // Para vistas de historial, ordenar por fecha descendente (más reciente primero)
+        const ordenadas = data.sort((a, b) => 
+          new Date(b.creada_en).getTime() - new Date(a.creada_en).getTime()
+        );
+        setSolicitudes(ordenadas);
+      }
     } catch (err: any) {
       console.error('Error al cargar solicitudes:', err);
-      setError('No se pudieron cargar las solicitudes pendientes. Intenta nuevamente.');
+      setError('No se pudieron cargar las solicitudes. Intenta nuevamente.');
     } finally {
       setLoading(false);
     }
@@ -328,7 +404,7 @@ export const AprobacionesAdminPage: React.FC = () => {
                 <Clock className="w-6 h-6 text-yellow-600" />
               </div>
               <div>
-                <p className="text-gray-500 text-sm">Pendientes</p>
+                <p className="text-gray-500 text-sm">Totales</p>
                 <p className="text-3xl font-bold text-gray-800">{solicitudes.length}</p>
               </div>
             </div>
@@ -360,6 +436,42 @@ export const AprobacionesAdminPage: React.FC = () => {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Botones de Vista */}
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-sm font-semibold text-gray-700">Ver:</span>
+            
+            <Button
+              onClick={() => setVistaActual('pendientes')}
+              variant={vistaActual === 'pendientes' ? 'default' : 'outline'}
+              className={vistaActual === 'pendientes' ? 'bg-[#009DDC] hover:bg-[#0088c4]' : ''}
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              Pendientes
+            </Button>
+            
+            <Button
+              onClick={() => setVistaActual('mis_aprobaciones')}
+              variant={vistaActual === 'mis_aprobaciones' ? 'default' : 'outline'}
+              className={vistaActual === 'mis_aprobaciones' ? 'bg-[#009DDC] hover:bg-[#0088c4]' : ''}
+            >
+              <User className="w-4 h-4 mr-2" />
+              Mis Aprobaciones
+            </Button>
+            
+            {user?.rol_nivel && user.rol_nivel >= 3 && (
+              <Button
+                onClick={() => setVistaActual('historial_completo')}
+                variant={vistaActual === 'historial_completo' ? 'default' : 'outline'}
+                className={vistaActual === 'historial_completo' ? 'bg-[#009DDC] hover:bg-[#0088c4]' : ''}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Historial Completo
+              </Button>
+            )}
           </div>
         </div>
 
@@ -444,10 +556,7 @@ export const AprobacionesAdminPage: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         {getTipoBadge(solicitud.tipo)}
-                        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 border flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          Pendiente
-                        </Badge>
+                        {getEstadoBadge(solicitud.estado)}
                       </div>
                       <p className="text-sm text-gray-500">
                         Solicitado el {formatearFecha(solicitud.creada_en)}
@@ -479,23 +588,68 @@ export const AprobacionesAdminPage: React.FC = () => {
                 </div>
 
                 {/* Detalles de la solicitud */}
-                <div className="grid md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Período Solicitado</p>
-                    <p className="font-semibold text-gray-800">
-                      {formatearFecha(solicitud.fecha_inicio)}
-                    </p>
-                    <p className="font-semibold text-gray-800">
-                      hasta {formatearFecha(solicitud.fecha_termino)}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {solicitud.cantidad_dias} día(s) hábil(es)
-                    </p>
-                  </div>
+                <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Período Solicitado</p>
+                      <p className="font-semibold text-gray-800">
+                        {formatearFecha(solicitud.fecha_inicio)}
+                      </p>
+                      <p className="font-semibold text-gray-800">
+                        hasta {formatearFecha(solicitud.fecha_termino)}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {solicitud.cantidad_dias} día(s) hábil(es)
+                      </p>
+                    </div>
 
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Motivo</p>
-                    <p className="text-sm text-gray-700">{solicitud.motivo}</p>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Motivo</p>
+                      <p className="text-sm text-gray-700">{solicitud.motivo}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Aprobadores */}
+                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <User className="w-4 h-4 text-gray-400" />
+                    <p className="text-xs text-gray-500 font-semibold">APROBACIONES</p>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    {/* Aprobador Jefatura */}
+                    <div>
+                      <p className="text-gray-500">Aprobación Jefatura</p>
+                      {solicitud.jefatura_aprobador_nombre ? (
+                        <>
+                          <p className="font-semibold text-gray-800">{solicitud.jefatura_aprobador_nombre}</p>
+                          {solicitud.jefatura_fecha_aprobacion && (
+                            <p className="text-xs text-gray-500">
+                              {formatearFecha(solicitud.jefatura_fecha_aprobacion)}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="font-semibold text-gray-500 italic">Pendiente</p>
+                      )}
+                    </div>
+
+                    {/* Aprobador Dirección */}
+                    <div>
+                      <p className="text-gray-500">Aprobación Dirección</p>
+                      {solicitud.direccion_aprobador_nombre ? (
+                        <>
+                          <p className="font-semibold text-gray-800">{solicitud.direccion_aprobador_nombre}</p>
+                          {solicitud.direccion_fecha_aprobacion && (
+                            <p className="text-xs text-gray-500">
+                              {formatearFecha(solicitud.direccion_fecha_aprobacion)}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="font-semibold text-gray-500 italic">Pendiente</p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -514,25 +668,27 @@ export const AprobacionesAdminPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Acciones */}
-                <div className="flex gap-3 pt-4 border-t">
-                  <Button
-                    onClick={() => abrirModal(solicitud, 'aprobar')}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Aprobar
-                  </Button>
+                {/* Acciones - Solo en vista pendientes */}
+                {vistaActual === 'pendientes' && (
+                  <div className="flex gap-3 pt-4 border-t">
+                    <Button
+                      onClick={() => abrirModal(solicitud, 'aprobar')}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Aprobar
+                    </Button>
 
-                  <Button
-                    onClick={() => abrirModal(solicitud, 'rechazar')}
-                    variant="outline"
-                    className="flex-1 text-red-600 border-red-600 hover:bg-red-50"
-                  >
-                    <XCircle className="w-4 h-4 mr-2" />
-                    Rechazar
-                  </Button>
-                </div>
+                    <Button
+                      onClick={() => abrirModal(solicitud, 'rechazar')}
+                      variant="outline"
+                      className="flex-1 text-red-600 border-red-600 hover:bg-red-50"
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Rechazar
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

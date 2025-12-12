@@ -232,6 +232,22 @@ class SolicitudService {
   }
 
   /**
+   * Obtener solicitudes que YO aprobé o rechacé
+   */
+  async getMisAprobaciones(): Promise<Solicitud[]> {
+    const response = await axios.get(`${this.baseURL}/mis_aprobaciones/`);
+    return response.data;
+  }
+
+  /**
+   * Obtener TODAS las solicitudes aprobadas/rechazadas (solo Dirección/Subdirección)
+   */
+  async getHistorialCompleto(): Promise<Solicitud[]> {
+    const response = await axios.get(`${this.baseURL}/historial_completo/`);
+    return response.data;
+  }
+
+  /**
    * Obtener estadísticas de solicitudes del usuario actual
    */
   async getEstadisticas(): Promise<EstadisticasSolicitudes> {
