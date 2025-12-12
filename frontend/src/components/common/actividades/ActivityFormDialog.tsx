@@ -24,10 +24,15 @@ import { Calendar, MapPin, FileText, Image, Clock, Tag, Upload } from 'lucide-re
 // INTERFACES
 // ======================================================
 
+export interface ActivityFormData extends Omit<Activity, 'id'> {
+  imageFile?: File | null;
+  imageSource?: 'url' | 'file';
+}
+
 interface ActivityFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (activity: Omit<Activity, 'id'>) => void;
+  onSave: (activity: ActivityFormData) => void;
   activity?: Activity | null; // Si existe, modo edición; si null, modo creación
 }
 
@@ -225,23 +230,11 @@ export const ActivityFormDialog: React.FC<ActivityFormDialogProps> = ({
       newErrors.description = 'La descripción no puede exceder 500 caracteres';
     }
 
-    if (!formData.location.trim()) {
+    if (!formData.location?.trim()) {
       newErrors.location = 'La ubicación es obligatoria';
     }
 
-    // Validación de imagen según la fuente
-    if (imageSource === 'url') {
-      if (!formData.imageUrl.trim()) {
-        newErrors.imageUrl = 'La URL de la imagen es obligatoria';
-      } else if (!isValidUrl(formData.imageUrl)) {
-        newErrors.imageUrl = 'Ingresa una URL válida';
-      }
-    } else {
-      // Modo archivo
-      if (!selectedFile && !formData.imageUrl) {
-        newErrors.imageUrl = 'Debes seleccionar una imagen';
-      }
-    }
+    // Imagen es opcional, no hay validación necesaria
 
     if (formData.date < new Date(new Date().setHours(0, 0, 0, 0))) {
       newErrors.date = 'La fecha no puede ser anterior a hoy';
@@ -270,7 +263,13 @@ export const ActivityFormDialog: React.FC<ActivityFormDialogProps> = ({
     e.preventDefault();
 
     if (validateForm()) {
-      onSave(formData);
+      // Enviar datos con archivo si existe
+      const dataToSave: ActivityFormData = {
+        ...formData,
+        imageFile: selectedFile,
+        imageSource: 'file',
+      };
+      onSave(dataToSave);
     }
   };
 
@@ -414,102 +413,43 @@ export const ActivityFormDialog: React.FC<ActivityFormDialogProps> = ({
           <div className="space-y-3">
             <Label className="text-base font-semibold">
               <Image className="w-4 h-4 inline mr-1" />
-              Imagen de la Actividad *
+              Imagen de la Actividad (Opcional)
             </Label>
             
-            {/* Selector de tipo de fuente */}
-            <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
-              <button
-                type="button"
-                onClick={() => handleImageSourceChange('url')}
-                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  imageSource === 'url'
-                    ? 'bg-white text-[#009DDC] shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Image className="w-4 h-4 inline mr-1" />
-                URL de Imagen
-              </button>
-              <button
-                type="button"
-                onClick={() => handleImageSourceChange('file')}
-                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  imageSource === 'file'
-                    ? 'bg-white text-[#009DDC] shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Upload className="w-4 h-4 inline mr-1" />
-                Subir Archivo
-              </button>
-            </div>
-
-            {/* Campo de URL */}
-            {imageSource === 'url' && (
-              <div className="space-y-2">
-                <Input
-                  id="imageUrl"
-                  type="url"
-                  value={formData.imageUrl}
-                  onChange={(e) => handleChange('imageUrl', e.target.value)}
-                  placeholder="https://picsum.photos/seed/cesfam-activity/600/400"
-                  aria-invalid={!!errors.imageUrl}
-                  className="text-base"
-                />
-                <p className="text-xs text-gray-500">
-                  💡 Sugerencia: Usa <a href="https://picsum.photos/" target="_blank" rel="noopener noreferrer" className="text-[#009DDC] underline">Lorem Picsum</a> para imágenes de prueba
-                </p>
-              </div>
-            )}
-
             {/* Campo de archivo */}
-            {imageSource === 'file' && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-8 h-8 mb-2 text-gray-500" />
-                      <p className="mb-1 text-sm text-gray-600 font-medium">
-                        {selectedFile ? selectedFile.name : 'Haz clic para seleccionar una imagen'}
-                      </p>
-                      <p className="text-xs text-gray-500">PNG, JPG, GIF (máx. 5MB)</p>
-                    </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleFileSelect}
-                    />
-                  </label>
-                </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-center w-full">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="w-8 h-8 mb-2 text-gray-500" />
+                    <p className="mb-1 text-sm text-gray-600 font-medium">
+                      {selectedFile ? selectedFile.name : 'Haz clic para seleccionar una imagen'}
+                    </p>
+                    <p className="text-xs text-gray-500">PNG, JPG, GIF (máx. 5MB)</p>
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                  />
+                </label>
               </div>
-            )}
 
-            {/* Mensajes de error */}
-            {errors.imageUrl && (
-              <p className="text-sm text-red-600 font-medium">{errors.imageUrl}</p>
-            )}
-
-            {/* Vista previa */}
-            {((imageSource === 'url' && formData.imageUrl && isValidUrl(formData.imageUrl)) || 
-              (imageSource === 'file' && imagePreview)) && (
-              <div className="mt-3 rounded-lg overflow-hidden border-2 border-gray-200">
-                <img
-                  src={imageSource === 'url' ? formData.imageUrl : imagePreview}
-                  alt="Vista previa"
-                  className="w-full h-48 object-cover"
-                  onError={(e) => {
-                    if (imageSource === 'url') {
-                      e.currentTarget.src = 'https://via.placeholder.com/600x400?text=Error+al+cargar+imagen';
-                    }
-                  }}
-                />
-                <div className="px-3 py-2 bg-gray-50 text-xs text-gray-600">
-                  Vista previa de la imagen
+              {/* Vista previa */}
+              {imagePreview && (
+                <div className="mt-3 rounded-lg overflow-hidden border-2 border-gray-200">
+                  <img
+                    src={imagePreview}
+                    alt="Vista previa"
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="px-3 py-2 bg-gray-50 text-xs text-gray-600">
+                    Vista previa de la imagen
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* ======================================================

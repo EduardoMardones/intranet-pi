@@ -23,8 +23,7 @@ import {
   User, 
   Shield, 
   Users, 
-  Clock,
-  X 
+  Clock
 } from 'lucide-react';
 
 // ======================================================

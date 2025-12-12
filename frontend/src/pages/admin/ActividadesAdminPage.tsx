@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
@@ -14,8 +14,10 @@ import bannerHome from "@/components/images/banner_images/BannerActividades.png"
 
 import { ActivitiesGridAdmin } from '@/components/common/actividades/ActivitiesGridAdmin';
 import { ActivityFormDialog } from '@/components/common/actividades/ActivityFormDialog';
+import type { ActivityFormData } from '@/components/common/actividades/ActivityFormDialog';
+import { ActivityDetailsModal } from '@/components/common/actividades/ActivityDetailsModal';
 import type { Activity } from '@/types/activity';
-import { mockActivities, sortActivitiesByDate } from '@/data/mockActivities';
+import { sortActivitiesByDate } from '@/data/mockActivities';
 import { Sparkles, Users, Calendar, Plus, Shield, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/actividades/Toast';
@@ -23,6 +25,13 @@ import { useToast } from '@/components/common/actividades/Toast';
 // ✅ SISTEMA DE PERMISOS
 import { useAuth } from '@/api/contexts/AuthContext';
 import { PermissionGate } from '@/components/common/PermissionGate';
+
+// ✅ SERVICIO DE BACKEND
+import { actividadesService } from '@/api/services/actividadesService';
+import type { CrearActividadData, TipoActividad } from '@/api/services/actividadesService';
+
+// ✅ ADAPTADOR
+import { actividadesToActivities, actividadToActivity, categoryToBackendTipo, dateToBackendString } from '@/utils/actividadesAdapter';
 
 // ======================================================
 // HELPER: Calcular permisos
@@ -57,10 +66,42 @@ export const ActividadesAdminPage: React.FC = () => {
   // HOOKS & ESTADOS
   // ======================================================
   const toast = useToast();
-  const [activities, setActivities] = useState<Activity[]>(mockActivities);
-  const [isLoading] = useState<boolean>(false);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState<boolean>(false);
+
+  // ======================================================
+  // EFECTOS - CARGA DE DATOS
+  // ======================================================
+
+  useEffect(() => {
+    cargarActividades();
+  }, []);
+
+  // ======================================================
+  // FUNCIONES DE BACKEND
+  // ======================================================
+
+  /**
+   * Carga las actividades desde el backend
+   */
+  const cargarActividades = async () => {
+    try {
+      setLoading(true);
+      const data = await actividadesService.getAll({ activa: true });
+      const actividadesConvertidas = actividadesToActivities(data);
+      setActivities(actividadesConvertidas);
+    } catch (err) {
+      console.error('Error al cargar actividades:', err);
+      setActivities([]);
+      toast.error('Error al cargar las actividades');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ======================================================
   // DATOS PROCESADOS
@@ -96,29 +137,84 @@ export const ActividadesAdminPage: React.FC = () => {
     setIsDialogOpen(true);
   };
 
-  const handleSave = (activityData: Omit<Activity, 'id'>) => {
-    if (editingActivity) {
-      setActivities(prev => 
-        prev.map(act => act.id === editingActivity.id ? { ...activityData, id: editingActivity.id } : act)
-      );
-      toast.success('✅ Actividad actualizada correctamente');
-    } else {
-      const newActivity: Activity = {
-        ...activityData,
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      };
-      setActivities(prev => [newActivity, ...prev]);
-      toast.success('✨ Actividad creada exitosamente');
-    }
-    setIsDialogOpen(false);
-    setEditingActivity(null);
+  const handleViewDetails = (activity: Activity) => {
+    setSelectedActivity(activity);
+    setIsDetailsModalOpen(true);
   };
 
-  const handleDelete = (activityId: string) => {
+  const handleSave = async (activityData: ActivityFormData) => {
+    try {
+      if (editingActivity) {
+        // Editar actividad existente
+        const datosBackend = {
+          titulo: activityData.title,
+          descripcion: activityData.description,
+          tipo: categoryToBackendTipo(activityData.category || 'otra') as TipoActividad,
+          fecha_inicio: dateToBackendString(activityData.date),
+          fecha_termino: activityData.endTime ? dateToBackendString(new Date(activityData.endTime)) : dateToBackendString(activityData.date),
+          ubicacion: activityData.location || '',
+          color: activityData.color || '#3B82F6',
+          cupo_maximo: activityData.maxAttendees || null,
+        };
+
+        let actividadActualizada = await actividadesService.patch(editingActivity.id, datosBackend);
+        
+        // Subir imagen si existe
+        if (activityData.imageFile) {
+          actividadActualizada = await actividadesService.uploadImage(editingActivity.id, activityData.imageFile);
+        }
+        
+        const actividadConvertida = actividadToActivity(actividadActualizada);
+        
+        setActivities(prev => 
+          prev.map(act => act.id === editingActivity.id ? actividadConvertida : act)
+        );
+        toast.success('✅ Actividad actualizada correctamente');
+      } else {
+        // Crear nueva actividad
+        const datosBackend: CrearActividadData = {
+          titulo: activityData.title,
+          descripcion: activityData.description,
+          tipo: categoryToBackendTipo(activityData.category || 'otra'),
+          fecha_inicio: dateToBackendString(activityData.date),
+          fecha_termino: activityData.endTime ? dateToBackendString(new Date(activityData.endTime)) : dateToBackendString(activityData.date),
+          ubicacion: activityData.location || '',
+          color: activityData.color || '#3B82F6',
+          cupo_maximo: activityData.maxAttendees || null,
+          para_todas_areas: true,
+        };
+
+        let actividadCreada = await actividadesService.create(datosBackend);
+        
+        // Subir imagen si existe
+        if (activityData.imageFile) {
+          actividadCreada = await actividadesService.uploadImage(actividadCreada.id, activityData.imageFile);
+        }
+        
+        const actividadConvertida = actividadToActivity(actividadCreada);
+        
+        setActivities(prev => [actividadConvertida, ...prev]);
+        toast.success('✨ Actividad creada exitosamente');
+      }
+      setIsDialogOpen(false);
+      setEditingActivity(null);
+    } catch (err) {
+      console.error('Error al guardar actividad:', err);
+      toast.error('❌ Error al guardar la actividad');
+    }
+  };
+
+  const handleDelete = async (activityId: string) => {
     const confirmed = window.confirm('¿Estás seguro de que deseas eliminar esta actividad?');
     if (confirmed) {
-      setActivities(prev => prev.filter(act => act.id !== activityId));
-      toast.success('🗑️ Actividad eliminada correctamente');
+      try {
+        await actividadesService.delete(activityId);
+        setActivities(prev => prev.filter(act => act.id !== activityId));
+        toast.success('🗑️ Actividad eliminada correctamente');
+      } catch (err) {
+        console.error('Error al eliminar actividad:', err);
+        toast.error('❌ Error al eliminar la actividad');
+      }
     }
   };
 
@@ -290,15 +386,23 @@ export const ActividadesAdminPage: React.FC = () => {
             {/* ✅ Grid con permisos condicionales */}
             <ActivitiesGridAdmin
               activities={sortedActivities}
-              isLoading={isLoading}
+              isLoading={loading}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onViewDetails={handleViewDetails}
             />
           </main>
         </div>
       </div>
 
       <Footer />
+
+      {/* ✅ Modal de detalles - Disponible para todos */}
+      <ActivityDetailsModal
+        activity={selectedActivity}
+        open={isDetailsModalOpen}
+        onOpenChange={setIsDetailsModalOpen}
+      />
 
       {/* ✅ Diálogo solo para usuarios con permisos */}
       <PermissionGate customCheck={(p) => p.nivel >= 3}>

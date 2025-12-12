@@ -18,6 +18,7 @@ interface ActivitiesGridAdminProps {
   isLoading?: boolean;
   onEdit: (activity: Activity) => void;
   onDelete: (activityId: string) => void;
+  onViewDetails?: (activity: Activity) => void;
 }
 
 // ======================================================
@@ -28,7 +29,8 @@ export const ActivitiesGridAdmin: React.FC<ActivitiesGridAdminProps> = ({
   activities,
   isLoading = false,
   onEdit,
-  onDelete
+  onDelete,
+  onViewDetails
 }) => {
   // ======================================================
   // ESTADO DE CARGA
@@ -74,6 +76,7 @@ export const ActivitiesGridAdmin: React.FC<ActivitiesGridAdminProps> = ({
           activity={activity}
           onEdit={() => onEdit(activity)}
           onDelete={() => onDelete(activity.id)}
+          onViewDetails={onViewDetails ? () => onViewDetails(activity) : undefined}
         />
       ))}
     </div>

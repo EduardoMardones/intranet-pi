@@ -13,7 +13,7 @@ import type { Announcement, AnnouncementCategory } from '@/types/announcement';
 import { sortAnnouncementsByDate } from '@/data/mockAnnouncements';
 import { 
   Megaphone, Shield, FileCheck, AlertCircle, Plus, 
-  CheckCircle2, Edit, Trash2, Filter, Download, Eye 
+  CheckCircle2, Filter, Download, Eye 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -29,7 +29,7 @@ import { PermissionGate } from '@/components/common/PermissionGate';
 
 // ✅ SERVICIO DE BACKEND
 import { anunciosService } from '@/api/services/anunciosService';
-import type { Anuncio, CrearAnuncioData, TipoAnuncio } from '@/api/services/anunciosService';
+import type { CrearAnuncioData, TipoAnuncio } from '@/api/services/anunciosService';
 
 // ✅ ADAPTADOR
 import { anunciosToAnnouncements, anuncioToAnnouncement, categoryToBackendTipo, dateToBackendString } from '@/utils/anunciosAdapter';
@@ -285,18 +285,7 @@ export const AnunciosAdminPage: React.FC = () => {
   // HELPERS DE CATEGORÍA
   // ======================================================
 
-  const getCategoryColor = (category: AnnouncementCategory) => {
-  const colors: Record<AnnouncementCategory, string> = {
-    general: 'bg-blue-100 text-blue-800 border-blue-300',
-    urgente: 'bg-red-100 text-red-800 border-red-300',
-    informativa: 'bg-green-100 text-green-800 border-green-300',
-    normativa: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    administrativa: 'bg-gray-100 text-gray-800 border-gray-300',
-  };
-  return colors[category] || colors.general;
-};
-
-const getCategoryLabel = (category: AnnouncementCategory) => {
+  const getCategoryLabel = (category: AnnouncementCategory) => {
   const labels: Record<AnnouncementCategory, string> = {
     general: 'General',
     urgente: 'Urgente',
