@@ -6,7 +6,7 @@
 /**
  * Tipo de evento institucional
  */
-export type EventType = 'reunion' | 'capacitacion' | 'feriado' | 'otro';
+export type EventType = 'reunion' | 'capacitacion' | 'feriado' | 'anuncio' | 'otro';
 
 /**
  * Interface principal de un evento del calendario
@@ -75,6 +75,11 @@ export const EVENT_COLORS: Record<EventType, { bg: string; border: string; text:
     bg: 'bg-green-100',
     border: 'border-green-400',
     text: 'text-green-700'
+  },
+  anuncio: {
+    bg: 'bg-orange-100',
+    border: 'border-orange-400',
+    text: 'text-orange-700'
   },
   otro: {
     bg: 'bg-gray-100',

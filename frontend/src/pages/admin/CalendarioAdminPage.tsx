@@ -1,25 +1,17 @@
 // ======================================================
-// PÁGINA: Calendario Administrativo CESFAM - CON PERMISOS
+// PÁGINA: Calendario CESFAM - SOLO LECTURA
 // Ubicación: src/pages/admin/CalendarioAdminPage.tsx
-// Descripción: Vista administrativa con control de permisos por rol
 // ======================================================
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CalendarHeader } from '@/components/common/calendario/CalendarHeader';
 import { CalendarGrid } from '@/components/common/calendario/CalendarGrid';
 import { EventModal } from '@/components/common/calendario/EventModal';
-import { SelectTypeModal } from '@/components/common/calendario/SelectTypeModal';
-import { ActividadFormWrapper } from '@/components/common/calendario/ActividadFormWrapper';
-import { AnuncioFormWrapper } from '@/components/common/calendario/AnuncioFormWrapper';
-import { DeleteConfirmModal } from '@/components/common/calendario/DeleteConfirmModal';
 import type { CalendarEvent } from '@/types/calendar';
-import type { Activity } from '@/types/activity';
-import type { Announcement } from '@/types/announcement';
-import { mockEvents } from '@/data/mockEvents';
 import { getPreviousMonth, getNextMonth } from '@/utils/dateUtils';
-import { Shield, Plus } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 
 // Layout
 import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
@@ -27,27 +19,36 @@ import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
 import bannerHome from "@/components/images/banner_images/BannerCalendario.png";
 
-// ✅ SISTEMA DE PERMISOS
+// Servicios
 import { useAuth } from '@/api/contexts/AuthContext';
-import { PermissionGate } from '@/components/common/PermissionGate';
+import { anunciosService, actividadesService } from '@/api/services';
+import type { Anuncio } from '@/api/services/anunciosService';
+import type { Actividad } from '@/api/services/actividadesService';
 
 // ======================================================
-// HELPER: Calcular permisos
+// CONVERSORES
 // ======================================================
-function useCalendarioPermisos() {
-  const { user } = useAuth();
-  
-  const rolNombre = user?.rol_nombre?.toLowerCase() || '';
-  const nivel = rolNombre.includes('direcci') && !rolNombre.includes('sub') ? 4
-    : rolNombre.includes('subdirecci') ? 3
-    : rolNombre.includes('jefe') || rolNombre.includes('jefa') ? 2
-    : 1;
-  
+
+function anuncioToCalendarEvent(anuncio: Anuncio): CalendarEvent {
   return {
-    nivel,
-    puedeEditar: nivel >= 3,      // Subdirección y Dirección
-    puedeEliminar: nivel >= 4,    // Solo Dirección
-    esAdmin: nivel >= 3,          // Para mostrar panel admin
+    id: parseInt(anuncio.id) || 0,
+    fecha: new Date(anuncio.fecha_publicacion).toISOString().split('T')[0],
+    titulo: anuncio.titulo,
+    descripcion: anuncio.contenido,
+    tipo: 'anuncio', // Naranja
+    organizador: anuncio.creado_por_nombre || 'Sistema',
+  };
+}
+
+function actividadToCalendarEvent(actividad: Actividad): CalendarEvent {
+  return {
+    id: parseInt(actividad.id) || 0,
+    fecha: new Date(actividad.fecha_inicio).toISOString().split('T')[0],
+    titulo: actividad.titulo,
+    descripcion: actividad.descripcion || '',
+    tipo: 'reunion',
+    ubicacion: actividad.ubicacion,
+    horaInicio: actividad.fecha_inicio ? new Date(actividad.fecha_inicio).toTimeString().slice(0, 5) : undefined,
   };
 }
 
@@ -56,28 +57,126 @@ function useCalendarioPermisos() {
 // ======================================================
 
 export const CalendarioAdminPage: React.FC = () => {
-  // ✅ Permisos
-  const permisos = useCalendarioPermisos();
+  const { user } = useAuth();
 
-  // ======================================================
-  // ESTADOS
-  // ======================================================
-
+  // Estados
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const [eventToDelete, setEventToDelete] = useState<CalendarEvent | null>(null);
-  const [events, setEvents] = useState<CalendarEvent[]>(mockEvents);
-  
-  // Modales
-  const [isViewModalOpen, setIsViewModalOpen] = useState<boolean>(false);
-  const [isSelectTypeModalOpen, setIsSelectTypeModalOpen] = useState<boolean>(false);
-  const [isActividadFormOpen, setIsActividadFormOpen] = useState<boolean>(false);
-  const [isAnuncioFormOpen, setIsAnuncioFormOpen] = useState<boolean>(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [eventType, setEventType] = useState<'anuncio' | 'actividad' | 'feriado' | null>(null);
 
   // ======================================================
-  // MANEJADORES DE NAVEGACIÓN
+  // CARGAR EVENTOS
+  // ======================================================
+
+  useEffect(() => {
+    if (user) {
+      cargarEventos();
+    }
+  }, [user]);
+
+  const cargarFeriados = async (): Promise<CalendarEvent[]> => {
+    try {
+      console.log(`📅 Cargando feriados desde boostr.cl...`);
+      const response = await fetch('https://api.boostr.cl/holidays.json');
+      
+      if (!response.ok) {
+        console.warn(`⚠️ Error al cargar feriados:`, response.status);
+        return [];
+      }
+      
+      const result = await response.json();
+      
+      if (result.status !== 'success' || !result.data) {
+        console.warn('⚠️ Respuesta inesperada de la API de feriados');
+        return [];
+      }
+      
+      const feriados = result.data;
+      console.log(`✅ ${feriados.length} feriados cargados`);
+      
+      const feriadosConvertidos = feriados.map((feriado: any, index: number) => ({
+        id: 900000 + index, // ID único para feriados
+        fecha: feriado.date,
+        titulo: feriado.title,
+        descripcion: feriado.inalienable 
+          ? `Feriado ${feriado.type} (Irrenunciable)` 
+          : `Feriado ${feriado.type}`,
+        tipo: 'feriado' as const,
+        // organizador omitido intencionalmente para feriados
+      }));
+      
+      console.log(`🎯 Primer feriado:`, feriadosConvertidos[0]);
+      return feriadosConvertidos;
+    } catch (error) {
+      console.error('❌ Error al cargar feriados:', error);
+      return [];
+    }
+  };
+
+  const cargarEventos = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      // ======================================================
+      // CARGAR TODO EN PARALELO PARA MAYOR VELOCIDAD
+      // ======================================================
+      const [feriados, anunciosData, actividadesData] = await Promise.all([
+        cargarFeriados(),
+        anunciosService.getVigentes(),
+        actividadesService.getAll({ activa: true }),
+      ]);
+      
+      console.log(`📊 Eventos cargados - Feriados: ${feriados.length}, Anuncios: ${anunciosData.length}, Actividades: ${actividadesData.length}`);
+      
+      // Filtrar anuncios según permisos del usuario
+      const anunciosFiltrados = anunciosData.filter((anuncio: Anuncio) => {
+        // Si es para todas las áreas
+        if (anuncio.para_todas_areas) return true;
+        
+        // Si es para el área del usuario
+        if (anuncio.areas_destinatarias?.includes(user.area_nombre || '')) return true;
+        
+        // Filtrar por visibilidad de roles
+        const userRolNivel = user.rol_nivel || 1;
+        
+        switch (anuncio.visibilidad_roles) {
+          case 'solo_funcionarios':
+            return userRolNivel === 1;
+          case 'solo_jefatura':
+            return userRolNivel === 2;
+          case 'funcionarios_y_jefatura':
+            return userRolNivel <= 2;
+          case 'solo_direccion':
+            return userRolNivel >= 3;
+          default:
+            return true;
+        }
+      });
+      
+      // ======================================================
+      // CONVERTIR A EVENTOS DE CALENDARIO
+      // ======================================================
+      const eventosAnuncios = anunciosFiltrados.map(anuncioToCalendarEvent);
+      const eventosActividades = actividadesData.map(actividadToCalendarEvent);
+      
+      console.log(`🎨 Eventos finales - Anuncios: ${eventosAnuncios.length}, Actividades: ${eventosActividades.length}, Feriados: ${feriados.length}`);
+      
+      setEvents([...eventosAnuncios, ...eventosActividades, ...feriados]);
+    } catch (error) {
+      console.error('Error al cargar eventos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ======================================================
+  // NAVEGACIÓN
   // ======================================================
 
   const handlePreviousMonth = () => {
@@ -96,292 +195,143 @@ export const CalendarioAdminPage: React.FC = () => {
   };
 
   // ======================================================
-  // MANEJADORES DE EVENTOS
+  // EVENTOS
   // ======================================================
 
   const handleDateClick = (date: Date) => {
-    // ✅ Solo abrir modal si tiene permisos para crear
-    if (permisos.puedeEditar) {
-      setSelectedDate(date);
-      setIsSelectTypeModalOpen(true);
-    } else {
-      // Usuario sin permisos solo selecciona la fecha
-      setSelectedDate(date);
-    }
+    setSelectedDate(date);
   };
 
   const handleEventClick = (event: CalendarEvent) => {
     setSelectedEvent(event);
     setIsViewModalOpen(true);
-  };
-
-  const handleCloseViewModal = () => {
-    setIsViewModalOpen(false);
-    setSelectedEvent(null);
-  };
-
-  // ======================================================
-  // MANEJADORES CRUD (Solo para usuarios con permisos)
-  // ======================================================
-
-  const handleCreateEvent = () => {
-    setSelectedDate(new Date());
-    setSelectedEvent(null);
-    setIsSelectTypeModalOpen(true);
-  };
-
-  const handleSelectActividad = () => {
-    setIsSelectTypeModalOpen(false);
-    setIsActividadFormOpen(true);
-  };
-
-  const handleSelectAnuncio = () => {
-    setIsSelectTypeModalOpen(false);
-    setIsAnuncioFormOpen(true);
-  };
-
-  const handleSaveActividad = (actividadData: Omit<Activity, 'id'>) => {
-    const newId = (events.length + 1).toString();
     
-    const newEvent: CalendarEvent = {
-      id: parseInt(newId),
-      fecha: actividadData.date.toISOString().split('T')[0],
-      titulo: actividadData.title,
-      descripcion: actividadData.description,
-      tipo: 'otro',
-      horaInicio: actividadData.date.toTimeString().slice(0, 5),
-      horaFin: '',
-      ubicacion: actividadData.location,
-      organizador: 'Sistema'
-    };
-
-    setEvents([...events, newEvent]);
-    setIsActividadFormOpen(false);
-    setSelectedDate(null);
-    
-    console.log('✅ Actividad creada:', actividadData);
-  };
-
-  const handleSaveAnuncio = (anuncioData: Omit<Announcement, 'id' | 'publicationDate'>) => {
-    const newId = (events.length + 1).toString();
-    
-    const newEvent: CalendarEvent = {
-      id: parseInt(newId),
-      fecha: selectedDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
-      titulo: anuncioData.title,
-      descripcion: anuncioData.description,
-      tipo: 'otro',
-      horaInicio: '00:00',
-      horaFin: '23:59',
-      organizador: 'Dirección'
-    };
-
-    setEvents([...events, newEvent]);
-    setIsAnuncioFormOpen(false);
-    setSelectedDate(null);
-    
-    console.log('✅ Anuncio creado:', anuncioData);
-  };
-
-  const handleEditEvent = (event: CalendarEvent) => {
-    setSelectedEvent(event);
-    setIsViewModalOpen(false);
-    setIsActividadFormOpen(true);
-  };
-
-  const handleDeleteClick = (event: CalendarEvent) => {
-    setEventToDelete(event);
-    setIsViewModalOpen(false);
-    setIsDeleteModalOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (eventToDelete) {
-      setEvents(events.filter(event => event.id !== eventToDelete.id));
-      setEventToDelete(null);
+    // Determinar tipo basado en el evento
+    if (event.tipo === 'feriado') {
+      setEventType('feriado');
+    } else if (event.organizador && event.organizador !== 'Sistema') {
+      setEventType('anuncio');
+    } else {
+      setEventType('actividad');
     }
   };
 
   // ======================================================
-  // ESTADÍSTICAS
+  // NAVEGACIÓN A VISTAS DE EDICIÓN
   // ======================================================
-  const stats = useMemo(() => {
-    const now = new Date();
-    const upcomingEvents = events.filter(event => new Date(event.fecha) >= now);
-    return {
-      total: events.length,
-      upcoming: upcomingEvents.length,
-      thisMonth: events.filter(event => {
-        const eventDate = new Date(event.fecha);
-        return eventDate.getMonth() === now.getMonth() &&
-               eventDate.getFullYear() === now.getFullYear();
-      }).length
-    };
-  }, [events]);
+
+  const handleGoToEdit = () => {
+    if (eventType === 'feriado') {
+      // Los feriados no se pueden editar
+      return;
+    }
+    
+    if (eventType === 'anuncio') {
+      window.location.href = '/admin/anuncios';
+    } else {
+      window.location.href = '/admin/actividades';
+    }
+  };
 
   // ======================================================
-  // RENDERIZADO
+  // RENDER
   // ======================================================
 
   return (
-    <>
+    <div className="min-h-screen bg-gray-50">
       <UnifiedNavbar />
-      <div className="h-16" /> 
-      
-      <Banner
-        imageSrc={bannerHome}
-        title=""
-        subtitle=""
-        height="250px"
-      />
+      <Banner title="" imageSrc={bannerHome} height="250px" />
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50 p-4 md:p-8">
-        <div className="max-w-[1600px] mx-auto">
-          
-          {/* ======================================================
-              PANEL ADMINISTRATIVO (Solo con permisos)
-              ====================================================== */}
-          <PermissionGate 
-            customCheck={(p) => p.nivel >= 3}
-            fallback={
-              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-900">
-                  📅 <strong>Modo Vista:</strong> Puedes ver eventos pero no crear o modificar.
-                </p>
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">Calendario CESFAM</h1>
+          <p className="text-gray-600">
+            Visualiza actividades y anuncios institucionales
+          </p>
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              💡 <strong>Para crear, editar o eliminar eventos:</strong> ve a{' '}
+              <a href="/admin/anuncios" className="underline font-semibold hover:text-blue-600">
+                Gestión de Anuncios
+              </a>
+              {' '}o{' '}
+              <a href="/admin/actividades" className="underline font-semibold hover:text-blue-600">
+                Gestión de Actividades
+              </a>
+            </p>
+          </div>
+        </div>
+
+        {/* Calendario */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#009DDC]"></div>
+            <p className="text-gray-500 mt-4">Cargando calendario...</p>
+          </div>
+        ) : (
+          <>
+            <CalendarHeader
+              currentDate={currentDate}
+              onPreviousMonth={handlePreviousMonth}
+              onNextMonth={handleNextMonth}
+              onToday={handleToday}
+            />
+            <CalendarGrid
+              currentDate={currentDate}
+              selectedDate={selectedDate}
+              events={events}
+              onDateClick={handleDateClick}
+              onEventClick={handleEventClick}
+            />
+
+            {/* Leyenda */}
+            <div className="mt-6 flex items-center gap-6 justify-center">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-orange-400"></div>
+                <span className="text-sm text-gray-600">Anuncios</span>
               </div>
-            }
-          >
-            <div className="mb-8 space-y-6">
-              
-              {/* Barra de herramientas admin */}
-              <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-blue-100">
-                <div className="flex items-center gap-3 text-blue-800">
-                  <div className="p-2 bg-blue-100 rounded-full">
-                    <Shield className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h2 className="font-bold text-lg">Panel de Gestión</h2>
-                    <p className="text-sm text-gray-500">
-                      {permisos.nivel === 4 ? 'Dirección' : 'Subdirección'} - Modo Administrador
-                    </p>
-                  </div>
-                </div>
-
-                {/* ✅ Botón Crear (Solo con permisos de edición) */}
-                <button
-                  onClick={handleCreateEvent}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#009DDC] to-[#4DFFF3] text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-                >
-                  <Plus className="w-5 h-5" />
-                  Crear Nuevo Evento
-                </button>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-blue-400"></div>
+                <span className="text-sm text-gray-600">Actividades</span>
               </div>
-
-              {/* Estadísticas */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-blue-500 flex justify-between items-center">
-                  <span className="text-gray-600 font-medium">Total Eventos</span>
-                  <span className="text-2xl font-bold text-gray-900">{stats.total}</span>
-                </div>
-                <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-green-500 flex justify-between items-center">
-                  <span className="text-gray-600 font-medium">Próximos</span>
-                  <span className="text-2xl font-bold text-gray-900">{stats.upcoming}</span>
-                </div>
-                <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-purple-500 flex justify-between items-center">
-                  <span className="text-gray-600 font-medium">Este Mes</span>
-                  <span className="text-2xl font-bold text-gray-900">{stats.thisMonth}</span>
-                </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-green-400"></div>
+                <span className="text-sm text-gray-600">Feriados</span>
               </div>
             </div>
-          </PermissionGate>
-
-          {/* ======================================================
-              CALENDARIO
-              ====================================================== */}
-          <CalendarHeader
-            currentDate={currentDate}
-            onPreviousMonth={handlePreviousMonth}
-            onNextMonth={handleNextMonth}
-            onToday={handleToday}
-            showAddButton={false} 
-          />
-
-          <CalendarGrid
-            currentDate={currentDate}
-            selectedDate={selectedDate}
-            events={events}
-            onDateClick={handleDateClick}
-            onEventClick={handleEventClick}
-          />
-
-          {/* ======================================================
-              MODAL DE VISTA DE EVENTO
-              Con botones condicionales según permisos
-              ====================================================== */}
-          <EventModal
-            event={selectedEvent}
-            isOpen={isViewModalOpen}
-            onClose={handleCloseViewModal}
-            isAdminView={permisos.puedeEditar} // ✅ Solo mostrar botones si puede editar
-            onEdit={permisos.puedeEditar ? handleEditEvent : undefined}
-            onDelete={permisos.puedeEliminar ? handleDeleteClick : undefined}
-          />
-
-          {/* ======================================================
-              MODALES DE CREACIÓN/EDICIÓN
-              Solo se renderizan si tiene permisos
-              ====================================================== */}
-          <PermissionGate customCheck={(p) => p.nivel >= 3}>
-            <SelectTypeModal
-              isOpen={isSelectTypeModalOpen}
-              onClose={() => {
-                setIsSelectTypeModalOpen(false);
-                setSelectedDate(null);
-              }}
-              onSelectActividad={handleSelectActividad}
-              onSelectAnuncio={handleSelectAnuncio}
-              selectedDate={selectedDate}
-            />
-
-            <ActividadFormWrapper
-              isOpen={isActividadFormOpen}
-              onClose={() => {
-                setIsActividadFormOpen(false);
-                setSelectedDate(null);
-              }}
-              onSave={handleSaveActividad}
-              initialDate={selectedDate}
-            />
-
-            <AnuncioFormWrapper
-              isOpen={isAnuncioFormOpen}
-              onClose={() => {
-                setIsAnuncioFormOpen(false);
-                setSelectedDate(null);
-              }}
-              onSave={handleSaveAnuncio}
-              initialDate={selectedDate}
-            />
-          </PermissionGate>
-
-          {/* ✅ Modal de eliminación solo para Dirección */}
-          <PermissionGate customCheck={(p) => p.nivel >= 4}>
-            <DeleteConfirmModal
-              isOpen={isDeleteModalOpen}
-              onClose={() => {
-                setIsDeleteModalOpen(false);
-                setEventToDelete(null);
-              }}
-              onConfirm={handleConfirmDelete}
-              eventTitle={eventToDelete?.titulo || ''}
-            />
-          </PermissionGate>
-
-        </div>
+          </>
+        )}
       </div>
-      
+
       <Footer />
-    </>
+
+      {/* Modal de vista (solo lectura) */}
+      {selectedEvent && (
+        <EventModal
+          event={selectedEvent}
+          isOpen={isViewModalOpen}
+          onClose={() => {
+            setIsViewModalOpen(false);
+            setSelectedEvent(null);
+            setEventType(null);
+          }}
+        />
+      )}
+
+      {/* Botón flotante para ir a editar (solo anuncios y actividades) */}
+      {isViewModalOpen && selectedEvent && eventType !== 'feriado' && (
+        <div className="fixed bottom-8 right-8 z-50">
+          <button
+            onClick={handleGoToEdit}
+            className="flex items-center gap-2 px-6 py-3 bg-[#009DDC] text-white rounded-full shadow-lg hover:bg-[#0088c4] transition-all hover:scale-105"
+          >
+            <ExternalLink className="w-5 h-5" />
+            Ir a {eventType === 'anuncio' ? 'Anuncios' : 'Actividades'}
+          </button>
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -44,6 +44,58 @@ export const LoginForm: React.FC = () => {
     return password.length >= 3; // Reducido para desarrollo
   };
 
+  // ======================================================
+  // FORMATEO AUTOMÁTICO DE RUT
+  // ======================================================
+  const formatRut = (value: string): string => {
+    // Eliminar todo lo que no sea número o K
+    const cleanValue = value.replace(/[^0-9kK]/g, '');
+    
+    if (cleanValue.length === 0) return '';
+    
+    // Separar cuerpo y dígito verificador
+    const body = cleanValue.slice(0, -1);
+    const dv = cleanValue.slice(-1).toUpperCase();
+    
+    if (body.length === 0) return dv;
+    
+    // Formatear el cuerpo con puntos
+    const reversedBody = body.split('').reverse().join('');
+    const formattedBody = reversedBody.match(/.{1,3}/g)?.join('.') || '';
+    const finalBody = formattedBody.split('').reverse().join('');
+    
+    // Retornar formato completo
+    return `${finalBody}-${dv}`;
+  };
+
+  const handleRutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    
+    // Si el usuario está borrando, permitir borrar libremente
+    if (inputValue.length < formData.rut.length) {
+      setFormData(prev => ({
+        ...prev,
+        rut: inputValue,
+      }));
+      return;
+    }
+    
+    // Formatear el RUT
+    const formatted = formatRut(inputValue);
+    
+    setFormData(prev => ({
+      ...prev,
+      rut: formatted,
+    }));
+
+    if (errors.rut) {
+      setErrors(prev => ({
+        ...prev,
+        rut: undefined,
+      }));
+    }
+  };
+
   const validateForm = (): boolean => {
     const newErrors: LoginFormErrors = {};
 
@@ -152,11 +204,12 @@ export const LoginForm: React.FC = () => {
               type="text"
               placeholder="12.345.678-9"
               value={formData.rut}
-              onChange={handleInputChange}
+              onChange={handleRutChange}
               className={errors.rut ? 'border-red-500' : ''}
               disabled={isSubmitting}
               autoComplete="username"
               autoFocus
+              maxLength={12}
             />
             {errors.rut && (
               <p className="text-sm text-red-600">{errors.rut}</p>

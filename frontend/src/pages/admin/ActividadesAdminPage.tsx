@@ -184,7 +184,11 @@ export const ActividadesAdminPage: React.FC = () => {
           para_todas_areas: true,
         };
 
+        console.log('📝 Datos a enviar al backend:', datosBackend);
+        
         let actividadCreada = await actividadesService.create(datosBackend);
+        
+        console.log('✅ Actividad creada:', actividadCreada);
         
         // Subir imagen si existe
         if (activityData.imageFile) {
@@ -199,7 +203,8 @@ export const ActividadesAdminPage: React.FC = () => {
       setIsDialogOpen(false);
       setEditingActivity(null);
     } catch (err) {
-      console.error('Error al guardar actividad:', err);
+      console.error('❌ Error completo al guardar actividad:', err);
+      console.error('❌ Detalles del error:', JSON.stringify(err, null, 2));
       toast.error('❌ Error al guardar la actividad');
     }
   };

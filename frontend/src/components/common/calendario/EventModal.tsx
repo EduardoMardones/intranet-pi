@@ -162,18 +162,6 @@ export const EventModal: React.FC<EventModalProps> = ({
           )}
 
           {/* ======================================================
-              NOTA INFORMATIVA PARA FUNCIONARIOS
-              ====================================================== */}
-          {!isAdminView && (
-            <div className="mt-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded">
-              <p className="text-sm text-blue-700">
-                <strong>Nota:</strong> Este es un evento de consulta. Si necesitas 
-                modificar o agregar eventos, contacta al administrador del sistema.
-              </p>
-            </div>
-          )}
-
-          {/* ======================================================
               BOTONES DE ADMINISTRACIÓN
               ====================================================== */}
           {isAdminView && onEdit && onDelete && (
