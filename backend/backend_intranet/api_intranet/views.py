@@ -7,6 +7,7 @@ from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q, Count
 from django.utils import timezone
@@ -575,6 +576,7 @@ class AnuncioViewSet(viewsets.ModelViewSet):
 class DocumentoViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de documentos"""
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['tipo', 'categoria', 'publico', 'activo']
     search_fields = ['titulo', 'codigo_documento', 'descripcion']
@@ -608,6 +610,7 @@ class DocumentoViewSet(viewsets.ModelViewSet):
     def download(self, request, pk=None):
         """Descargar archivo desde base de datos"""
         from django.http import HttpResponse
+        import io
         
         documento = self.get_object()
         
@@ -616,13 +619,24 @@ class DocumentoViewSet(viewsets.ModelViewSet):
         documento.save(update_fields=['descargas'])
         
         if documento.storage_type == 'database':
+            # Verificar que hay contenido
+            if not documento.archivo_contenido:
+                return Response(
+                    {'error': 'El archivo no tiene contenido'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
             # Servir archivo desde BD
+            # Convertir memoryview a bytes si es necesario
+            contenido = bytes(documento.archivo_contenido) if isinstance(documento.archivo_contenido, memoryview) else documento.archivo_contenido
+            
             response = HttpResponse(
-                documento.archivo_contenido,
+                contenido,
                 content_type=documento.mime_type
             )
             response['Content-Disposition'] = f'attachment; filename="{documento.nombre_archivo}"'
-            response['Content-Length'] = documento.tamano
+            response['Content-Length'] = len(contenido)
+            response['Accept-Ranges'] = 'bytes'
             return response
         elif documento.storage_type == 's3':
             # Redirigir a S3

@@ -25,8 +25,8 @@ const ArchivosAdminPage: React.FC = () => {
       {/* Banner */}
       <Banner
         imageSrc={bannerArchivos}
-        title="Gestión de Archivos"
-        subtitle="Administración completa del repositorio de documentos"
+        title=""
+        subtitle=""
         height="250px"
       />
       

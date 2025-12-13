@@ -85,6 +85,10 @@ export const documentosService = {
    * Crear nuevo documento con archivo
    */
   async create(data: CrearDocumentoData): Promise<Documento> {
+    console.log('📤 Creando documento:', data);
+    console.log('📄 Tipo de archivo:', data.archivo instanceof File ? 'File' : typeof data.archivo);
+    console.log('📦 Archivo:', data.archivo);
+    
     const formData = new FormData();
     
     formData.append('titulo', data.titulo);
@@ -99,6 +103,11 @@ export const documentosService = {
       data.areas_con_acceso.forEach(area => formData.append('areas_con_acceso', area));
     }
     formData.append('archivo', data.archivo);
+    
+    console.log('📮 FormData entries:');
+    for (const [key, value] of formData.entries()) {
+      console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value);
+    }
     
     return ApiClient.postFormData('/documentos/', formData);
   },
@@ -136,9 +145,11 @@ export const documentosService = {
    * Descargar archivo
    */
   async download(id: string): Promise<Blob> {
-    const response = await fetch(`/api/documentos/${id}/download/`, {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE_URL}/documentos/${id}/download/`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Authorization': `Bearer ${token}`,
       },
     });
     
