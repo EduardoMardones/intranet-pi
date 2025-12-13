@@ -240,68 +240,53 @@ export const CalendarioAdminPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <UnifiedNavbar />
+      <div className="h-16" />
       <Banner title="" imageSrc={bannerHome} height="250px" />
 
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Calendario CESFAM</h1>
-          <p className="text-gray-600">
-            Visualiza actividades y anuncios institucionales
-          </p>
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              💡 <strong>Para crear, editar o eliminar eventos:</strong> ve a{' '}
-              <a href="/admin/anuncios" className="underline font-semibold hover:text-blue-600">
-                Gestión de Anuncios
-              </a>
-              {' '}o{' '}
-              <a href="/admin/actividades" className="underline font-semibold hover:text-blue-600">
-                Gestión de Actividades
-              </a>
-            </p>
-          </div>
-        </div>
+      <div className="flex-1 bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 p-4 md:p-8">
+        <div className="max-w-[1600px] mx-auto">
+          
 
-        {/* Calendario */}
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#009DDC]"></div>
-            <p className="text-gray-500 mt-4">Cargando calendario...</p>
-          </div>
-        ) : (
-          <>
-            <CalendarHeader
-              currentDate={currentDate}
-              onPreviousMonth={handlePreviousMonth}
-              onNextMonth={handleNextMonth}
-              onToday={handleToday}
-            />
-            <CalendarGrid
-              currentDate={currentDate}
-              selectedDate={selectedDate}
-              events={events}
-              onDateClick={handleDateClick}
-              onEventClick={handleEventClick}
-            />
+          {/* Calendario */}
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#009DDC]"></div>
+              <p className="text-gray-500 mt-4">Cargando calendario...</p>
+            </div>
+          ) : (
+            <>
+              <CalendarHeader
+                currentDate={currentDate}
+                onPreviousMonth={handlePreviousMonth}
+                onNextMonth={handleNextMonth}
+                onToday={handleToday}
+              />
+              <CalendarGrid
+                currentDate={currentDate}
+                selectedDate={selectedDate}
+                events={events}
+                onDateClick={handleDateClick}
+                onEventClick={handleEventClick}
+              />
 
-            {/* Leyenda */}
-            <div className="mt-6 flex items-center gap-6 justify-center">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-orange-400"></div>
-                <span className="text-sm text-gray-600">Anuncios</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-blue-400"></div>
-                <span className="text-sm text-gray-600">Actividades</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-green-400"></div>
-                <span className="text-sm text-gray-600">Feriados</span>
+              {/* Leyenda */}
+              <div className="mt-6 flex items-center gap-6 justify-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-orange-400"></div>
+                  <span className="text-sm text-gray-600">Anuncios</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-blue-400"></div>
+                  <span className="text-sm text-gray-600">Actividades</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-green-400"></div>
+                  <span className="text-sm text-gray-600">Feriados</span>
               </div>
             </div>
           </>
         )}
+        </div>
       </div>
 
       <Footer />

@@ -197,241 +197,164 @@ export const LicenciasMedicasPage: React.FC = () => {
   // RENDERIZADO
   // ======================================================
 
-  return (
-    <>
-    <UnifiedNavbar></UnifiedNavbar>
-    <div className="h-15" /> {/* Este espacio ocupa la altura del Navbar */}
+  // ======================================================
+  // RENDERIZADO
+  // ======================================================
 
-     <Banner
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <UnifiedNavbar />
+      <div className="h-16" />
+      <Banner
         imageSrc={bannerHome}
         title=""
         subtitle=""
         height="250px"
       />
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50">
-      {/* ======================================================
-          HEADER
-          ====================================================== */}
-      <header className="bg-white shadow-lg border-b-4 border-[#009DDC]">
-        <div className="max-w-[1800px] mx-auto px-6 py-8">
-          {/* Título principal */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="p-4 bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] rounded-2xl shadow-lg">
-                <FileText className="w-8 h-8 text-white" />
+
+      {/* CORRECCIÓN 1: Cambiado de <div> a <main> para coincidir con la estructura semántica */}
+      <main className="flex-1 bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 p-4 md:p-8">
+        <div className="max-w-[1600px] mx-auto">
+          {/* Header Container */}
+          <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
+            {/* Título principal */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-[#009DDC] to-[#4DFFF3]">
+                  <FileText className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-800">
+                    Gestión de Licencias Médicas
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    Repositorio digital de licencias del personal
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  Gestión de Licencias Médicas
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  Repositorio digital de licencias del personal
+
+              {/* Badge de acceso */}
+              <div className="bg-gradient-to-r from-[#009DDC] to-[#4DFFF3] text-white px-4 py-2 rounded-lg">
+                <p className="text-xs font-semibold">🔒 Acceso Administrativo</p>
+              </div>
+            </div>
+
+            {/* Estadísticas */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Total de licencias */}
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border-l-4 border-blue-500">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-white rounded-lg shadow-sm">
+                    <FileText className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 font-medium">
+                      Total Licencias
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {stats.total}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Licencias vigentes */}
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border-l-4 border-green-500">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-white rounded-lg shadow-sm">
+                    <TrendingUp className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 font-medium">
+                      Vigentes
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {stats.vigentes}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Licencias vencidas */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border-l-4 border-gray-500">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-white rounded-lg shadow-sm">
+                    <Clock className="w-6 h-6 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 font-medium">
+                      Vencidas
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {stats.vencidas}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Nota informativa */}
+          <div className="bg-blue-50 border-l-4 border-[#009DDC] rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <FileText className="w-5 h-5 text-[#009DDC] flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-gray-700">
+                <p className="font-semibold mb-1">Información importante:</p>
+                <p>
+                  Este módulo está diseñado exclusivamente para <strong>Dirección y Subdirecciones</strong>. 
+                  Todos los archivos subidos se almacenan de forma segura y solo son accesibles 
+                  para personal administrativo autorizado.
                 </p>
               </div>
             </div>
-
-            {/* Badge de acceso */}
-            <div className="bg-gradient-to-r from-[#009DDC] to-[#4DFFF3] text-white px-4 py-2 rounded-lg">
-              <p className="text-xs font-semibold">🔒 Acceso Administrativo</p>
-            </div>
           </div>
 
-          {/* ======================================================
-              ESTADÍSTICAS
-              ====================================================== */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Total de licencias */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border-l-4 border-blue-500">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-white rounded-lg shadow-sm">
-                  <FileText className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 font-medium">
-                    Total Licencias
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stats.total}
-                  </p>
-                </div>
-              </div>
-            </div>
+          {/* Componente de carga */}
+          <FileUploader
+            onOpenModal={handleOpenModal}
+            hasFiles={licencias.length > 0}
+          />
 
-            {/* Licencias vigentes */}
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border-l-4 border-green-500">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-white rounded-lg shadow-sm">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 font-medium">
-                    Vigentes
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stats.vigentes}
-                  </p>
-                </div>
-              </div>
-            </div>
+          {/* Modal de carga de licencia */}
+          <LicenciaUploadModal
+            isOpen={isModalOpen}
+            onClose={handleCloseModal}
+            onSubmit={handleSubmitLicencia}
+            empleados={empleados}
+          />
 
-            {/* Licencias vencidas */}
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border-l-4 border-gray-500">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-white rounded-lg shadow-sm">
-                  <Clock className="w-6 h-6 text-gray-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 font-medium">
-                    Vencidas
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stats.vencidas}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+          {/* TABLA DE LICENCIAS */}
+          <LicenciasTable
+            licencias={licencias}
+            onView={handleView}
+            onDownload={handleDownload}
+            onDelete={handleDelete}
+          />
 
-      {/* ======================================================
-          CONTENIDO PRINCIPAL
-          ====================================================== */}
-      <main className="max-w-[1800px] mx-auto px-6 py-8 space-y-8">
-        {/* Nota informativa */}
-        <div className="bg-blue-50 border-l-4 border-[#009DDC] rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <FileText className="w-5 h-5 text-[#009DDC] flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-gray-700">
-              <p className="font-semibold mb-1">Información importante:</p>
-              <p>
-                Este módulo está diseñado exclusivamente para <strong>Dirección y Subdirecciones</strong>. 
-                Todos los archivos subidos se almacenan de forma segura y solo son accesibles 
-                para personal administrativo autorizado.
+          {/* Estado vacío cuando no hay licencias */}
+          {licencias.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="w-32 h-32 mb-6 rounded-full bg-gradient-to-br from-blue-100 to-gray-100 flex items-center justify-center">
+                <FileText className="w-16 h-16 text-gray-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                No hay licencias cargadas
+              </h3>
+              <p className="text-gray-600 text-center max-w-md">
+                Comienza subiendo las licencias médicas digitalizadas del personal 
+                utilizando el área de carga superior.
               </p>
             </div>
-          </div>
+          )}
+          
+        {/* CORRECCIÓN 2: Cierre correcto de divs anidados */}
         </div>
-
-        {/* ======================================================
-            COMPONENTE DE CARGA
-            ====================================================== */}
-        <FileUploader
-          onOpenModal={handleOpenModal}
-          hasFiles={licencias.length > 0}
-        />
-
-        {/* ======================================================
-            MODAL DE CARGA DE LICENCIA
-            ====================================================== */}
-        <LicenciaUploadModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          onSubmit={handleSubmitLicencia}
-          empleados={empleados}
-        />
-
-        {/* ======================================================
-            TABLA DE LICENCIAS
-            ====================================================== */}
-        <LicenciasTable
-          licencias={licencias}
-          onView={handleView}
-          onDownload={handleDownload}
-          onDelete={handleDelete}
-        />
-
-        {/* Estado vacío cuando no hay licencias */}
-        {licencias.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16">
-            <div className="w-32 h-32 mb-6 rounded-full bg-gradient-to-br from-blue-100 to-gray-100 flex items-center justify-center">
-              <FileText className="w-16 h-16 text-gray-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">
-              No hay licencias cargadas
-            </h3>
-            <p className="text-gray-600 text-center max-w-md">
-              Comienza subiendo las licencias médicas digitalizadas del personal 
-              utilizando el área de carga superior.
-            </p>
-          </div>
-        )}
       </main>
-
       
-
-      {/* ======================================================
-          NOTAS PARA DESARROLLO FUTURO
-          ======================================================
-          
-          FUNCIONALIDADES A IMPLEMENTAR:
-          
-          1. INTEGRACIÓN CON BACKEND:
-             - Upload real de archivos a servidor/cloud storage
-             - Gestión de permisos por rol de usuario
-             - Logs de auditoría (quién subió/descargó/eliminó)
-          
-          2. BÚSQUEDA Y FILTROS:
-             - Búsqueda por nombre de empleado
-             - Filtro por estado (vigente, vencida, pendiente)
-             - Filtro por rango de fechas
-             - Filtro por tipo de archivo
-          
-          3. VISTA PREVIA DE ARCHIVOS:
-             - Modal con preview de PDFs
-             - Galería de imágenes
-             - Zoom y navegación entre archivos
-          
-          4. NOTIFICACIONES:
-             - Alertas cuando una licencia está por vencer
-             - Notificación de nuevas licencias cargadas
-             - Recordatorios de licencias pendientes de revisión
-          
-          5. VALIDACIONES ADICIONALES:
-             - Verificar que el nombre del archivo siga un estándar
-             - Detección automática de datos desde el PDF (OCR)
-             - Validación de fechas coherentes
-          
-          6. EXPORTACIÓN Y REPORTES:
-             - Exportar lista a Excel
-             - Generar reporte mensual de licencias
-             - Estadísticas de ausentismo
-          
-          7. SEGURIDAD:
-             - Encriptación de archivos sensibles
-             - Watermark en documentos
-             - Control de versiones de archivos
-             - Backup automático
-          
-          8. OPTIMIZACIONES:
-             - Compresión de imágenes
-             - Conversión automática a PDF
-             - Almacenamiento en CDN
-             - Carga lazy de archivos grandes
-          
-          Ejemplo de conexión con API:
-          
-          const handleUpload = async (files: File[]) => {
-            const formData = new FormData();
-            files.forEach(file => formData.append('files', file));
-            
-            const response = await fetch('/api/licencias/upload', {
-              method: 'POST',
-              body: formData
-            });
-            
-            if (response.ok) {
-              const newLicencias = await response.json();
-              setLicencias([...newLicencias, ...licencias]);
-            }
-          };
-      ====================================================== */}
+      <Footer />
     </div>
-    <Footer></Footer>
-    </>
   );
 };
-
 // ======================================================
 // EXPORT
 // ======================================================
