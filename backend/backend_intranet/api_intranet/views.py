@@ -602,6 +602,24 @@ class DocumentoViewSet(viewsets.ModelViewSet):
             return DocumentoCreateSerializer
         return DocumentoDetailSerializer
     
+    def create(self, request, *args, **kwargs):
+        """Solo Dirección y Subdirección pueden crear documentos"""
+        if request.user.rol.nivel < 3:
+            return Response(
+                {'error': 'No tienes permisos para subir documentos'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().create(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        """Solo Dirección y Subdirección pueden eliminar documentos"""
+        if request.user.rol.nivel < 3:
+            return Response(
+                {'error': 'No tienes permisos para eliminar documentos'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().destroy(request, *args, **kwargs)
+    
     def perform_create(self, serializer):
         """Registrar quién subió el documento"""
         serializer.save(subido_por=self.request.user)
@@ -634,7 +652,7 @@ class DocumentoViewSet(viewsets.ModelViewSet):
                 contenido,
                 content_type=documento.mime_type
             )
-            response['Content-Disposition'] = f'attachment; filename="{documento.nombre_archivo}"'
+            response['Content-Disposition'] = f'inline; filename="{documento.nombre_archivo}"'
             response['Content-Length'] = len(contenido)
             response['Accept-Ranges'] = 'bytes'
             return response

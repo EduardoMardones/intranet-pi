@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { documentosService, type Documento } from '@/api/services/documentosService'
+import { useAuth } from '@/api/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { 
@@ -25,11 +26,15 @@ import { SubirDocumentoUltraSimple } from './SubirSocumentoUltraSimple'
 import FileDownload from '../buttons/FileDownload'
 
 export function DocumentosAdminTable() {
+  const { user } = useAuth()
   const [documentos, setDocumentos] = useState<Documento[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
+
+  // Verificar si el usuario puede subir/eliminar (nivel >= 3)
+  const puedeGestionar = (user?.rol_nivel ?? 0) >= 3
 
   useEffect(() => {
     cargarDocumentos()
@@ -133,10 +138,12 @@ export function DocumentosAdminTable() {
             className="pl-10"
           />
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Subir Documento
-        </Button>
+        {puedeGestionar && (
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Subir Documento
+          </Button>
+        )}
       </div>
 
       {/* Tabla */}
@@ -197,7 +204,8 @@ export function DocumentosAdminTable() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        title="Ver detalles"
+                        title="Visualizar"
+                        onClick={() => window.open(`http://127.0.0.1:8000/api/documentos/${doc.id}/download/`, '_blank')}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
@@ -207,14 +215,16 @@ export function DocumentosAdminTable() {
                         fileType={doc.mime_type}
                         iconClassName="w-4 h-4 text-blue-600 cursor-pointer hover:text-blue-800"
                       />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEliminar(doc.id)}
-                        title="Eliminar"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </Button>
+                      {puedeGestionar && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEliminar(doc.id)}
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
