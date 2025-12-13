@@ -374,106 +374,127 @@ export const AprobacionesAdminPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <UnifiedNavbar />
+      <div className="h-16" />
       <Banner title="" imageSrc={bannerSolicitudes} height="250px"/>
 
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        {/* Mensajes */}
-        {successMessage && (
-          <Alert className="mb-6 bg-green-50 border-green-200">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800">
-              {successMessage}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {error && (
-          <Alert className="mb-6 bg-red-50 border-red-200">
-            <AlertCircle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
-              {error}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <Clock className="w-6 h-6 text-yellow-600" />
+      <div className="flex-1 bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 p-4 md:p-8">
+        <div className="max-w-[1600px] mx-auto">
+          {/* Header Container */}
+          <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-[#009DDC] to-[#4DFFF3]">
+                <CheckCircle className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <p className="text-gray-500 text-sm">Totales</p>
-                <p className="text-3xl font-bold text-gray-800">{solicitudes.length}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <CalendarDays className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-gray-500 text-sm">Vacaciones</p>
-                <p className="text-3xl font-bold text-gray-800">
-                  {solicitudes.filter(s => s.tipo === 'vacaciones').length}
+              
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold text-gray-800 mb-2">
+                  Aprobación de Solicitudes
+                </h1>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Gestiona y aprueba solicitudes de vacaciones y días administrativos del personal del CESFAM.
+                  Revisa los detalles y toma decisiones informadas sobre cada petición.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <FileText className="w-6 h-6 text-purple-600" />
+          {/* Mensajes */}
+          {successMessage && (
+            <Alert className="mb-6 bg-green-50 border-green-200">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                {successMessage}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {error && (
+            <Alert className="mb-6 bg-red-50 border-red-200">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Estadísticas */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-yellow-100 rounded-lg">
+                  <Clock className="w-6 h-6 text-yellow-600" />
+                </div>
+                <div>
+                  <p className="text-gray-500 text-sm">Totales</p>
+                  <p className="text-3xl font-bold text-gray-800">{solicitudes.length}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-gray-500 text-sm">Días Admin.</p>
-                <p className="text-3xl font-bold text-gray-800">
-                  {solicitudes.filter(s => s.tipo === 'dia_administrativo').length}
-                </p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <CalendarDays className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-gray-500 text-sm">Vacaciones</p>
+                  <p className="text-3xl font-bold text-gray-800">
+                    {solicitudes.filter(s => s.tipo === 'vacaciones').length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-purple-100 rounded-lg">
+                  <FileText className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-gray-500 text-sm">Días Admin.</p>
+                  <p className="text-3xl font-bold text-gray-800">
+                    {solicitudes.filter(s => s.tipo === 'dia_administrativo').length}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Botones de Vista */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-sm font-semibold text-gray-700">Ver:</span>
-            
-            <Button
-              onClick={() => setVistaActual('pendientes')}
-              variant={vistaActual === 'pendientes' ? 'default' : 'outline'}
-              className={vistaActual === 'pendientes' ? 'bg-[#009DDC] hover:bg-[#0088c4]' : ''}
-            >
-              <Clock className="w-4 h-4 mr-2" />
-              Pendientes
-            </Button>
-            
-            <Button
-              onClick={() => setVistaActual('mis_aprobaciones')}
-              variant={vistaActual === 'mis_aprobaciones' ? 'default' : 'outline'}
-              className={vistaActual === 'mis_aprobaciones' ? 'bg-[#009DDC] hover:bg-[#0088c4]' : ''}
-            >
-              <User className="w-4 h-4 mr-2" />
-              Mis Aprobaciones
-            </Button>
-            
-            {user?.rol_nivel && user.rol_nivel >= 3 && (
+          {/* Botones de Vista */}
+          <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm font-semibold text-gray-700">Ver:</span>
+              
               <Button
-                onClick={() => setVistaActual('historial_completo')}
-                variant={vistaActual === 'historial_completo' ? 'default' : 'outline'}
-                className={vistaActual === 'historial_completo' ? 'bg-[#009DDC] hover:bg-[#0088c4]' : ''}
+                onClick={() => setVistaActual('pendientes')}
+                variant={vistaActual === 'pendientes' ? 'default' : 'outline'}
+                className={vistaActual === 'pendientes' ? 'bg-[#009DDC] hover:bg-[#0088c4]' : ''}
               >
-                <FileText className="w-4 h-4 mr-2" />
-                Historial Completo
+                <Clock className="w-4 h-4 mr-2" />
+                Pendientes
               </Button>
-            )}
+              
+              <Button
+                onClick={() => setVistaActual('mis_aprobaciones')}
+                variant={vistaActual === 'mis_aprobaciones' ? 'default' : 'outline'}
+                className={vistaActual === 'mis_aprobaciones' ? 'bg-[#009DDC] hover:bg-[#0088c4]' : ''}
+              >
+                <User className="w-4 h-4 mr-2" />
+                Mis Aprobaciones
+              </Button>
+              
+              {user?.rol_nivel && user.rol_nivel >= 3 && (
+                <Button
+                  onClick={() => setVistaActual('historial_completo')}
+                  variant={vistaActual === 'historial_completo' ? 'default' : 'outline'}
+                  className={vistaActual === 'historial_completo' ? 'bg-[#009DDC] hover:bg-[#0088c4]' : ''}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Historial Completo
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
 
         {/* Filtros */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
@@ -693,7 +714,6 @@ export const AprobacionesAdminPage: React.FC = () => {
             ))}
           </div>
         )}
-      </div>
 
       {/* Modal de confirmación */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
@@ -767,6 +787,9 @@ export const AprobacionesAdminPage: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+        </div>
+      </div>
 
       <Footer />
     </div>

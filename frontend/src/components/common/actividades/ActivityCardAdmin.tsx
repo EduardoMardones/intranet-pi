@@ -10,6 +10,7 @@ import { ACTIVITY_COLORS } from '@/types/activity';
 import { formatActivityDate } from '@/utils/dateUtils';
 import { Calendar, MapPin, Edit, Trash2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/api/contexts/AuthContext';
 
 // ======================================================
 // INTERFACES
@@ -32,6 +33,9 @@ export const ActivityCardAdmin: React.FC<ActivityCardAdminProps> = ({
   onDelete,
   onViewDetails
 }) => {
+  const { user } = useAuth()
+  const puedeGestionar = (user?.rol_nivel ?? 0) >= 3
+  
   // Obtener configuración de colores según el tipo de actividad
   // Usar category si existe, sino type, sino 'otra' como fallback
   const activityType = activity.category || activity.type || 'otra';
@@ -135,29 +139,33 @@ export const ActivityCardAdmin: React.FC<ActivityCardAdminProps> = ({
               Detalles
             </Button>
             
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
-              className="border-blue-300 text-blue-700 hover:bg-blue-50"
-            >
-              <Edit className="w-4 h-4" />
-            </Button>
-            
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              className="border-red-300 text-red-700 hover:bg-red-50"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            {puedeGestionar && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit();
+                  }}
+                  className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+                
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                  className="border-red-300 text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Metadata adicional (versión desktop) */}
@@ -174,26 +182,30 @@ export const ActivityCardAdmin: React.FC<ActivityCardAdminProps> = ({
               >
                 <Eye className="w-3.5 h-3.5" />
               </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit();
-                }}
-                className="px-2 py-1 rounded hover:bg-blue-50 text-blue-600 transition-colors"
-                title="Editar"
-              >
-                <Edit className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
-                className="px-2 py-1 rounded hover:bg-red-50 text-red-600 transition-colors"
-                title="Eliminar"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              {puedeGestionar && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit();
+                    }}
+                    className="px-2 py-1 rounded hover:bg-blue-50 text-blue-600 transition-colors"
+                    title="Editar"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete();
+                    }}
+                    className="px-2 py-1 rounded hover:bg-red-50 text-red-600 transition-colors"
+                    title="Eliminar"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
