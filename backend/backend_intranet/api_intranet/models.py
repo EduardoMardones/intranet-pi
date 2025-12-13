@@ -706,6 +706,7 @@ class CategoriaDocumento(models.Model):
 class Documento(models.Model):
     """
     Documentos institucionales (circulares, protocolos, etc.)
+    Soporta almacenamiento en BD (actual) y S3 (futuro)
     """
     TIPO_CHOICES = [
         ('circular', 'Circular'),
@@ -718,6 +719,11 @@ class Documento(models.Model):
         ('otro', 'Otro'),
     ]
     
+    STORAGE_CHOICES = [
+        ('database', 'Base de Datos'),
+        ('s3', 'Amazon S3'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     codigo_documento = models.CharField(max_length=50, unique=True, blank=True)
     
@@ -727,10 +733,21 @@ class Documento(models.Model):
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
     categoria = models.ForeignKey(CategoriaDocumento, on_delete=models.PROTECT)
     
-    # Archivo
-    archivo = models.FileField(upload_to='documentos/')
+    # Archivo - Almacenamiento híbrido
+    storage_type = models.CharField(max_length=20, choices=STORAGE_CHOICES, default='database')
+    
+    # Para almacenamiento en BD
+    archivo_contenido = models.BinaryField(null=True, blank=True, editable=False)
+    
+    # Para almacenamiento en S3 (futuro)
+    archivo_url = models.URLField(max_length=500, null=True, blank=True)
+    
+    # Metadata del archivo (siempre presente)
+    nombre_archivo = models.CharField(max_length=255)
+    tipo_archivo = models.CharField(max_length=50, blank=True, null=True, help_text='Tipo de archivo: pdf, imagen, video, etc.')
     tamano = models.IntegerField()  # en bytes
     extension = models.CharField(max_length=10)
+    mime_type = models.CharField(max_length=100, default='application/octet-stream')
     
     # Versión y vigencia
     version = models.CharField(max_length=20, default='1.0')
@@ -778,6 +795,14 @@ class Documento(models.Model):
         if self.fecha_expiracion:
             return self.fecha_vigencia <= hoy <= self.fecha_expiracion
         return hoy >= self.fecha_vigencia
+    
+    def get_url_descarga(self):
+        """Retorna la URL para descargar el archivo"""
+        if self.storage_type == 's3':
+            return self.archivo_url
+        else:
+            # Para archivos en BD, usar endpoint de descarga
+            return f"/api/documentos/{self.id}/download/"
 
 
 # ======================================================

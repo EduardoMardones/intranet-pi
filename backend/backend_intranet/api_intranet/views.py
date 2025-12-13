@@ -26,7 +26,8 @@ from .serializers import (
     LicenciaMedicaSerializer,
     ActividadListSerializer, ActividadDetailSerializer, InscripcionActividadSerializer,
     AnuncioListSerializer, AnuncioDetailSerializer, AdjuntoAnuncioSerializer,
-    DocumentoListSerializer, DocumentoDetailSerializer, CategoriaDocumentoSerializer,
+    DocumentoListSerializer, DocumentoDetailSerializer, DocumentoCreateSerializer,
+    CategoriaDocumentoSerializer,
     NotificacionSerializer, LogAuditoriaSerializer
 )
 
@@ -595,15 +596,47 @@ class DocumentoViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'list':
             return DocumentoListSerializer
+        elif self.action == 'create':
+            return DocumentoCreateSerializer
         return DocumentoDetailSerializer
     
     def perform_create(self, serializer):
         """Registrar quién subió el documento"""
         serializer.save(subido_por=self.request.user)
     
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        """Descargar archivo desde base de datos"""
+        from django.http import HttpResponse
+        
+        documento = self.get_object()
+        
+        # Registrar descarga
+        documento.descargas += 1
+        documento.save(update_fields=['descargas'])
+        
+        if documento.storage_type == 'database':
+            # Servir archivo desde BD
+            response = HttpResponse(
+                documento.archivo_contenido,
+                content_type=documento.mime_type
+            )
+            response['Content-Disposition'] = f'attachment; filename="{documento.nombre_archivo}"'
+            response['Content-Length'] = documento.tamano
+            return response
+        elif documento.storage_type == 's3':
+            # Redirigir a S3
+            from django.shortcuts import redirect
+            return redirect(documento.archivo_url)
+        else:
+            return Response(
+                {'error': 'Tipo de almacenamiento no soportado'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
     @action(detail=True, methods=['post'])
     def descargar(self, request, pk=None):
-        """Registrar descarga de documento"""
+        """Registrar descarga de documento (deprecated - usar download)"""
         documento = self.get_object()
         documento.descargas += 1
         documento.save()

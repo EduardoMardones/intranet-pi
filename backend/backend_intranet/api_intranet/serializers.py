@@ -518,23 +518,28 @@ class DocumentoListSerializer(serializers.ModelSerializer):
     categoria_nombre = serializers.CharField(source='categoria.nombre', read_only=True)
     subido_por_nombre = serializers.CharField(source='subido_por.get_nombre_completo', read_only=True)
     esta_vigente = serializers.SerializerMethodField()
+    url_descarga = serializers.SerializerMethodField()
     
     class Meta:
         model = Documento
         fields = [
             'id', 'codigo_documento', 'titulo', 'tipo', 'tipo_display',
             'categoria', 'categoria_nombre', 'extension', 'tamano',
+            'nombre_archivo', 'mime_type', 'storage_type',
             'version', 'fecha_vigencia', 'fecha_expiracion',
             'publico', 'descargas', 'visualizaciones', 'activo',
-            'esta_vigente', 'subido_por_nombre', 'subido_en'
+            'esta_vigente', 'subido_por_nombre', 'subido_en', 'url_descarga'
         ]
         read_only_fields = (
             'id', 'codigo_documento', 'descargas', 'visualizaciones',
-            'subido_en'
+            'subido_en', 'storage_type'
         )
     
     def get_esta_vigente(self, obj):
         return obj.esta_vigente()
+    
+    def get_url_descarga(self, obj):
+        return obj.get_url_descarga()
 
 
 class DocumentoDetailSerializer(serializers.ModelSerializer):
@@ -544,13 +549,23 @@ class DocumentoDetailSerializer(serializers.ModelSerializer):
     subido_por_nombre = serializers.CharField(source='subido_por.get_nombre_completo', read_only=True)
     areas_con_acceso_nombres = serializers.SerializerMethodField()
     esta_vigente = serializers.SerializerMethodField()
+    url_descarga = serializers.SerializerMethodField()
     
     class Meta:
         model = Documento
-        fields = '__all__'
+        fields = [
+            'id', 'codigo_documento', 'titulo', 'descripcion', 'tipo', 'tipo_display',
+            'categoria', 'categoria_nombre', 'storage_type',
+            'nombre_archivo', 'tamano', 'extension', 'mime_type',
+            'archivo_url', 'url_descarga',
+            'version', 'fecha_vigencia', 'fecha_expiracion',
+            'publico', 'areas_con_acceso', 'areas_con_acceso_nombres',
+            'descargas', 'visualizaciones', 'activo', 'esta_vigente',
+            'subido_por', 'subido_por_nombre', 'subido_en', 'actualizado_en'
+        ]
         read_only_fields = (
             'id', 'codigo_documento', 'descargas', 'visualizaciones',
-            'subido_en', 'actualizado_en'
+            'subido_en', 'actualizado_en', 'storage_type', 'archivo_url'
         )
     
     def get_areas_con_acceso_nombres(self, obj):
@@ -558,6 +573,52 @@ class DocumentoDetailSerializer(serializers.ModelSerializer):
     
     def get_esta_vigente(self, obj):
         return obj.esta_vigente()
+    
+    def get_url_descarga(self, obj):
+        return obj.get_url_descarga()
+
+
+class DocumentoCreateSerializer(serializers.ModelSerializer):
+    """Serializer para crear documentos con archivo"""
+    archivo = serializers.FileField(write_only=True)
+    
+    class Meta:
+        model = Documento
+        fields = [
+            'titulo', 'descripcion', 'tipo', 'categoria',
+            'version', 'fecha_vigencia', 'fecha_expiracion',
+            'publico', 'areas_con_acceso', 'archivo'
+        ]
+    
+    def create(self, validated_data):
+        archivo = validated_data.pop('archivo')
+        areas_con_acceso = validated_data.pop('areas_con_acceso', [])
+        
+        # Extraer información del archivo
+        nombre_archivo = archivo.name
+        extension = nombre_archivo.split('.')[-1] if '.' in nombre_archivo else ''
+        tamano = archivo.size
+        mime_type = archivo.content_type or 'application/octet-stream'
+        
+        # Leer contenido del archivo
+        archivo_contenido = archivo.read()
+        
+        # Crear el documento
+        documento = Documento.objects.create(
+            storage_type='database',
+            nombre_archivo=nombre_archivo,
+            extension=extension,
+            tamano=tamano,
+            mime_type=mime_type,
+            archivo_contenido=archivo_contenido,
+            **validated_data
+        )
+        
+        # Asignar areas_con_acceso después de crear el objeto
+        if areas_con_acceso:
+            documento.areas_con_acceso.set(areas_con_acceso)
+        
+        return documento
 
 
 # ======================================================

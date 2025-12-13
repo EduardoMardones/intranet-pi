@@ -10,13 +10,17 @@ export interface Documento {
   codigo_documento: string;
   titulo: string;
   descripcion?: string;
-  tipo: 'circular' | 'memorandum' | 'resolucion' | 'protocolo' | 'manual' | 'otro';
+  tipo: 'circular' | 'protocolo' | 'formulario' | 'guia' | 'reglamento' | 'manual' | 'informe' | 'otro';
   tipo_display: string;
   categoria: string;
   categoria_nombre: string;
-  archivo: string;
+  storage_type: 'database' | 's3';
+  nombre_archivo: string;
   extension: string;
   tamano: number;
+  mime_type: string;
+  archivo_url?: string;
+  url_descarga: string;
   version: string;
   fecha_vigencia: string;
   fecha_expiracion?: string;
@@ -45,13 +49,14 @@ export interface CategoriaDocumento {
 export interface CrearDocumentoData {
   titulo: string;
   descripcion?: string;
-  tipo: 'circular' | 'memorandum' | 'resolucion' | 'protocolo' | 'manual' | 'otro';
+  tipo: 'circular' | 'protocolo' | 'formulario' | 'guia' | 'reglamento' | 'manual' | 'informe' | 'otro';
   categoria: string;
   version?: string;
   fecha_vigencia: string;
   fecha_expiracion?: string;
   publico?: boolean;
   areas_con_acceso?: string[];
+  archivo: File;
 }
 
 export const documentosService = {
@@ -77,17 +82,47 @@ export const documentosService = {
   },
 
   /**
-   * Crear nuevo documento
+   * Crear nuevo documento con archivo
    */
   async create(data: CrearDocumentoData): Promise<Documento> {
-    return ApiClient.post('/documentos/', data);
+    const formData = new FormData();
+    
+    formData.append('titulo', data.titulo);
+    if (data.descripcion) formData.append('descripcion', data.descripcion);
+    formData.append('tipo', data.tipo);
+    formData.append('categoria', data.categoria);
+    if (data.version) formData.append('version', data.version);
+    formData.append('fecha_vigencia', data.fecha_vigencia);
+    if (data.fecha_expiracion) formData.append('fecha_expiracion', data.fecha_expiracion);
+    formData.append('publico', String(data.publico ?? true));
+    if (data.areas_con_acceso) {
+      data.areas_con_acceso.forEach(area => formData.append('areas_con_acceso', area));
+    }
+    formData.append('archivo', data.archivo);
+    
+    return ApiClient.postFormData('/documentos/', formData);
   },
 
   /**
    * Actualizar documento
    */
   async update(id: string, data: Partial<CrearDocumentoData>): Promise<Documento> {
-    return ApiClient.patch(`/documentos/${id}/`, data);
+    const formData = new FormData();
+    
+    if (data.titulo) formData.append('titulo', data.titulo);
+    if (data.descripcion) formData.append('descripcion', data.descripcion);
+    if (data.tipo) formData.append('tipo', data.tipo);
+    if (data.categoria) formData.append('categoria', data.categoria);
+    if (data.version) formData.append('version', data.version);
+    if (data.fecha_vigencia) formData.append('fecha_vigencia', data.fecha_vigencia);
+    if (data.fecha_expiracion) formData.append('fecha_expiracion', data.fecha_expiracion);
+    if (data.publico !== undefined) formData.append('publico', String(data.publico));
+    if (data.areas_con_acceso) {
+      data.areas_con_acceso.forEach(area => formData.append('areas_con_acceso', area));
+    }
+    if (data.archivo) formData.append('archivo', data.archivo);
+    
+    return ApiClient.patchFormData(`/documentos/${id}/`, formData);
   },
 
   /**
@@ -98,10 +133,20 @@ export const documentosService = {
   },
 
   /**
-   * Subir archivo de documento
+   * Descargar archivo
    */
-  async uploadFile(id: string, file: File): Promise<Documento> {
-    return ApiClient.uploadFile(`/documentos/${id}/`, file, 'archivo');
+  async download(id: string): Promise<Blob> {
+    const response = await fetch(`/api/documentos/${id}/download/`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error('Error al descargar el archivo');
+    }
+    
+    return response.blob();
   },
 
   /**

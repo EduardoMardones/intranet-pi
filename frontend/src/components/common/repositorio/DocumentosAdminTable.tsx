@@ -1,0 +1,235 @@
+import { useState, useEffect } from 'react'
+import { documentosService, type Documento } from '@/api/services/documentosService'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { 
+  FileText, 
+  Image as ImageIcon, 
+  Video, 
+  FileType, 
+  Loader2, 
+  Trash2, 
+  Eye,
+  Search,
+  Plus
+} from 'lucide-react'
+import { SubirDocumentoUltraSimple } from './SubirSocumentoUltraSimple'
+import FileDownload from '../buttons/FileDownload'
+
+export function DocumentosAdminTable() {
+  const [documentos, setDocumentos] = useState<Documento[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [dialogOpen, setDialogOpen] = useState(false)
+
+  useEffect(() => {
+    cargarDocumentos()
+  }, [])
+
+  const cargarDocumentos = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await documentosService.getAll()
+      console.log('Respuesta de la API:', response) // Debug
+      
+      // Manejar diferentes formatos de respuesta
+      if (response && response.results) {
+        setDocumentos(response.results)
+      } else if (Array.isArray(response)) {
+        setDocumentos(response)
+      } else {
+        console.warn('Formato de respuesta inesperado:', response)
+        setDocumentos([])
+      }
+    } catch (err) {
+      console.error('Error al cargar documentos:', err)
+      setError('Error al cargar los documentos')
+      setDocumentos([]) // Asegurar que sea array vacío
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEliminar = async (id: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este documento?')) {
+      return
+    }
+
+    try {
+      await documentosService.delete(id)
+      setDocumentos(prev => prev.filter(doc => doc.id !== id))
+    } catch (error) {
+      console.error('Error al eliminar documento:', error)
+      alert('Error al eliminar el documento')
+    }
+  }
+
+  const getIconoPorExtension = (extension: string) => {
+    const ext = extension.toLowerCase()
+    if (ext === 'pdf') return <FileText className="w-5 h-5 text-red-600" />
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) 
+      return <ImageIcon className="w-5 h-5 text-blue-600" />
+    if (['mp4', 'avi', 'mov', 'wmv'].includes(ext)) 
+      return <Video className="w-5 h-5 text-purple-600" />
+    return <FileType className="w-5 h-5 text-green-600" />
+  }
+
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+  }
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString)
+    return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`
+  }
+
+  const documentosFiltrados = documentos.filter(doc =>
+    doc.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    doc.nombre_archivo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    doc.codigo_documento.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <span className="ml-2">Cargando documentos...</span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12 text-red-600">
+        {error}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Header con búsqueda y botón subir */}
+      <div className="flex justify-between items-center">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="Buscar documentos..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Button onClick={() => setDialogOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Subir Documento
+        </Button>
+      </div>
+
+      {/* Tabla */}
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Código</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Título</TableHead>
+              <TableHead>Archivo</TableHead>
+              <TableHead>Categoría</TableHead>
+              <TableHead>Tamaño</TableHead>
+              <TableHead>Fecha</TableHead>
+              <TableHead>Descargas</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {documentosFiltrados.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                  No se encontraron documentos
+                </TableCell>
+              </TableRow>
+            ) : (
+              documentosFiltrados.map((doc) => (
+                <TableRow key={doc.id}>
+                  <TableCell className="font-mono text-sm">
+                    {doc.codigo_documento}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {getIconoPorExtension(doc.extension)}
+                      <span className="text-sm">{doc.tipo_display}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="max-w-xs truncate" title={doc.titulo}>
+                    {doc.titulo}
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-600">
+                    {doc.nombre_archivo}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {doc.categoria_nombre}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {formatBytes(doc.tamano)}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {formatDate(doc.subido_en)}
+                  </TableCell>
+                  <TableCell className="text-sm text-center">
+                    {doc.descargas}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Ver detalles"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <FileDownload
+                        documentId={doc.id}
+                        fileName={doc.nombre_archivo}
+                        fileType={doc.mime_type}
+                        iconClassName="w-4 h-4 text-blue-600 cursor-pointer hover:text-blue-800"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEliminar(doc.id)}
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Diálogo para subir */}
+      <SubirDocumentoUltraSimple
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSuccess={cargarDocumentos}
+      />
+    </div>
+  )
+}
