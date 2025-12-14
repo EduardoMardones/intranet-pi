@@ -197,6 +197,10 @@ export const ActividadesAdminPage: React.FC = () => {
         
         const actividadConvertida = actividadToActivity(actividadCreada);
         
+        console.log('🔄 Actividad convertida:', actividadConvertida);
+        console.log('🎯 Category:', actividadConvertida.category);
+        console.log('🎯 Type del backend:', actividadCreada.tipo);
+        
         setActivities(prev => [actividadConvertida, ...prev]);
         toast.success('✨ Actividad creada exitosamente');
       }

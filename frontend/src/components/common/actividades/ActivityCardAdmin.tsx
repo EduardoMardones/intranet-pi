@@ -39,7 +39,7 @@ export const ActivityCardAdmin: React.FC<ActivityCardAdminProps> = ({
   // Obtener configuración de colores según el tipo de actividad
   // Usar category si existe, sino type, sino 'otra' como fallback
   const activityType = activity.category || activity.type || 'otra';
-  const colorConfig = ACTIVITY_COLORS[activityType];
+  const colorConfig = ACTIVITY_COLORS[activityType] || ACTIVITY_COLORS['otra'];
 
   // Determinar si la actividad ya pasó
   const isPastActivity = activity.date < new Date();

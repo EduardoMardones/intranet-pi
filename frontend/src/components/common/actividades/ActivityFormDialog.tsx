@@ -45,6 +45,8 @@ const ACTIVITY_TYPES: { value: ActivityType; label: string; emoji: string }[] = 
   { value: 'deportiva', label: 'Deportiva', emoji: '⚽' },
   { value: 'celebracion', label: 'Celebración', emoji: '🎉' },
   { value: 'comunitaria', label: 'Comunitaria', emoji: '🌱' },
+  { value: 'cultural', label: 'Cultural', emoji: '🎭' },
+  { value: 'capacitacion', label: 'Capacitación', emoji: '📚' },
   { value: 'otra', label: 'Otra', emoji: '📌' },
 ];
 
@@ -68,6 +70,7 @@ export const ActivityFormDialog: React.FC<ActivityFormDialogProps> = ({
     date: new Date(),
     location: '',
     imageUrl: '',
+    category: 'otra',
     type: 'otra'
   });
 
@@ -89,13 +92,15 @@ export const ActivityFormDialog: React.FC<ActivityFormDialogProps> = ({
     if (isOpen) {
       if (activity) {
         // MODO EDICIÓN: cargar datos existentes
+        const activityType = activity.category || activity.type || 'otra';
         setFormData({
           title: activity.title,
           description: activity.description,
           date: activity.date,
           location: activity.location,
           imageUrl: activity.imageUrl,
-          type: activity.type
+          type: activityType,
+          category: activityType
         });
         // Si tiene URL, asumir que es URL
         if (activity.imageUrl) {
@@ -111,7 +116,8 @@ export const ActivityFormDialog: React.FC<ActivityFormDialogProps> = ({
           date: new Date(),
           location: '',
           imageUrl: '',
-          type: 'otra'
+          type: 'otra',
+          category: 'otra'
         });
         setImageSource('url');
         setImagePreview('');
@@ -151,7 +157,7 @@ export const ActivityFormDialog: React.FC<ActivityFormDialogProps> = ({
    * Maneja cambio de tipo de actividad
    */
   const handleTypeChange = (type: ActivityType) => {
-    setFormData(prev => ({ ...prev, type }));
+    setFormData(prev => ({ ...prev, type, category: type }));
   };
 
   /**
@@ -463,7 +469,7 @@ export const ActivityFormDialog: React.FC<ActivityFormDialogProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {ACTIVITY_TYPES.map((type) => {
                 const colorConfig = ACTIVITY_COLORS[type.value];
-                const isSelected = formData.type === type.value;
+                const isSelected = (formData.category || formData.type) === type.value;
                 
                 return (
                   <button

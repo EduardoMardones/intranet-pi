@@ -39,12 +39,14 @@ const categoryToTipo: Record<ActivityCategory, TipoActividad> = {
  * Convierte una actividad del backend al formato frontend
  */
 export function actividadToActivity(actividad: Actividad): Activity {
+  const mappedCategory = tipoToCategory[actividad.tipo] || 'otra';
+  
   return {
     id: actividad.id,
     title: actividad.titulo,
     description: actividad.descripcion,
-    category: tipoToCategory[actividad.tipo],
-    type: tipoToCategory[actividad.tipo], // Mantener por compatibilidad
+    category: mappedCategory,
+    type: mappedCategory, // Mantener por compatibilidad
     date: new Date(actividad.fecha_inicio),
     startTime: actividad.fecha_inicio,
     endTime: actividad.fecha_termino,
