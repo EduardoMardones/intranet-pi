@@ -118,23 +118,17 @@ const Homepage = () => {
   ];
 
   return (
-    // CAMBIO 1: Estructura flex flex-col para manejar el footer sticky igual que en admin
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <UnifiedNavbar />
       
-      {/* CAMBIO 2: Espaciador para el navbar fixed (igual que en admin page) */}
+      {/* Espaciador para el navbar fixed */}
       <div className="h-16" />
 
-      {/* 
-         CAMBIO 3: Padding y Layout del contenido.
-         Se cambió 'container mx-auto py-24' por 'flex-1 p-4 md:p-8'
-         y un wrapper interno 'max-w-[1600px]' para dar más amplitud.
-      */}
       <main className="flex-1 p-4 md:p-8">
         <div className="max-w-[1600px] mx-auto">
         
           {/* ========================================== */}
-          {/* BANNER DE BIENVENIDA (Tu versión original) */}
+          {/* BANNER DE BIENVENIDA                       */}
           {/* ========================================== */}
           <div className="bg-gradient-to-r from-[#009DDC] to-[#0077A3] text-white rounded-2xl shadow-xl p-8 mb-6">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -161,6 +155,39 @@ const Homepage = () => {
           </div>
 
           {/* ========================================== */}
+          {/* ACCESOS RÁPIDOS (NUEVA UBICACIÓN FULL WIDTH) */}
+          {/* ========================================== */}
+          {/* Agregamos mb-6 para separarlo del grid de abajo */}
+          <Card className="shadow-md border-0 bg-white overflow-hidden mb-6">
+            <CardHeader className="p-0">
+              <div className="bg-gradient-to-r from-[#CDC7E5] to-[#009DDC] px-6 py-4">
+                <CardTitle className="text-base font-semibold text-white">Accesos Rápidos</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              {/* Ajustamos el grid para que en pantallas grandes (lg) se vea más distribuido si lo deseas, 
+                  o mantenemos el md:grid-cols-4 que ya funciona bien */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {accesosRapidos.map((acceso, i) => {
+                  const Icon = acceso.icon;
+                  return (
+                    <button
+                      key={i}
+                      className="flex flex-col items-center gap-3 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-all hover:shadow-sm border border-slate-200"
+                    >
+                      <div className={`w-12 h-12 ${acceso.color} rounded-xl flex items-center justify-center shadow-sm`}>
+                        <Icon className="w-6 h-6 text-white" />
+                      </div>
+                      <span className="text-sm font-medium text-slate-700 text-center">{acceso.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+
+          {/* ========================================== */}
           {/* CUERPO PRINCIPAL - ESTRUCTURA DE GRID      */}
           {/* ========================================== */}
           <div className="grid grid-cols-12 gap-6">
@@ -168,34 +195,9 @@ const Homepage = () => {
             {/* --- COLUMNA IZQUIERDA (Principal) --- */}
             <div className="col-span-12 lg:col-span-8 space-y-6">
 
-              {/* 1. Accesos Rápidos */}
-              <Card className="shadow-md border-0 bg-white overflow-hidden">
-                <CardHeader className="p-0">
-                  <div className="bg-gradient-to-r from-[#CDC7E5] to-[#009DDC] px-6 py-4">
-                    <CardTitle className="text-base font-semibold text-white">Accesos Rápidos</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {accesosRapidos.map((acceso, i) => {
-                      const Icon = acceso.icon;
-                      return (
-                        <button
-                          key={i}
-                          className="flex flex-col items-center gap-3 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-all hover:shadow-sm border border-slate-200"
-                        >
-                          <div className={`w-12 h-12 ${acceso.color} rounded-xl flex items-center justify-center shadow-sm`}>
-                            <Icon className="w-6 h-6 text-white" />
-                          </div>
-                          <span className="text-sm font-medium text-slate-700 text-center">{acceso.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
+              {/* [Accesos Rápidos ELIMINADO de aquí] */}
 
-              {/* 2. Grid Interno: Comunicados y Actividades */}
+              {/* 1. Grid Interno: Comunicados y Actividades */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
                 {/* Comunicados */}
@@ -255,7 +257,7 @@ const Homepage = () => {
                 </Card>
               </div>
 
-              {/* 3. Mini Calendario */}
+              {/* 2. Mini Calendario */}
               <Card className="shadow-md border-0 bg-white overflow-hidden">
                 <CardHeader className="p-0">
                   <div className="bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] px-6 py-4 flex justify-between items-center">
