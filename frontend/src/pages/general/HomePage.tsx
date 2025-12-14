@@ -11,7 +11,8 @@ import {
   CheckSquare,
   Bell,
   Users,
-  FileText,
+  FileText,   // Usado anteriormente, pero útil
+  Folder,     // <--- NUEVO: Agregado para "Archivos"
   UserCircle,
   Settings,
   ChevronRight,
@@ -70,12 +71,14 @@ const Homepage = () => {
     return days;
   };
 
-  // 2. DATOS Y ARRAYS (Del diseño nuevo)
+  // 2. DATOS Y ARRAYS (ACTUALIZADO: 6 Ítems)
   const accesosRapidos = [
-    { icon: FileText, label: 'Licencias Médicas', color: 'bg-blue-500' },
-    { icon: Briefcase, label: 'Documentos', color: 'bg-purple-500' },
-    { icon: Users, label: 'Directorio', color: 'bg-teal-500' },
-    { icon: Settings, label: 'Configuración', color: 'bg-slate-500' }
+    { icon: Folder, label: 'Archivos', color: 'bg-blue-600' },
+    { icon: Megaphone, label: 'Anuncios', color: 'bg-purple-500' },
+    { icon: PartyPopper, label: 'Actividades', color: 'bg-teal-500' },
+    { icon: Calendar, label: 'Calendario', color: 'bg-orange-500' },
+    { icon: Users, label: 'Directorio', color: 'bg-indigo-500' },
+    { icon: UserCircle, label: 'Perfil', color: 'bg-rose-500' }
   ];
 
   const comunicados = [
@@ -155,9 +158,8 @@ const Homepage = () => {
           </div>
 
           {/* ========================================== */}
-          {/* ACCESOS RÁPIDOS (NUEVA UBICACIÓN FULL WIDTH) */}
+          {/* ACCESOS RÁPIDOS (ACTUALIZADO GRID 6 ÍTEMS) */}
           {/* ========================================== */}
-          {/* Agregamos mb-6 para separarlo del grid de abajo */}
           <Card className="shadow-md border-0 bg-white overflow-hidden mb-6">
             <CardHeader className="p-0">
               <div className="bg-gradient-to-r from-[#CDC7E5] to-[#009DDC] px-6 py-4">
@@ -165,9 +167,13 @@ const Homepage = () => {
               </div>
             </CardHeader>
             <CardContent className="p-6">
-              {/* Ajustamos el grid para que en pantallas grandes (lg) se vea más distribuido si lo deseas, 
-                  o mantenemos el md:grid-cols-4 que ya funciona bien */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* 
+                  CAMBIO DE GRILLA:
+                  grid-cols-2: Celular (2 columnas)
+                  md:grid-cols-3: Tablet/Laptop pequeña (3 columnas, 2 filas)
+                  lg:grid-cols-6: Pantalla grande (6 columnas, 1 fila)
+              */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 {accesosRapidos.map((acceso, i) => {
                   const Icon = acceso.icon;
                   return (
@@ -194,8 +200,6 @@ const Homepage = () => {
 
             {/* --- COLUMNA IZQUIERDA (Principal) --- */}
             <div className="col-span-12 lg:col-span-8 space-y-6">
-
-              {/* [Accesos Rápidos ELIMINADO de aquí] */}
 
               {/* 1. Grid Interno: Comunicados y Actividades */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
