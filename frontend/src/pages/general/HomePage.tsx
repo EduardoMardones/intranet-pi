@@ -4,6 +4,7 @@
 // ======================================================
 
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom'; // <--- 1. IMPORTANTE: Importamos Link
 import {
   Calendar,
   Megaphone,
@@ -11,8 +12,8 @@ import {
   CheckSquare,
   Bell,
   Users,
-  FileText,   // Usado anteriormente, pero útil
-  Folder,     // <--- NUEVO: Agregado para "Archivos"
+  FileText,
+  Folder,
   UserCircle,
   Settings,
   ChevronRight,
@@ -22,6 +23,7 @@ import {
   Clock,
   Check
 } from 'lucide-react';
+
 // Asegúrate que estas rutas sean correctas según tu proyecto actual:
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/cardgenerica/cardsn';
 import { Badge } from '@/components/ui/badge';
@@ -71,14 +73,20 @@ const Homepage = () => {
     return days;
   };
 
-  // 2. DATOS Y ARRAYS (ACTUALIZADO: 6 Ítems)
+  // 2. DATOS Y ARRAYS (CON RUTAS DEL NAVBAR)
   const accesosRapidos = [
-    { icon: Folder, label: 'Archivos', color: 'bg-blue-600' },
-    { icon: Megaphone, label: 'Anuncios', color: 'bg-purple-500' },
-    { icon: PartyPopper, label: 'Actividades', color: 'bg-teal-500' },
-    { icon: Calendar, label: 'Calendario', color: 'bg-orange-500' },
-    { icon: Users, label: 'Directorio', color: 'bg-indigo-500' },
-    { icon: UserCircle, label: 'Perfil', color: 'bg-rose-500' }
+    // Archivos -> Ruta: /repositorio
+    { icon: Folder, label: 'Archivos', color: 'bg-blue-600', path: '/repositorio' },
+    // Anuncios -> Ruta: /anuncios
+    { icon: Megaphone, label: 'Anuncios', color: 'bg-purple-500', path: '/anuncios' },
+    // Actividades -> Ruta: /actividades
+    { icon: PartyPopper, label: 'Actividades', color: 'bg-teal-500', path: '/actividades' },
+    // Calendario -> Ruta: /calendario
+    { icon: Calendar, label: 'Calendario', color: 'bg-orange-500', path: '/calendario' },
+    // Directorio -> Ruta: /directorio
+    { icon: Users, label: 'Directorio', color: 'bg-indigo-500', path: '/directorio' },
+    // Perfil -> Ruta típica: /perfil (Asumida por convención ya que suele estar en el botón de avatar)
+    { icon: UserCircle, label: 'Perfil', color: 'bg-rose-500', path: '/perfil' }
   ];
 
   const comunicados = [
@@ -130,9 +138,7 @@ const Homepage = () => {
       <main className="flex-1 p-4 md:p-8">
         <div className="max-w-[1600px] mx-auto">
         
-          {/* ========================================== */}
-          {/* BANNER DE BIENVENIDA                       */}
-          {/* ========================================== */}
+          {/* BANNER DE BIENVENIDA */}
           <div className="bg-gradient-to-r from-[#009DDC] to-[#0077A3] text-white rounded-2xl shadow-xl p-8 mb-6">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div>
@@ -157,9 +163,7 @@ const Homepage = () => {
             </div>
           </div>
 
-          {/* ========================================== */}
-          {/* ACCESOS RÁPIDOS (ACTUALIZADO GRID 6 ÍTEMS) */}
-          {/* ========================================== */}
+          {/* ACCESOS RÁPIDOS CON LINKS */}
           <Card className="shadow-md border-0 bg-white overflow-hidden mb-6">
             <CardHeader className="p-0">
               <div className="bg-gradient-to-r from-[#CDC7E5] to-[#009DDC] px-6 py-4">
@@ -167,25 +171,21 @@ const Homepage = () => {
               </div>
             </CardHeader>
             <CardContent className="p-6">
-              {/* 
-                  CAMBIO DE GRILLA:
-                  grid-cols-2: Celular (2 columnas)
-                  md:grid-cols-3: Tablet/Laptop pequeña (3 columnas, 2 filas)
-                  lg:grid-cols-6: Pantalla grande (6 columnas, 1 fila)
-              */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 {accesosRapidos.map((acceso, i) => {
                   const Icon = acceso.icon;
+                  // Usamos LINK en lugar de button
                   return (
-                    <button
+                    <Link
                       key={i}
-                      className="flex flex-col items-center gap-3 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-all hover:shadow-sm border border-slate-200"
+                      to={acceso.path}
+                      className="flex flex-col items-center gap-3 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-all hover:shadow-sm border border-slate-200 group"
                     >
-                      <div className={`w-12 h-12 ${acceso.color} rounded-xl flex items-center justify-center shadow-sm`}>
+                      <div className={`w-12 h-12 ${acceso.color} rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}>
                         <Icon className="w-6 h-6 text-white" />
                       </div>
                       <span className="text-sm font-medium text-slate-700 text-center">{acceso.label}</span>
-                    </button>
+                    </Link>
                   );
                 })}
               </div>
@@ -193,9 +193,7 @@ const Homepage = () => {
           </Card>
 
 
-          {/* ========================================== */}
-          {/* CUERPO PRINCIPAL - ESTRUCTURA DE GRID      */}
-          {/* ========================================== */}
+          {/* CUERPO PRINCIPAL */}
           <div className="grid grid-cols-12 gap-6">
 
             {/* --- COLUMNA IZQUIERDA (Principal) --- */}
