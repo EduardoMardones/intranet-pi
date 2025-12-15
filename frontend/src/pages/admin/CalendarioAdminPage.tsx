@@ -18,6 +18,8 @@ import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
 import bannerHome from "@/components/images/banner_images/BannerCalendario.png";
+import BannerCalendario from '@/components/images/banners_finales/BannerCalendario';
+
 
 // Servicios
 import { useAuth } from '@/api/contexts/AuthContext';
@@ -241,8 +243,7 @@ export const CalendarioAdminPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <UnifiedNavbar />
       <div className="h-16" />
-      <Banner title="" imageSrc={bannerHome} height="250px" />
-
+      <BannerCalendario></BannerCalendario>
       <div className="flex-1 bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 p-4 md:p-8">
         <div className="max-w-[1600px] mx-auto">
           

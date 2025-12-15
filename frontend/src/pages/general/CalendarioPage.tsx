@@ -15,6 +15,7 @@ import Footer from '@/components/common/layout/Footer';
 import Banner from '@/components/common/layout/Banner';
 import bannerHome from "@/components/images/banner_images/BannerCalendario.png";
 
+
 // ✅ Sistema de permisos
 import { useAuth } from '@/api/contexts/AuthContext';
 

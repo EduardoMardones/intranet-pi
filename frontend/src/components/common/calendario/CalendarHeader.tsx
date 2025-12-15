@@ -19,7 +19,7 @@ interface CalendarHeaderProps {
   onNextMonth: () => void;
   onToday: () => void;
   showAddButton?: boolean;
-  onAddEvent?: () => void; // Nueva prop
+  onAddEvent?: () => void;
 }
 
 // ======================================================
@@ -31,33 +31,35 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onPreviousMonth,
   onNextMonth,
   onToday,
-  showAddButton = false // Por defecto oculto para vista de funcionario
+  showAddButton = false
 }) => {
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        
         {/* ======================================================
-            SECCIÓN IZQUIERDA: TÍTULO Y MES/AÑO
+            SECCIÓN IZQUIERDA: LEYENDA DE TIPOS DE EVENTOS
+            (Ahora al mismo nivel que la navegación)
             ====================================================== */}
         <div className="flex items-center gap-4">
-          {/* Icono del calendario */}
-          <div className="p-3 bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] rounded-xl">
-            <Calendar className="w-6 h-6 text-white" />
-          </div>
-          
-          {/* Título y mes actual */}
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">
-              Calendario Institucional
-            </h1>
-            <p className="text-sm text-gray-500">
-              CESFAM - Centro de Salud Familiar
-            </p>
+          <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-blue-400 rounded"></div>
+              <span className="text-sm text-gray-600">Actividades</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-orange-400 rounded"></div>
+              <span className="text-sm text-gray-600">Anuncios</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-green-400 rounded"></div>
+              <span className="text-sm text-gray-600">Feriados</span>
+            </div>
           </div>
         </div>
 
         {/* ======================================================
-            SECCIÓN DERECHA: CONTROLES DE NAVEGACIÓN
+            SECCIÓN DERECHA: CONTROLES DE NAVEGACIÓN Y MES
             ====================================================== */}
         <div className="flex items-center gap-3">
           {/* Botón "Hoy" */}
@@ -98,13 +100,12 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           </div>
 
           {/* ======================================================
-              BOTÓN AGREGAR EVENTO (SOLO PARA ADMINISTRADORES)
+              BOTÓN AGREGAR EVENTO
               ====================================================== */}
           {showAddButton && (
             <Button
               className="bg-[#009DDC] hover:bg-[#0088c4] text-white font-medium"
               onClick={() => {
-                // Funcionalidad futura para agregar eventos
                 console.log('Agregar evento - Próximamente');
               }}
             >
@@ -112,30 +113,6 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
               Agregar Evento
             </Button>
           )}
-        </div>
-      </div>
-
-      {/* ======================================================
-          LEYENDA DE TIPOS DE EVENTOS
-          ====================================================== */}
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-400 rounded"></div>
-            <span className="text-sm text-gray-600">Reuniones</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-purple-400 rounded"></div>
-            <span className="text-sm text-gray-600">Capacitaciones</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-green-400 rounded"></div>
-            <span className="text-sm text-gray-600">Feriados</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-400 rounded"></div>
-            <span className="text-sm text-gray-600">Otros</span>
-          </div>
         </div>
       </div>
     </div>
