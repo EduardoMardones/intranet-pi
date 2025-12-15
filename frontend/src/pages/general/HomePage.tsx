@@ -31,14 +31,13 @@ import { Button } from '@/components/ui/button';
 import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import { useAuth } from '@/api/contexts/AuthContext';
+import { MiniCalendario } from '@/components/common/calendario/MiniCalendario';
 
 const Homepage = () => {
   // 1. LÓGICA DE ESTADO Y AUTH
-  const [currentDate, setCurrentDate] = useState(new Date());
   const { user } = useAuth(); 
   const userName = user?.nombre || 'Usuario';
-  
-  const [selectedDate, setSelectedDate] = useState<number | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentDate(new Date()), 60000);
@@ -53,24 +52,6 @@ const Homepage = () => {
       day: 'numeric'
     };
     return date.toLocaleDateString('es-CL', options);
-  };
-
-  const monthName = currentDate.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
-
-  const getMiniCalendar = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const days = [];
-
-    for (let i = 0; i < firstDay; i++) {
-      days.push(null);
-    }
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(i);
-    }
-    return days;
   };
 
   // 2. DATOS Y ARRAYS (CON RUTAS DEL NAVBAR)
@@ -260,41 +241,7 @@ const Homepage = () => {
               </div>
 
               {/* 2. Mini Calendario */}
-              <Card className="shadow-md border-0 bg-white overflow-hidden">
-                <CardHeader className="p-0">
-                  <div className="bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] px-6 py-4 flex justify-between items-center">
-                    <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      {monthName}
-                    </CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-7 gap-2 text-center mb-2">
-                    {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((day, i) => (
-                      <div key={i} className="text-xs font-bold text-slate-400 uppercase">{day}</div>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-7 gap-2">
-                    {getMiniCalendar().map((day, i) => (
-                      <button
-                        key={i}
-                        onClick={() => day && setSelectedDate(day)}
-                        className={`
-                          aspect-square rounded-lg text-sm flex items-center justify-center transition-all
-                          ${!day ? 'invisible' : ''}
-                          ${day === currentDate.getDate()
-                            ? 'bg-[#009DDC] text-white font-bold shadow-md scale-105'
-                            : 'hover:bg-slate-100 text-slate-700'}
-                          ${selectedDate === day && day !== currentDate.getDate() ? 'ring-2 ring-[#009DDC] ring-offset-2' : ''}
-                        `}
-                      >
-                        {day}
-                      </button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <MiniCalendario />
 
             </div>
 
