@@ -3,7 +3,7 @@
 // Ubicación: src/pages/general/HomePage.tsx
 // ======================================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom'; // <--- 1. IMPORTANTE: Importamos Link
 import {
   Calendar,
@@ -32,12 +32,16 @@ import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import { useAuth } from '@/api/contexts/AuthContext';
 import { MiniCalendario } from '@/components/common/calendario/MiniCalendario';
+import { anunciosService } from '@/api/services';
+import type { Anuncio } from '@/api/services/anunciosService';
 
 const Homepage = () => {
   // 1. LÓGICA DE ESTADO Y AUTH
   const { user } = useAuth(); 
   const userName = user?.nombre || 'Usuario';
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [anuncios, setAnuncios] = useState<Anuncio[]>([]);
+  const [loadingAnuncios, setLoadingAnuncios] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentDate(new Date()), 60000);
@@ -54,8 +58,93 @@ const Homepage = () => {
     return date.toLocaleDateString('es-CL', options);
   };
 
-  // 2. DATOS Y ARRAYS (CON RUTAS DEL NAVBAR)
-  const accesosRapidos = [
+  // ======================================================
+  // CARGAR ANUNCIOS CON FILTRADO POR PERMISOS (OPTIMIZADO)
+  // ======================================================
+
+  useEffect(() => {
+    if (user) {
+      // Cargar anuncios inmediatamente sin esperar
+      cargarAnuncios();
+    }
+  }, [user]);
+
+  const cargarAnuncios = async () => {
+    if (!user) return;
+    
+    try {
+      setLoadingAnuncios(true);
+      
+      // Obtener todos los anuncios vigentes
+      const anunciosData = await anunciosService.getVigentes();
+      
+      // Filtrar anuncios según permisos del usuario (misma lógica que CalendarioAdminPage)
+      const anunciosFiltrados = anunciosData.filter((anuncio: Anuncio) => {
+        // Si es para todas las áreas
+        if (anuncio.para_todas_areas) return true;
+        
+        // Si es para el área del usuario
+        if (anuncio.areas_destinatarias?.includes(user.area_nombre || '')) return true;
+        
+        // Filtrar por visibilidad de roles
+        const userRolNivel = user.rol_nivel || 1;
+        
+        switch (anuncio.visibilidad_roles) {
+          case 'solo_funcionarios':
+            return userRolNivel === 1;
+          case 'solo_jefatura':
+            return userRolNivel === 2;
+          case 'funcionarios_y_jefatura':
+            return userRolNivel <= 2;
+          case 'solo_direccion':
+            return userRolNivel >= 3;
+          default:
+            return true;
+        }
+      });
+      
+      // Ordenar por fecha de publicación (más recientes primero) y tomar los 3 primeros
+      const anunciosOrdenados = anunciosFiltrados
+        .sort((a, b) => new Date(b.fecha_publicacion).getTime() - new Date(a.fecha_publicacion).getTime())
+        .slice(0, 3);
+      
+      setAnuncios(anunciosOrdenados);
+    } catch (error) {
+      console.error('Error al cargar anuncios:', error);
+      // En caso de error, no mostrar spinner infinito
+      setAnuncios([]);
+    } finally {
+      setLoadingAnuncios(false);
+    }
+  };
+
+  // ======================================================
+  // FORMATEAR FECHA PARA ANUNCIOS
+  // ======================================================
+
+  const formatDateShort = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+  };
+
+  // ======================================================
+  // OBTENER BADGE DE TIPO DE ANUNCIO
+  // ======================================================
+
+  const getTipoBadge = (tipo: string): string => {
+    const tipos: Record<string, string> = {
+      'informativo': 'Info',
+      'urgente': 'Urgente',
+      'recordatorio': 'Recordatorio',
+      'felicitacion': 'Felicitación',
+      'normativa': 'Normativa',
+      'administrativa': 'Admin'
+    };
+    return tipos[tipo] || 'Info';
+  };
+
+  // 2. DATOS Y ARRAYS (CON RUTAS DEL NAVBAR) - MEMOIZADO
+  const accesosRapidos = useMemo(() => [
     // Archivos -> Ruta: /repositorio
     { icon: Folder, label: 'Archivos', color: 'bg-blue-600', path: '/repositorio' },
     // Anuncios -> Ruta: /anuncios
@@ -68,13 +157,7 @@ const Homepage = () => {
     { icon: Users, label: 'Directorio', color: 'bg-indigo-500', path: '/directorio' },
     // Perfil -> Ruta típica: /perfil (Asumida por convención ya que suele estar en el botón de avatar)
     { icon: UserCircle, label: 'Perfil', color: 'bg-rose-500', path: '/perfil' }
-  ];
-
-  const comunicados = [
-    { id: 1, title: 'Actualización del protocolo de atención', author: 'Dr. Ramírez', date: '20 Oct', type: 'Importante' },
-    { id: 2, title: 'Cambios en horarios de turnos', author: 'RR.HH.', date: '18 Oct', type: 'Info' },
-    { id: 3, title: 'Capacitación en nuevos sistemas', author: 'TI', date: '15 Oct', type: 'Formación' }
-  ];
+  ], []);
 
   const actividades = [
     { id: 1, title: 'Aniversario CESFAM', date: '30 Oct', icon: Calendar },
@@ -183,31 +266,77 @@ const Homepage = () => {
               {/* 1. Grid Interno: Comunicados y Actividades */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                {/* Comunicados */}
+                {/* Últimos Anuncios */}
                 <Card className="shadow-md border-0 bg-white overflow-hidden">
                   <CardHeader className="p-0">
                     <div className="bg-gradient-to-br from-purple-400 to-pink-400 px-6 py-4 flex justify-between items-center">
                       <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
                         <Megaphone className="w-4 h-4" />
-                        Comunicados
+                        Últimos Anuncios
                       </CardTitle>
-                      <Button variant="ghost" size="sm" className="h-7 text-xs text-white hover:bg-white/20 px-2">
-                        Ver todos
-                      </Button>
+                      <Link to="/anuncios">
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-white hover:bg-white/20 px-2">
+                          Ver todos
+                        </Button>
+                      </Link>
                     </div>
                   </CardHeader>
                   <CardContent className="p-4 space-y-3">
-                    {comunicados.map((com) => (
-                      <div key={com.id} className="p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer border border-slate-100">
-                        <div className="flex justify-between items-start gap-2">
-                          <div>
-                            <p className="text-sm font-medium text-slate-800 line-clamp-1">{com.title}</p>
-                            <p className="text-xs text-slate-500 mt-1">{com.author} • {com.date}</p>
+                    {loadingAnuncios ? (
+                      // Skeleton loader ligero
+                      <>
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="p-3 rounded-lg bg-slate-50 border border-slate-100 animate-pulse">
+                            <div className="flex justify-between items-start gap-2">
+                              <div className="flex-1 space-y-2">
+                                <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                                <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                              </div>
+                              <div className="h-5 w-16 bg-slate-200 rounded"></div>
+                            </div>
                           </div>
-                          <Badge variant="secondary" className="text-[10px] px-2 h-5">{com.type}</Badge>
-                        </div>
+                        ))}
+                      </>
+                    ) : anuncios.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Megaphone className="w-12 h-12 mx-auto text-slate-300 mb-2" />
+                        <p className="text-sm text-slate-500">No hay anuncios disponibles</p>
                       </div>
-                    ))}
+                    ) : (
+                      anuncios.map((anuncio) => (
+                        <Link 
+                          key={anuncio.id} 
+                          to="/anuncios"
+                          className="block"
+                        >
+                          <div className="p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer border border-slate-100">
+                            <div className="flex justify-between items-start gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-800 line-clamp-1">
+                                  {anuncio.titulo}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">
+                                  {anuncio.creado_por_nombre} • {formatDateShort(anuncio.fecha_publicacion)}
+                                </p>
+                              </div>
+                              <Badge 
+                                variant={anuncio.tipo === 'urgente' ? 'destructive' : 'secondary'} 
+                                className="text-[10px] px-2 h-5 shrink-0"
+                              >
+                                {getTipoBadge(anuncio.tipo)}
+                              </Badge>
+                            </div>
+                            {/* Indicador si es destacado */}
+                            {anuncio.es_destacado && (
+                              <div className="flex items-center gap-1 mt-2">
+                                <div className="w-1 h-1 rounded-full bg-[#009DDC]"></div>
+                                <span className="text-[10px] text-[#009DDC] font-medium">Destacado</span>
+                              </div>
+                            )}
+                          </div>
+                        </Link>
+                      ))
+                    )}
                   </CardContent>
                 </Card>
 

@@ -135,6 +135,8 @@ export const MiniCalendario: React.FC = () => {
       setEvents([...eventosAnuncios, ...eventosActividades, ...feriados]);
     } catch (error) {
       console.error('Error al cargar eventos:', error);
+      // En caso de error, establecer array vacío en lugar de dejar cargando
+      setEvents([]);
     } finally {
       setLoading(false);
     }
