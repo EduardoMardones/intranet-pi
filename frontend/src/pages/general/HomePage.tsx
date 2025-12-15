@@ -3,8 +3,8 @@
 // Ubicación: src/pages/general/HomePage.tsx
 // ======================================================
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom'; // <--- 1. IMPORTANTE: Importamos Link
+import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Calendar,
   Megaphone,
@@ -12,14 +12,9 @@ import {
   CheckSquare,
   Bell,
   Users,
-  FileText,
   Folder,
   UserCircle,
-  Settings,
-  ChevronRight,
   Award,
-  Briefcase,
-  Phone,
   Clock,
   Check
 } from 'lucide-react';
@@ -32,8 +27,10 @@ import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
 import { useAuth } from '@/api/contexts/AuthContext';
 import { MiniCalendario } from '@/components/common/calendario/MiniCalendario';
-import { anunciosService } from '@/api/services';
+import { anunciosService, actividadesService } from '@/api/services';
 import type { Anuncio } from '@/api/services/anunciosService';
+import { actividadesToActivities } from '@/utils/actividadesAdapter';
+import type { Activity } from '@/types/activity';
 
 const Homepage = () => {
   // 1. LÓGICA DE ESTADO Y AUTH
@@ -42,6 +39,8 @@ const Homepage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [anuncios, setAnuncios] = useState<Anuncio[]>([]);
   const [loadingAnuncios, setLoadingAnuncios] = useState(true);
+  const [actividades, setActividades] = useState<Activity[]>([]);
+  const [loadingActividades, setLoadingActividades] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentDate(new Date()), 60000);
@@ -66,6 +65,8 @@ const Homepage = () => {
     if (user) {
       // Cargar anuncios inmediatamente sin esperar
       cargarAnuncios();
+      // Cargar actividades en paralelo
+      cargarActividades();
     }
   }, [user]);
 
@@ -119,6 +120,79 @@ const Homepage = () => {
   };
 
   // ======================================================
+  // CARGAR ACTIVIDADES
+  // ======================================================
+
+  const cargarActividades = async () => {
+    if (!user) return;
+    
+    try {
+      setLoadingActividades(true);
+      
+      // Obtener todas las actividades activas
+      const actividadesData = await actividadesService.getAll({ activa: true });
+      
+      // Convertir al formato del frontend
+      const actividadesConvertidas = actividadesToActivities(actividadesData);
+      
+      // Filtrar actividades futuras y ordenar por fecha (más próximas primero)
+      const now = new Date();
+      const actividadesFuturas = actividadesConvertidas
+        .filter(actividad => {
+          // Validar que startTime existe antes de crear Date
+          if (!actividad.startTime) return false;
+          return new Date(actividad.startTime) > now;
+        })
+        .sort((a, b) => {
+          // Validar que ambos startTime existen
+          const dateA = a.startTime ? new Date(a.startTime).getTime() : 0;
+          const dateB = b.startTime ? new Date(b.startTime).getTime() : 0;
+          return dateA - dateB;
+        })
+        .slice(0, 3); // Tomar las 3 más próximas
+      
+      setActividades(actividadesFuturas);
+    } catch (error) {
+      console.error('Error al cargar actividades:', error);
+      // En caso de error, no mostrar spinner infinito
+      setActividades([]);
+    } finally {
+      setLoadingActividades(false);
+    }
+  };
+
+  // ======================================================
+  // FORMATEAR FECHA PARA ACTIVIDADES
+  // ======================================================
+
+  const formatActivityDate = (dateStr: string | undefined): string => {
+    if (!dateStr) return 'Fecha no disponible';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+  };
+
+  // ======================================================
+  // OBTENER ICONO POR TIPO DE ACTIVIDAD
+  // ======================================================
+
+  const getActivityIcon = (category: string | undefined) => {
+    if (!category) return Calendar;
+    
+    switch (category) {
+      case 'celebracion':
+        return PartyPopper;
+      case 'deportiva':
+        return Users;
+      case 'gastronomica':
+        return Calendar;
+      case 'cultural':
+        return Award;
+      default:
+        return Calendar;
+    }
+  };
+
+  // ======================================================
   // FORMATEAR FECHA PARA ANUNCIOS
   // ======================================================
 
@@ -158,12 +232,6 @@ const Homepage = () => {
     // Perfil -> Ruta típica: /perfil (Asumida por convención ya que suele estar en el botón de avatar)
     { icon: UserCircle, label: 'Perfil', color: 'bg-rose-500', path: '/perfil' }
   ], []);
-
-  const actividades = [
-    { id: 1, title: 'Aniversario CESFAM', date: '30 Oct', icon: Calendar },
-    { id: 2, title: 'Asado de fin de mes', date: '02 Nov', icon: Users },
-    { id: 3, title: 'Día del Funcionario', date: '15 Nov', icon: Award }
-  ];
 
   const recordatoriosIniciales = [
     { id: 1, text: 'Completar informe mensual', completed: false },
@@ -343,28 +411,69 @@ const Homepage = () => {
                 {/* Próximas Actividades */}
                 <Card className="shadow-md border-0 bg-white overflow-hidden">
                   <CardHeader className="p-0">
-                    <div className="bg-gradient-to-br from-[#52FFB8] to-[#4DFFF3] px-6 py-4">
+                    <div className="bg-gradient-to-br from-[#52FFB8] to-[#4DFFF3] px-6 py-4 flex justify-between items-center">
                       <CardTitle className="text-sm font-semibold text-slate-800 flex items-center gap-2">
                         <PartyPopper className="w-4 h-4" />
                         Próximas Actividades
                       </CardTitle>
+                      <Link to="/actividades">
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-slate-700 hover:bg-slate-800/10 px-2">
+                          Ver todas
+                        </Button>
+                      </Link>
                     </div>
                   </CardHeader>
                   <CardContent className="p-4 space-y-3">
-                    {actividades.map((act) => {
-                      const Icon = act.icon;
-                      return (
-                        <div key={act.id} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100">
-                          <div className="w-10 h-10 bg-[#009DDC]/10 rounded-lg flex items-center justify-center shrink-0 text-[#009DDC]">
-                            <Icon className="w-5 h-5" />
+                    {loadingActividades ? (
+                      // Skeleton loader ligero
+                      <>
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-100 animate-pulse">
+                            <div className="w-10 h-10 bg-slate-200 rounded-lg shrink-0"></div>
+                            <div className="flex-1 space-y-2">
+                              <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                              <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-slate-800">{act.title}</p>
-                            <p className="text-xs text-slate-500">{act.date}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        ))}
+                      </>
+                    ) : actividades.length === 0 ? (
+                      <div className="text-center py-8">
+                        <PartyPopper className="w-12 h-12 mx-auto text-slate-300 mb-2" />
+                        <p className="text-sm text-slate-500">No hay actividades próximas</p>
+                      </div>
+                    ) : (
+                      actividades.map((actividad) => {
+                        const Icon = getActivityIcon(actividad.category);
+                        return (
+                          <Link 
+                            key={actividad.id} 
+                            to="/actividades"
+                            className="block"
+                          >
+                            <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100 cursor-pointer">
+                              <div className="w-10 h-10 bg-[#009DDC]/10 rounded-lg flex items-center justify-center shrink-0 text-[#009DDC]">
+                                <Icon className="w-5 h-5" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-800 line-clamp-1">
+                                  {actividad.title}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  {formatActivityDate(actividad.startTime)}
+                                </p>
+                              </div>
+                              {/* Indicador de cupos si aplica */}
+                              {actividad.maxAttendees && (
+                                <div className="text-[10px] text-slate-500 shrink-0">
+                                  {actividad.currentAttendees}/{actividad.maxAttendees}
+                                </div>
+                              )}
+                            </div>
+                          </Link>
+                        );
+                      })
+                    )}
                   </CardContent>
                 </Card>
               </div>
