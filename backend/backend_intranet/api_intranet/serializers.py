@@ -60,14 +60,16 @@ class CategoriaDocumentoSerializer(serializers.ModelSerializer):
 class UsuarioListSerializer(serializers.ModelSerializer):
     """Serializer reducido para listados"""
     rol_nombre = serializers.CharField(source='rol.nombre', read_only=True)
+    rol_nivel = serializers.IntegerField(source='rol.nivel', read_only=True)
     area_nombre = serializers.CharField(source='area.nombre', read_only=True)
     nombre_completo = serializers.SerializerMethodField()
     
     class Meta:
         model = Usuario
         fields = [
-            'id', 'rut', 'nombre_completo', 'email', 'telefono',
-            'cargo', 'area', 'area_nombre', 'rol', 'rol_nombre',
+            'id', 'rut', 'nombre', 'apellido_paterno', 'apellido_materno', 
+            'nombre_completo', 'email', 'telefono',
+            'cargo', 'area', 'area_nombre', 'rol', 'rol_nombre', 'rol_nivel',
             'avatar', 'is_active'
         ]
         read_only_fields = ('id',)

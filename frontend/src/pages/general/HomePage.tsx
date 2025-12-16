@@ -28,9 +28,13 @@ import Footer from '@/components/common/layout/Footer';
 import { useAuth } from '@/api/contexts/AuthContext';
 import { MiniCalendario } from '@/components/common/calendario/MiniCalendario';
 import { anunciosService, actividadesService } from '@/api/services';
+import { usuarioService } from '@/api/services/usuarioService';
+import { areaService } from '@/api/services/areaService';
 import type { Anuncio } from '@/api/services/anunciosService';
 import { actividadesToActivities } from '@/utils/actividadesAdapter';
 import type { Activity } from '@/types/activity';
+import type { Usuario } from '@/api/services/usuarioService';
+import type { Area } from '@/api/services/areaService';
 
 const Homepage = () => {
   // 1. LÓGICA DE ESTADO Y AUTH
@@ -41,6 +45,8 @@ const Homepage = () => {
   const [loadingAnuncios, setLoadingAnuncios] = useState(true);
   const [actividades, setActividades] = useState<Activity[]>([]);
   const [loadingActividades, setLoadingActividades] = useState(true);
+  const [usuariosDestacados, setUsuariosDestacados] = useState<Usuario[]>([]);
+  const [loadingDestacados, setLoadingDestacados] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentDate(new Date()), 60000);
@@ -67,6 +73,8 @@ const Homepage = () => {
       cargarAnuncios();
       // Cargar actividades en paralelo
       cargarActividades();
+      // Cargar usuarios destacados
+      cargarUsuariosDestacados();
     }
   }, [user]);
 
@@ -162,8 +170,70 @@ const Homepage = () => {
   };
 
   // ======================================================
-  // FORMATEAR FECHA PARA ACTIVIDADES
+  // CARGAR USUARIOS DESTACADOS
   // ======================================================
+
+  const cargarUsuariosDestacados = async () => {
+    if (!user) return;
+    
+    try {
+      setLoadingDestacados(true);
+      const destacados: Usuario[] = [];
+      
+      // Obtener todos los usuarios activos
+      const todosUsuarios = await usuarioService.getActivos();
+      console.log('📋 Total usuarios activos:', todosUsuarios.length);
+      console.log('👤 Usuario actual - rol_nivel:', user.rol_nivel, 'rol_nombre:', user.rol_nombre);
+      
+      // 1. Dirección (rol_nivel = 4)
+      const direccion = todosUsuarios.find(u => u.rol_nivel === 4);
+      if (direccion) {
+        console.log('✅ Dirección encontrada:', direccion.nombre_completo);
+        destacados.push(direccion);
+      } else {
+        console.log('⚠️ No se encontró Dirección (rol_nivel = 4)');
+      }
+      
+      // 2. Todas las subdirecciones (rol_nivel = 3)
+      const subdirecciones = todosUsuarios.filter(u => u.rol_nivel === 3);
+      console.log('📊 Subdirecciones encontradas:', subdirecciones.length);
+      
+      subdirecciones.forEach(sub => {
+        console.log('  - ' + sub.nombre_completo + ' (' + sub.rol_nombre + ')');
+        if (!destacados.find(d => d.id === sub.id)) {
+          destacados.push(sub);
+        }
+      });
+      
+      // 3. Si el usuario es funcionario (rol_nivel = 1), agregar su jefe de área
+      if (user.rol_nivel === 1 && user.area) {
+        try {
+          console.log('🔍 Buscando jefe del área:', user.area_nombre);
+          const area = await areaService.getById(user.area);
+          
+          if (area.jefe) {
+            const jefeUsuario = todosUsuarios.find(u => u.id === area.jefe);
+            if (jefeUsuario && !destacados.find(d => d.id === jefeUsuario.id)) {
+              console.log('✅ Jefe de área encontrado:', jefeUsuario.nombre_completo);
+              destacados.push(jefeUsuario);
+            }
+          } else {
+            console.log('⚠️ El área no tiene jefe asignado');
+          }
+        } catch (error) {
+          console.error('❌ Error al obtener jefe de área:', error);
+        }
+      }
+      
+      console.log('✅ Total usuarios destacados:', destacados.length);
+      setUsuariosDestacados(destacados);
+    } catch (error) {
+      console.error('❌ Error al cargar usuarios destacados:', error);
+      setUsuariosDestacados([]);
+    } finally {
+      setLoadingDestacados(false);
+    }
+  };
 
   const formatActivityDate = (dateStr: string | undefined): string => {
     if (!dateStr) return 'Fecha no disponible';
@@ -252,12 +322,6 @@ const Homepage = () => {
     { id: 1, message: 'Nueva solicitud de licencia médica pendiente', time: '15 min' },
     { id: 2, message: 'Documento aprobado: Informe trimestral', time: '1 h' },
     { id: 3, message: 'Recordatorio: Reunión a las 15:00', time: '2 h' }
-  ];
-
-  const destacados = [
-    { id: 1, name: 'Carlos Muñoz', area: 'Enfermería' },
-    { id: 2, name: 'Ana Torres', area: 'Atención al Usuario' },
-    { id: 3, name: 'Luis Pérez', area: 'Medicina General' }
   ];
 
   return (
@@ -486,28 +550,7 @@ const Homepage = () => {
             {/* --- COLUMNA DERECHA (Lateral) --- */}
             <div className="col-span-12 lg:col-span-4 space-y-6">
 
-              {/* 1. Notificaciones */}
-              <Card className="shadow-md border-0 bg-white overflow-hidden">
-                <CardHeader className="p-0">
-                  <div className="bg-gradient-to-br from-rose-400 to-pink-400 px-6 py-4">
-                    <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
-                      <Bell className="w-4 h-4" />
-                      Notificaciones
-                    </CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4 space-y-3">
-                  {notificaciones.map((notif) => (
-                    <div key={notif.id} className="p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors border-l-4 border-[#009DDC] shadow-sm">
-                      <p className="text-xs font-medium text-slate-800 mb-1">{notif.message}</p>
-                      <div className="flex items-center gap-1 text-slate-400">
-                        <Clock className="w-3 h-3" />
-                        <span className="text-[10px]">{notif.time}</span>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+              
 
               {/* 2. Recordatorios (Checklist) */}
               <Card className="shadow-md border-0 bg-white overflow-hidden">
@@ -541,28 +584,68 @@ const Homepage = () => {
                 </CardContent>
               </Card>
 
-              {/* 3. Destacados */}
+              {/* 3. Usuarios Destacados */}
               <Card className="shadow-md border-0 bg-white overflow-hidden">
                 <CardHeader className="p-0">
                   <div className="bg-gradient-to-br from-indigo-400 to-purple-500 px-6 py-4">
                     <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
-                      <Award className="w-4 h-4" />
-                      Destacados del Mes
+                      <Users className="w-4 h-4" />
+                      Usuarios Destacados
                     </CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="p-4 space-y-4">
-                  {destacados.map((dest) => (
-                    <div key={dest.id} className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-sm">
-                        {dest.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800">{dest.name}</p>
-                        <p className="text-xs text-slate-500">{dest.area}</p>
-                      </div>
+                  {loadingDestacados ? (
+                    // Skeleton loader
+                    <>
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="p-3 rounded-lg bg-slate-50 border border-slate-100 animate-pulse">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-slate-200 rounded-full shrink-0"></div>
+                            <div className="flex-1 space-y-2">
+                              <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                              <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                              <div className="h-3 bg-slate-200 rounded w-2/3"></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  ) : usuariosDestacados.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Users className="w-12 h-12 mx-auto text-slate-300 mb-2" />
+                      <p className="text-sm text-slate-500">No hay usuarios disponibles</p>
                     </div>
-                  ))}
+                  ) : (
+                    usuariosDestacados.map((usuario) => (
+                      <div key={usuario.id} className="p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100">
+                        <div className="flex items-center gap-3">
+                          {usuario.avatar ? (
+                            <img 
+                              src={usuario.avatar} 
+                              alt={usuario.nombre_completo}
+                              className="w-10 h-10 rounded-full object-cover shrink-0 shadow-sm"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 bg-[#009DDC]/10 rounded-full flex items-center justify-center shrink-0">
+                              <UserCircle className="w-6 h-6 text-[#009DDC]" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-800 truncate">
+                              {usuario.nombre_completo}
+                            </p>
+                            <p className="text-xs text-slate-500 truncate">
+                              {usuario.cargo}
+                            </p>
+                            <p className="text-xs text-slate-400 truncate">
+                              {usuario.email}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
 
