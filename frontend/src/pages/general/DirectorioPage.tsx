@@ -14,10 +14,8 @@ import { ROLE_CONFIG, AREA_CONFIG } from '@/types/employee';
 import { mockEmployees, searchEmployees } from '@/data/mockEmployees';
 import { Users, Mail, Phone, Download } from 'lucide-react';
 import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
-import Banner from '@/components/common/layout/Banner';
-import bannerHome from "@/components/images/banner_images/BannerDirectorio.png"
 import Footer from '@/components/common/layout/Footer';
-
+import BannerDirectorio from '@/components/images/banners_finales/BannerDirectorio';
 
 // ======================================================
 // FUNCIÓN PARA GENERAR INICIALES
@@ -95,12 +93,7 @@ export const DirectorioPage: React.FC = () => {
       <UnifiedNavbar />
       <div className="h-15" /> {/* Este espacio ocupa la altura del Navbar */}
 
-      <Banner
-        imageSrc={bannerHome}
-        title=""
-        subtitle=""
-        height="250px"
-      />
+      <BannerDirectorio></BannerDirectorio>
 
       {/* Nuevo contenedor principal para el padding y ancho máximo, similar a ComunicadosOficiales */}
       <div className="flex-1 min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 p-4 md:p-8">

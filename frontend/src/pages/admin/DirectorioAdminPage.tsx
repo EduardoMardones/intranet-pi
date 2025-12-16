@@ -15,8 +15,7 @@ import { Users, Mail, Phone, Download, UserPlus, CheckCircle2, Edit, Trash2, Eye
 
 // Layout
 import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
-import Banner from '@/components/common/layout/Banner';
-import bannerHome from "@/components/images/banner_images/BannerDirectorio.png";
+import BannerDirectorio from '@/components/images/banners_finales/BannerDirectorio';
 import Footer from '@/components/common/layout/Footer';
 
 // ✅ IMPORTAR SERVICIOS Y TIPOS REALES
@@ -280,7 +279,7 @@ export const DirectorioAdminPage: React.FC = () => {
     <>
       <UnifiedNavbar />
       <div className="h-15" />
-      <Banner imageSrc={bannerHome} title="" subtitle="" height="250px" />
+      <BannerDirectorio></BannerDirectorio>
 
       {/* Mensaje de éxito/error */}
       {showSuccessMessage && (
