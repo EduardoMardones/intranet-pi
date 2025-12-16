@@ -16,10 +16,10 @@ import { mockLicencias } from '@/data/mockLicencias';
 import { FileText, TrendingUp, Clock } from 'lucide-react';
 import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
-import Banner from '@/components/common/layout/Banner';
-import bannerHome from "@/components/images/banner_images/BannerActividades.png"
 import { useAuth } from '@/api/contexts/AuthContext';
 import { usuarioService } from '@/api';
+import BannerLicencias from '@/components/images/banners_finales/BannerLicencias';
+
 
 // ======================================================
 // COMPONENTE PRINCIPAL
@@ -205,12 +205,7 @@ export const LicenciasMedicasPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <UnifiedNavbar />
       <div className="h-16" />
-      <Banner
-        imageSrc={bannerHome}
-        title=""
-        subtitle=""
-        height="250px"
-      />
+      <BannerLicencias></BannerLicencias>
 
       {/* CORRECCIÓN 1: Cambiado de <div> a <main> para coincidir con la estructura semántica */}
       <main className="flex-1 bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 p-4 md:p-8">
