@@ -7,9 +7,8 @@
 import React from 'react';
 import UnifiedNavbar from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
-import Banner from '@/components/common/layout/Banner';
 import { DocumentosAdminTable } from '@/components/common/repositorio/DocumentosAdminTable';
-import bannerArchivos from "@/components/images/banner_images/BannerArchivos.png";
+import BannerArchivos from '@/components/images/banners_finales/BannerArchivos';
 
 // ======================================================
 // COMPONENTE PRINCIPAL
@@ -23,12 +22,7 @@ const ArchivosAdminPage: React.FC = () => {
       <div className="h-16" />
 
       {/* Banner */}
-      <Banner
-        imageSrc={bannerArchivos}
-        title=""
-        subtitle=""
-        height="250px"
-      />
+      <BannerArchivos></BannerArchivos>
       
       {/* Contenido Principal */}
       <div className="flex-1 bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 p-4 md:p-8">
