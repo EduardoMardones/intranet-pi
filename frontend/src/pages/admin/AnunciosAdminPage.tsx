@@ -20,8 +20,7 @@ import { Button } from '@/components/ui/button';
 // Layout
 import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
-import bannerHome from "@/components/images/banner_images/BannerAnuncios.png";
-import Banner from "@/components/common/layout/Banner";
+import BannerComunicados from '@/components/images/banners_finales/BannerComunicados';
 
 // ✅ SISTEMA DE PERMISOS
 import { useAuth } from '@/api/contexts/AuthContext';
@@ -305,13 +304,7 @@ export const AnunciosAdminPage: React.FC = () => {
       <UnifiedNavbar />
       <div className="h-16" /> 
 
-      <Banner
-        imageSrc={bannerHome}
-        title=""
-        subtitle=""
-        height="250px"
-      />
-
+      <BannerComunicados></BannerComunicados>
       {/* Mensaje flotante de éxito */}
       {showSuccessMessage && (
         <div className="fixed top-24 right-4 z-50 animate-in slide-in-from-top-2">
