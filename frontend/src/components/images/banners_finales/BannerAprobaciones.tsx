@@ -1,13 +1,12 @@
 import React from 'react';
 
-const BannerLudicos: React.FC = () => {
+const BannerAprobaciones: React.FC = () => {
   return (
     <div className="banner-container">
       <style>{`
         .banner-container {
           width: 100%;
-          /* Eliminamos max-width para que ocupe toda la pantalla */
-          height: 250px; /* Altura fija igual al HTML */
+          height: 250px;
           border-radius: 0;
           overflow: hidden;
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -19,13 +18,13 @@ const BannerLudicos: React.FC = () => {
           display: block;
           width: 100%;
           height: 100%;
-          /* Esto asegura que el SVG cubra todo el contenedor sin deformarse */
-          object-fit: cover; 
+          object-fit: cover;
+          will-change: opacity;
           animation: fadeIn 0.6s ease-out forwards;
           opacity: 0;
         }
 
-        /* Optimizaciones de animación idénticas al HTML */
+        /* Optimización de rendering */
         .float-element,
         .float-slow,
         .float-fast,
@@ -35,6 +34,7 @@ const BannerLudicos: React.FC = () => {
           -webkit-backface-visibility: hidden;
         }
 
+        /* Animación suave de las olas */
         .wave-layer {
           transform-origin: center;
           animation: floatWave 6s ease-in-out infinite alternate;
@@ -42,6 +42,7 @@ const BannerLudicos: React.FC = () => {
         .wave-layer:nth-child(odd) { animation-duration: 7s; }
         .wave-layer:nth-child(even) { animation-duration: 9s; animation-direction: alternate-reverse; }
 
+        /* Animación flotante para decorativos */
         .float-element {
           animation: floatUp 5s ease-in-out infinite;
           animation-fill-mode: both;
@@ -73,62 +74,56 @@ const BannerLudicos: React.FC = () => {
         }
       `}</style>
       
-      {/* preserveAspectRatio="xMidYMid slice" es CLAVE para que actúe como background-size: cover */}
       <svg viewBox="0 0 900 250" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
         <defs>
-          <linearGradient id="calipsoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          {/* Usamos un ID único para evitar conflictos si hay varios banners */}
+          <linearGradient id="calipsoGradientVacaciones" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style={{ stopColor: '#22d3ee', stopOpacity: 1 }} />
             <stop offset="100%" style={{ stopColor: '#0284c7', stopOpacity: 1 }} />
           </linearGradient>
 
-          <filter id="shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="900" height="250">
+          <filter id="shadowVacaciones" filterUnits="userSpaceOnUse" x="0" y="0" width="900" height="250">
             <feDropShadow dx="0" dy="2" stdDeviation="4" floodOpacity="0.1"/>
           </filter>
 
-          <filter id="iconShadow" filterUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+          <filter id="iconShadowVacaciones" filterUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
             <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor="#0ea5e9" floodOpacity="0.4"/>
           </filter>
 
-          <filter id="softBlur">
+          <filter id="softBlurVacaciones">
             <feGaussianBlur stdDeviation="1.5"/>
           </filter>
         </defs>
 
-        {/* Fondo blanco */}
         <rect width="900" height="250" fill="#ffffff"/>
 
         {/* === TEXTOS === */}
         <g transform="translate(160, 35)">
           <text x="0" y="70" fontFamily="Arial, sans-serif" fontSize="32" fontWeight="700" fill="#0f172a" letterSpacing="-0.5">
-            Gestión de
+            Aprobación de
           </text>
           <text x="0" y="105" fontFamily="Arial, sans-serif" fontSize="32" fontWeight="700" fill="#0284c7" letterSpacing="-0.5">
-            Actividades
+            Solicitudes
           </text>
           
           <text x="0" y="135" fontFamily="Arial, sans-serif" fontSize="14" fill="#64748b">
-            Gestiona tus ausencias eficientemente
+            Gestiona las solicitudes
           </text>
         </g>
 
-        {/* === ICONO PRINCIPAL === */}
+        {/* === ICONO PRINCIPAL: Calendario Grande === */}
         <g transform="translate(40, 80)">
-          <rect width="90" height="90" rx="20" fill="url(#calipsoGradient)" filter="url(#iconShadow)"/>
+          <rect width="90" height="90" rx="20" fill="url(#calipsoGradientVacaciones)" filter="url(#iconShadowVacaciones)"/>
           
-          <g transform="translate(38, 42) rotate(-15)">
-            <g stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.9">
-              <path d="M 28,-5 Q 35,5 28,15" opacity="0.8"/>
-              <path d="M 34,-10 Q 45,5 34,20" opacity="0.6"/>
-              <path d="M 40,-15 Q 55,5 40,25" opacity="0.4"/>
-            </g>
-
-            <path d="M -5,15 Q -5,28 -12,28 Q -18,28 -15,18 L -8,14 Z" fill="#e2e8f0"/>
-            <path d="M -18,2 L 20,-10 L 20,20 L -18,10 Z" fill="#ffffff"/>
-            <path d="M -18,10 L 20,20 L 20,12 L -18,6 Z" fill="#cbd5e1" opacity="0.3"/>
-            <ellipse cx="-18" cy="6" rx="4" ry="7" fill="#f1f5f9"/>
-            <ellipse cx="20" cy="5" rx="6" ry="15" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1"/>
-            <ellipse cx="20" cy="5" rx="4" ry="12" fill="#334155"/>
-            <rect x="-10" y="-1" width="6" height="4" rx="1" fill="#cbd5e1" transform="translate(0, -4)"/>
+          <g transform="translate(20, 20)" stroke="white" strokeWidth="2.5" fill="none">
+            <rect x="0" y="5" width="50" height="50" rx="3"/>
+            <line x1="37" y1="0" x2="37" y2="10"/>
+            <line x1="13" y1="0" x2="13" y2="10"/>
+            <line x1="0" y1="18" x2="50" y2="18"/>
+            <rect x="8" y="27" width="5" height="5" fill="white"/>
+            <rect x="23" y="27" width="5" height="5" fill="white"/>
+            <rect x="37" y="27" width="5" height="5" fill="white"/>
+            <circle cx="40" cy="40" r="10" strokeWidth="2" fill="none" opacity="0.5"/>
           </g>
         </g>
 
@@ -141,7 +136,7 @@ const BannerLudicos: React.FC = () => {
           <path className="wave-layer" d="M 820,0 C 860,60 780,120 830,250 L 900,250 L 900,0 Z" fill="#0284c7" opacity="0.7"/>
         </g>
 
-        {/* === DECORACIONES === */}
+        {/* === DECORACIONES (Burbujas) === */}
         <g opacity="0.5">
           <g className="float-element">
             <circle cx="585" cy="100" r="16" fill="#ffffff" fillOpacity="0.2" stroke="#7dd3fc" strokeWidth="2"/>
@@ -194,7 +189,15 @@ const BannerLudicos: React.FC = () => {
           <circle cx="795" cy="145" r="8" fill="#ffffff" fillOpacity="0.24" stroke="#bae6fd" strokeWidth="1.5" className="float-slow" style={{ animationDelay: '1.9s' }}/>
         </g>
 
+        <g opacity="0.35">
+          <circle cx="635" cy="170" r="7" fill="#ffffff" fillOpacity="0.12" stroke="#38bdf8" strokeWidth="1" className="float-element" style={{ animationDelay: '2s' }}/>
+          <circle cx="680" cy="77" r="6" fill="#ffffff" fillOpacity="0.15" stroke="#7dd3fc" strokeWidth="1" className="float-slow" style={{ animationDelay: '0.9s' }}/>
+          <circle cx="770" cy="175" r="8" fill="#ffffff" fillOpacity="0.18" stroke="#38bdf8" strokeWidth="1" className="float-fast" style={{ animationDelay: '1.4s' }}/>
+        </g>
+
         {/* === ELEMENTOS VEGETALES === */}
+
+        {/* Planta 1 */}
         <g transform="translate(575, 155)" opacity="0.4">
           <g className="float-element">
             <path d="M 0,40 Q -2,25 -3,15 Q -2,8 0,0" stroke="#0ea5e9" strokeWidth="2" fill="none" opacity="0.5"/>
@@ -204,6 +207,7 @@ const BannerLudicos: React.FC = () => {
           </g>
         </g>
 
+        {/* Arbusto pequeño */}
         <g transform="translate(555, 130)" opacity="0.35">
           <g className="float-slow" style={{ animationDelay: '1.6s' }}>
             <ellipse cx="0" cy="0" rx="10" ry="14" fill="#7dd3fc" fillOpacity="0.2" transform="rotate(10)"/>
@@ -212,16 +216,18 @@ const BannerLudicos: React.FC = () => {
           </g>
         </g>
 
+        {/* Planta ramificada */}
         <g transform="translate(610, 170)" opacity="0.4">
           <g className="float-element" style={{ animationDelay: '0.7s' }}>
             <path d="M 0,30 Q -1,20 0,10 Q 1,5 0,0" stroke="#0ea5e9" strokeWidth="1.8" fill="none" opacity="0.5"/>
             <path d="M 0,15 Q -5,12 -8,10" stroke="#0ea5e9" strokeWidth="1.5" fill="none" opacity="0.4"/>
             <path d="M 0,20 Q 5,17 8,15" stroke="#0ea5e9" strokeWidth="1.5" fill="none" opacity="0.4"/>
-            <ellipse cx="-8" cy="10" rx="4" ry="6" fill="#7dd3fc" fillOpacity="0.3" transform="rotate(-30 -8 10)"/>
-            <ellipse cx="8" cy="15" rx="4" ry="6" fill="#38bdf8" fillOpacity="0.25" transform="rotate(30 8 15)"/>
+            <ellipse cx="-8" cy="10" rx="4" ry="6" fill="#7dd3fc" fillOpacity="0.3" transform="rotate(-30 -8 10)" />
+            <ellipse cx="8" cy="15" rx="4" ry="6" fill="#38bdf8" fillOpacity="0.25" transform="rotate(30 8 15)" />
           </g>
         </g>
 
+        {/* Planta 2 */}
         <g transform="translate(720, 85)" opacity="0.5">
           <g className="float-slow" style={{ animationDelay: '2s' }}>
             <path d="M 0,50 Q -3,30 -4,20 Q -2,10 0,0" stroke="#0284c7" strokeWidth="2.5" fill="none" opacity="0.4"/>
@@ -231,6 +237,7 @@ const BannerLudicos: React.FC = () => {
           </g>
         </g>
 
+        {/* Arbusto denso */}
         <g transform="translate(670, 150)" opacity="0.4">
           <g className="float-element" style={{ animationDelay: '1.1s' }}>
             <ellipse cx="0" cy="0" rx="12" ry="16" fill="#38bdf8" fillOpacity="0.22"/>
@@ -240,6 +247,7 @@ const BannerLudicos: React.FC = () => {
           </g>
         </g>
 
+        {/* Ramitas finas */}
         <g transform="translate(695, 115)" opacity="0.35">
           <g className="float-fast" style={{ animationDelay: '0.5s' }}>
             <path d="M 0,25 Q 2,15 0,0" stroke="#0284c7" strokeWidth="1.5" fill="none" opacity="0.4"/>
@@ -248,6 +256,7 @@ const BannerLudicos: React.FC = () => {
           </g>
         </g>
 
+        {/* Planta Grande */}
         <g transform="translate(800, 65)" opacity="0.8">
           <g className="float-element">
             <path d="M 0,80 Q -5,50 -6,35 Q -4,20 0,0" stroke="#e0f2fe" strokeWidth="2" fill="none" opacity="0.6"/>
@@ -257,6 +266,7 @@ const BannerLudicos: React.FC = () => {
           </g>
         </g>
 
+        {/* Arbusto tropical */}
         <g transform="translate(770, 135)" opacity="0.5">
           <g className="float-slow" style={{ animationDelay: '1.4s' }}>
             <ellipse cx="0" cy="0" rx="14" ry="18" fill="#0ea5e9" fillOpacity="0.25" stroke="#0284c7" strokeWidth="1"/>
@@ -265,6 +275,7 @@ const BannerLudicos: React.FC = () => {
           </g>
         </g>
 
+        {/* Helechos pequeños */}
         <g transform="translate(845, 95)" opacity="0.45">
           <g className="float-element" style={{ animationDelay: '0.9s' }}>
             <path d="M 0,35 Q 1,20 0,0" stroke="#bae6fd" strokeWidth="1.8" fill="none" opacity="0.5"/>
@@ -275,6 +286,7 @@ const BannerLudicos: React.FC = () => {
           </g>
         </g>
 
+        {/* Grupo de hojas bajas */}
         <g transform="translate(865, 180)" opacity="0.4">
           <g className="float-slow" style={{ animationDelay: '1.8s' }}>
             <ellipse cx="0" cy="0" rx="8" ry="6" fill="#bae6fd" fillOpacity="0.3" transform="rotate(15)"/>
@@ -283,7 +295,7 @@ const BannerLudicos: React.FC = () => {
           </g>
         </g>
 
-        {/* === HOJAS FLOTANTES === */}
+        {/* === HOJAS FLOTANTES INDIVIDUALES === */}
         <g opacity="0.35">
           <g transform="translate(600, 75) rotate(15)">
             <g className="float-slow">
@@ -438,7 +450,7 @@ const BannerLudicos: React.FC = () => {
           </g>
         </g>
 
-        {/* Puntos y burbujas extra */}
+        {/* Puntos y burbujas adicionales */}
         <g opacity="0.3">
           <circle cx="565" cy="90" r="2.5" fill="#38bdf8" className="float-element"/>
           <circle cx="595" cy="145" r="3" fill="#0ea5e9" className="float-slow" style={{ animationDelay: '1s' }}/>
@@ -463,43 +475,32 @@ const BannerLudicos: React.FC = () => {
           <path d="M 810,130 Q 830,125 850,130" stroke="#bae6fd" className="float-fast" style={{ animationDelay: '0.7s' }}/>
         </g>
 
-        {/* === ICONOS PRINCIPALES === */}
-        <g transform="translate(660, 65)">
-          <g className="float-slow">
-            <g filter="url(#shadow)">
-              <ellipse cx="40" cy="15" rx="4" ry="7" fill="#fbbf24" opacity="0.8"/>
-              <ellipse cx="40" cy="15" rx="2.5" ry="5" fill="#fef3c7"/>
-              <rect x="37" y="20" width="6" height="15" rx="1" fill="#0ea5e9"/>
-              <ellipse cx="40" cy="35" rx="25" ry="6" fill="#22d3ee"/>
-              <rect x="15" y="35" width="50" height="12" fill="#0ea5e9"/>
-              <ellipse cx="40" cy="47" rx="25" ry="6" fill="#0284c7"/>
-              <rect x="10" y="47" width="60" height="15" fill="#0ea5e9"/>
-              <ellipse cx="40" cy="62" rx="30" ry="6" fill="#0284c7"/>
-              <circle cx="25" cy="40" r="2" fill="#ffffff" opacity="0.6"/>
-              <circle cx="40" cy="42" r="2" fill="#ffffff" opacity="0.6"/>
-              <circle cx="55" cy="40" r="2" fill="#ffffff" opacity="0.6"/>
-              <circle cx="20" cy="54" r="2" fill="#ffffff" opacity="0.6"/>
-              <circle cx="35" cy="56" r="2" fill="#ffffff" opacity="0.6"/>
-              <circle cx="50" cy="54" r="2" fill="#ffffff" opacity="0.6"/>
-              <circle cx="65" cy="56" r="2" fill="#ffffff" opacity="0.6"/>
-            </g>
+        {/* === ICONOS FLOTANTES (Calendario Pequeño y Reloj) === */}
+
+        {/* Calendario pequeño */}
+        <g transform="translate(680, 60)">
+          <g stroke="#0284c7" strokeWidth="2.5" fill="none" filter="url(#shadowVacaciones)">
+            <rect x="0" y="8" width="46" height="38" rx="4" fill="#ffffff" fillOpacity="0.95"/>
+            <line x1="13" y1="5" x2="13" y2="15" strokeLinecap="round"/>
+            <line x1="33" y1="5" x2="33" y2="15" strokeLinecap="round"/>
+            <line x1="0" y1="20" x2="46" y2="20" strokeWidth="2"/>
+            <polyline points="12,32 19,39 34,24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
           </g>
         </g>
 
-        <g transform="translate(760, 125)">
-          <g className="float-element">
-            <g filter="url(#shadow)">
-              <path d="M 40,65 Q 15,45 15,30 Q 15,20 22,15 Q 28,10 35,15 Q 38,17 40,22 Q 42,17 45,15 Q 52,10 58,15 Q 65,20 65,30 Q 65,45 40,65 Z" fill="#0ea5e9" stroke="#0284c7" strokeWidth="2.5"/>
-              <ellipse cx="30" cy="28" rx="6" ry="10" fill="#ffffff" opacity="0.4" transform="rotate(-25 30 28)"/>
-              <rect x="37" y="32" width="6" height="18" rx="1" fill="#ffffff" opacity="0.9"/>
-              <rect x="31" y="38" width="18" height="6" rx="1" fill="#ffffff" opacity="0.9"/>
-              <path d="M 25,55 L 28,55 L 30,50 L 32,60 L 34,55 L 37,55" stroke="#22d3ee" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-            </g>
+        {/* Reloj */}
+        <g transform="translate(740, 155)">
+          <g stroke="#0ea5e9" strokeWidth="2.5" fill="none" filter="url(#shadowVacaciones)">
+            <circle cx="21" cy="21" r="20" fill="#ffffff" fillOpacity="0.95"/>
+            <circle cx="21" cy="21" r="3" fill="#0ea5e9"/>
+            <line x1="21" y1="21" x2="21" y2="8" strokeLinecap="round" strokeWidth="2.5"/>
+            <line x1="21" y1="21" x2="32" y2="21" strokeLinecap="round" strokeWidth="2"/>
           </g>
         </g>
+
       </svg>
     </div>
   );
 };
 
-export default BannerLudicos;
+export default BannerAprobaciones;

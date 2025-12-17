@@ -15,8 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import UnifiedNavbar from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
-import bannerHome from "@/components/images/banner_images/BannerSoporte.png" // Asegúrate que esta ruta sea correcta
-import Banner from '@/components/common/layout/Banner';
+import BannerSoporte from '@/components/images/banners_finales/BannerSoporte';
 
 
 
@@ -86,12 +85,7 @@ export const SoporteTecnicoPage = () => {
     <>
       <UnifiedNavbar></UnifiedNavbar>
       <div className="h-16" /> {/* Este espacio ocupa la altura del Navbar */}
-      <Banner
-          imageSrc={bannerHome}
-          title=""
-          subtitle=""
-          height="250px"
-        />
+      <BannerSoporte></BannerSoporte>
 
       {/* Nuevo contenedor principal para el padding y ancho máximo, similar a DirectorioPage */}
       <div className="flex-1 min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 p-4 md:p-8">

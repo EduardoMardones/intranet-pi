@@ -9,8 +9,7 @@
 import React, { useState, useEffect } from 'react';
 import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
-import Banner from '@/components/common/layout/Banner';
-import bannerSolicitudes from '@/components/images/banner_images/BannerSolicitudes.png';
+import BannerAprobaciones from '@/components/images/banners_finales/BannerAprobaciones';
 import {
   CalendarDays,
   CheckCircle,
@@ -357,7 +356,7 @@ export const AprobacionesAdminPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <UnifiedNavbar />
-        <Banner title="Aprobaciones" imageSrc={bannerSolicitudes} />
+        <BannerAprobaciones></BannerAprobaciones>
         <div className="flex items-center justify-center h-[calc(100vh-300px)]">
           <Alert className="max-w-md bg-red-50 border-red-200">
             <AlertCircle className="h-4 w-4 text-red-600" />
@@ -375,8 +374,7 @@ export const AprobacionesAdminPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <UnifiedNavbar />
       <div className="h-16" />
-      <Banner title="" imageSrc={bannerSolicitudes} height="250px"/>
-
+      <BannerAprobaciones></BannerAprobaciones>
       <div className="flex-1 bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 p-4 md:p-8">
         <div className="max-w-[1600px] mx-auto">
           {/* Header Container */}

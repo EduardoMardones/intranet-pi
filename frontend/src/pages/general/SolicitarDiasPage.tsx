@@ -9,8 +9,7 @@
 import React, { useState, useEffect } from 'react';
 import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
-import Banner from '@/components/common/layout/Banner';
-import bannerSolicitudes from '@/components/images/banner_images/BannerSolicitudes.png';
+import BannerVacaciones from '@/components/images/banners_finales/BannerVacaciones';
 import { 
   CalendarDays, 
   User, 
@@ -299,12 +298,7 @@ export const SolicitarDiasPage: React.FC = () => {
       <UnifiedNavbar />
       <div className="h-16" />
       
-      <Banner
-        imageSrc={bannerSolicitudes}
-        title=""
-        subtitle=""
-        height="250px"
-      />
+      <BannerVacaciones></BannerVacaciones>
 
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 p-4 md:p-8">
         <div className="max-w-[1200px] mx-auto">

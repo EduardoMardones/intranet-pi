@@ -9,8 +9,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { UnifiedNavbar } from '@/components/common/layout/UnifiedNavbar';
 import Footer from '@/components/common/layout/Footer';
-import Banner from '@/components/common/layout/Banner';
-import bannerHome from "@/components/images/banner_images/BannerActividades.png";
+import BannerLudicos from '@/components/images/banners_finales/BannerLudicos';
 
 import { ActivitiesGridAdmin } from '@/components/common/actividades/ActivitiesGridAdmin';
 import { ActivityFormDialog } from '@/components/common/actividades/ActivityFormDialog';
@@ -241,12 +240,7 @@ export const ActividadesAdminPage: React.FC = () => {
       <UnifiedNavbar />
       <div className="h-16" /> 
 
-      <Banner
-        imageSrc={bannerHome}
-        title=""
-        subtitle=""
-        height="250px"
-      />
+      <BannerLudicos></BannerLudicos>
 
       <div className="flex-1 min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50 p-4 md:p-8">
         <div className="max-w-[1600px] mx-auto">
