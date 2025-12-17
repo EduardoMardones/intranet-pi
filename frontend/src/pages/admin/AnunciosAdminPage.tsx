@@ -372,19 +372,12 @@ export const AnunciosAdminPage: React.FC = () => {
               {/* Título y Botones */}
               <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-gradient-to-br from-[#009DDC] to-[#0088c4] rounded-xl shadow-md">
-                    <Megaphone className="w-6 h-6 text-white" />
-                  </div>
+                 
                   
                   <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
-                      {permisos.esAdmin ? 'Gestión de Comunicados' : 'Comunicados Oficiales'}
-                    </h1>
+                    
                     <p className="text-gray-600 mt-1 text-sm">
-                      {permisos.esAdmin 
-                        ? 'Panel Administrativo · Vista de Edición'
-                        : 'Anuncios e información oficial del CESFAM'
-                      }
+                      Accede y gestiona Anuncios Oficiales para el CESFAM. Mantente Informado
                     </p>
                   </div>
                 </div>

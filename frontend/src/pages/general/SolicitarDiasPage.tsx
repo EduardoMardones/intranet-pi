@@ -309,13 +309,9 @@ export const SolicitarDiasPage: React.FC = () => {
           <header className="bg-white shadow-xl rounded-xl overflow-hidden mb-6">
             <div className="py-8 px-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] rounded-xl">
-                  <CalendarDays className="w-6 h-6 text-white" />
-                </div>
+                
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-800">
-                    Solicitar Días Libres
-                  </h1>
+                  
                   <p className="text-sm text-gray-500">
                     Vacaciones o días administrativos - Proceso de aprobación automático
                   </p>

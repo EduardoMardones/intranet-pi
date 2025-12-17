@@ -257,19 +257,14 @@ export const ActividadesAdminPage: React.FC = () => {
                   {/* Icono condicional */}
                   <div className={`p-3 rounded-xl ${
                     permisos.esAdmin 
-                      ? 'bg-gradient-to-br from-[#009DDC] to-[#4DFFF3]' 
-                      : 'bg-gradient-to-br from-gray-400 to-gray-500'
+                      ? '' 
+                      : ''
                   }`}>
-                    {permisos.esAdmin ? (
-                      <Shield className="w-6 h-6 text-white" />
-                    ) : (
-                      <Eye className="w-6 h-6 text-white" />
-                    )}
+                    
                   </div>
                   
                   <div>
                     <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                      {permisos.esAdmin ? 'Panel Administrativo' : 'Tablón'} - Actividades CESFAM
                     </h1>
                     <p className="text-sm text-gray-500">
                       {permisos.esAdmin 

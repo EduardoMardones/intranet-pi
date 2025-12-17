@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Headphones, 
+   
   FileText, 
   Download, 
   Send, 
@@ -95,11 +95,8 @@ export const SoporteTecnicoPage = () => {
           <header className="bg-white shadow-lg  rounded-xl overflow-hidden mb-6"> {/* Añadido rounded-xl y mb-6 */}
             <div className="max-w-[1800px] mx-auto px-6 py-6"> {/* Ajustado a px-6 para mejor look */}
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] rounded-xl shadow-lg">
-                  <Headphones className="w-7 h-7 text-white" />
-                </div>
+                
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Soporte Técnico</h1>
                   <p className="text-sm text-gray-600">Centro de ayuda y reportes del sistema</p>
                 </div>
               </div>

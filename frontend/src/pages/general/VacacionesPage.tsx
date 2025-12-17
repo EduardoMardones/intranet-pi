@@ -4,7 +4,7 @@ import { CardSection } from "@/components/common/vacaciones/VacacionesCardSectio
 import { UnifiedNavbar } from "@/components/common/layout/UnifiedNavbar"
 import Footer from "@/components/common/layout/Footer"
 import BannerVacaciones from "@/components/images/banners_finales/BannerVacaciones"
-import { CalendarDays, Plus } from "lucide-react";
+import { Plus } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 
 const VacacionesPage: React.FC = () => {
@@ -24,13 +24,9 @@ const VacacionesPage: React.FC = () => {
             <div className="py-8 px-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-gradient-to-br from-[#009DDC] to-[#4DFFF3] rounded-xl">
-                    <CalendarDays className="w-6 h-6 text-white" />
-                  </div>
+                  
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-800">
-                      Solicitudes de Vacaciones
-                    </h1>
+                    
                     <p className="text-sm text-gray-500">
                       Gestión centralizada de tus días de descanso
                     </p>

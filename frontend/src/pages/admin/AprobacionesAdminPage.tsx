@@ -380,14 +380,10 @@ export const AprobacionesAdminPage: React.FC = () => {
           {/* Header Container */}
           <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
             <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-[#009DDC] to-[#4DFFF3]">
-                <CheckCircle className="w-6 h-6 text-white" />
-              </div>
+              
               
               <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-800 mb-2">
-                  Aprobación de Solicitudes
-                </h1>
+                
                 <p className="text-sm text-gray-600 leading-relaxed">
                   Gestiona y aprueba solicitudes de vacaciones y días administrativos del personal del CESFAM.
                   Revisa los detalles y toma decisiones informadas sobre cada petición.

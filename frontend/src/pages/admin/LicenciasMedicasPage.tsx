@@ -215,13 +215,9 @@ export const LicenciasMedicasPage: React.FC = () => {
             {/* Título principal */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-[#009DDC] to-[#4DFFF3]">
-                  <FileText className="w-6 h-6 text-white" />
-                </div>
+                
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-800">
-                    Gestión de Licencias Médicas
-                  </h1>
+                  
                   <p className="text-sm text-gray-600">
                     Repositorio digital de licencias del personal
                   </p>
